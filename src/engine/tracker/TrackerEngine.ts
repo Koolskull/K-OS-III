@@ -38,6 +38,18 @@ export class TrackerEngine {
   private scheduleId: number | null = null;
   private tickCallback: ((tick: number, channel: number, row: number) => void) | null = null;
 
+  /** Scene queueing — pending song row to jump to at next phrase boundary */
+  private pendingSongRow: number | null = null;
+  private activeSongRow = 0;
+  private sceneCallback: ((activeRow: number, pendingRow: number | null) => void) | null = null;
+
+  /** Play mode: song = sequential, live = chains loop when followed by empty rows */
+  private playMode: "song" | "live" = "song";
+
+  /** Channel mute/solo */
+  private mutedChannels: Set<number> = new Set();
+  private soloedChannels: Set<number> = new Set();
+
   /** Pre-loaded sample buffers shared across channels (legacy URL-based) */
   private sampleBuffers: Map<string, import("tone").ToneAudioBuffer> = new Map();
   /** Project-embedded sample pool */
@@ -141,7 +153,7 @@ export class TrackerEngine {
     this.tickCallback = cb;
   }
 
-  async play(): Promise<void> {
+  async play(startRow = 0): Promise<void> {
     if (!this.project || this.playing) return;
 
     // Wait for samples if they're still loading
@@ -158,11 +170,12 @@ export class TrackerEngine {
     }
 
     this.playing = true;
-    console.log("[ENGINE] ▶ PLAY");
+    this.activeSongRow = startRow;
+    console.log(`[ENGINE] ▶ PLAY from row ${startRow}`);
 
-    // Reset positions
+    // Reset positions to start row
     this.channelStates.forEach((ch) => {
-      ch.songRow = 0;
+      ch.songRow = startRow;
       ch.chainStep = 0;
       ch.phraseRow = 0;
       ch.tableRow = 0;
@@ -219,6 +232,10 @@ export class TrackerEngine {
 
     for (let ch = 0; ch < song.channels; ch++) {
       const state = this.channelStates[ch];
+
+      // Channel mute/solo — skip processing but still advance position
+      const isAudible = this.isChannelAudible(ch);
+
       const songRow = song.rows[state.songRow];
       if (!songRow) continue;
 
@@ -236,7 +253,9 @@ export class TrackerEngine {
 
       const row = phrase.rows[state.phraseRow];
       if (row) {
-        this.processRow(row, state, instruments, step.transpose, time);
+        if (isAudible) {
+          this.processRow(row, state, instruments, step.transpose, time);
+        }
         this.tickCallback?.(tick, ch, state.phraseRow);
       }
 
@@ -258,16 +277,44 @@ export class TrackerEngine {
       state.phraseRow++;
       if (state.phraseRow >= phrase.rows.length) {
         state.phraseRow = 0;
-        state.chainStep++;
-        if (state.chainStep >= chain.steps.length || chain.steps[state.chainStep]?.phrase === null) {
-          state.chainStep = 0;
-          state.songRow = this.findNextSongRow(song, ch, state.songRow + 1);
+
+        // Scene queue: jump all channels to the pending song row at phrase boundary
+        if (this.pendingSongRow !== null && ch === 0) {
+          const targetRow = this.pendingSongRow;
+          this.pendingSongRow = null;
+          this.activeSongRow = targetRow;
+          for (const cs of this.channelStates) {
+            cs.songRow = targetRow;
+            cs.chainStep = 0;
+          }
+          this.sceneCallback?.(this.activeSongRow, null);
+        } else {
+          state.chainStep++;
+          if (state.chainStep >= chain.steps.length || chain.steps[state.chainStep]?.phrase === null) {
+            state.chainStep = 0;
+            state.songRow = this.findNextSongRow(song, ch, state.songRow + 1);
+            if (ch === 0) {
+              this.activeSongRow = state.songRow;
+              this.sceneCallback?.(this.activeSongRow, this.pendingSongRow);
+            }
+          }
         }
       }
     }
   }
 
   private findNextSongRow(song: Song, channel: number, fromRow: number): number {
+    if (this.playMode === "live") {
+      // Live mode: if the next row is empty for this channel, loop current row
+      const nextRow = song.rows[fromRow];
+      if (!nextRow || nextRow.chains[channel] == null) {
+        // Stay on current row (loop)
+        return fromRow - 1 >= 0 ? fromRow - 1 : 0;
+      }
+      return fromRow;
+    }
+
+    // Song mode: find next populated row, wrap around
     for (let i = fromRow; i < song.rows.length; i++) {
       if (song.rows[i]?.chains[channel] != null) return i;
     }
@@ -275,6 +322,12 @@ export class TrackerEngine {
       if (song.rows[i]?.chains[channel] != null) return i;
     }
     return 0;
+  }
+
+  private isChannelAudible(ch: number): boolean {
+    if (this.mutedChannels.has(ch)) return false;
+    if (this.soloedChannels.size > 0 && !this.soloedChannels.has(ch)) return false;
+    return true;
   }
 
   /** Choke all voices on a channel — monophonic: only one sound at a time */
@@ -344,6 +397,101 @@ export class TrackerEngine {
         this.chokeChannel(state, time);
         break;
     }
+  }
+
+  // ── SCENE SYSTEM ──
+
+  /** Queue a song row to jump to at the next phrase boundary */
+  queueScene(songRow: number): void {
+    if (!this.project) return;
+    if (songRow < 0 || songRow >= this.project.song.rows.length) return;
+    this.pendingSongRow = songRow;
+    this.sceneCallback?.(this.activeSongRow, this.pendingSongRow);
+  }
+
+  /** Get current active song row */
+  getActiveSongRow(): number {
+    return this.activeSongRow;
+  }
+
+  /** Get pending queued song row (null if none) */
+  getPendingSongRow(): number | null {
+    return this.pendingSongRow;
+  }
+
+  /** Register callback for scene changes */
+  onSceneChange(cb: (activeRow: number, pendingRow: number | null) => void): void {
+    this.sceneCallback = cb;
+  }
+
+  // ── PLAY MODE ──
+
+  setPlayMode(mode: "song" | "live"): void {
+    this.playMode = mode;
+  }
+
+  getPlayMode(): "song" | "live" {
+    return this.playMode;
+  }
+
+  // ── CHANNEL MUTE / SOLO ──
+
+  toggleChannelMute(ch: number): void {
+    if (this.mutedChannels.has(ch)) {
+      this.mutedChannels.delete(ch);
+    } else {
+      this.mutedChannels.add(ch);
+    }
+    // If muted, choke the channel immediately
+    if (this.mutedChannels.has(ch)) {
+      const state = this.channelStates[ch];
+      if (state) {
+        state.fmVoice?.triggerRelease();
+        state.samplerVoice?.triggerRelease();
+      }
+    }
+  }
+
+  toggleChannelSolo(ch: number): void {
+    if (this.soloedChannels.has(ch)) {
+      this.soloedChannels.delete(ch);
+    } else {
+      this.soloedChannels.add(ch);
+    }
+    // Choke all non-audible channels
+    for (let i = 0; i < this.channelStates.length; i++) {
+      if (!this.isChannelAudible(i)) {
+        const state = this.channelStates[i];
+        state.fmVoice?.triggerRelease();
+        state.samplerVoice?.triggerRelease();
+      }
+    }
+  }
+
+  getMutedChannels(): Set<number> { return new Set(this.mutedChannels); }
+  getSoloedChannels(): Set<number> { return new Set(this.soloedChannels); }
+
+  /** Get per-channel playback position for live display */
+  getPlaybackState(): Array<{ songRow: number; chainId: number | null; chainStep: number; phraseId: number | null; phraseRow: number }> {
+    if (!this.project) return [];
+    return this.channelStates.map((state, ch) => {
+      const songRow = this.project!.song.rows[state.songRow];
+      const chainId = songRow?.chains[ch] ?? null;
+      const chain = chainId !== null ? this.project!.chains.find((c) => c.id === chainId) : null;
+      const phraseId = chain?.steps[state.chainStep]?.phrase ?? null;
+      return {
+        songRow: state.songRow,
+        chainId,
+        chainStep: state.chainStep,
+        phraseId,
+        phraseRow: state.phraseRow,
+      };
+    });
+  }
+
+  /** Expose the sample pool so LiveVoiceManager can share decoded buffers */
+  getSamplePool(): SamplePool {
+    return this.samplePool;
   }
 
   dispose(): void {

@@ -35,9 +35,21 @@ import { toSlimeKeys } from "@/types/tracker";
 import type { SlimeHexKey } from "@/types/tracker";
 import { SlimeGlyph } from "@/components/apps/datamoshpit/ui/SlimeDigit";
 
+export interface PlaybackChannelInfo {
+  chainId: number | null;
+  phraseId: number | null;
+  phraseRow: number;
+}
+
 interface LivePadsProps {
   bank: number;
   preset: number;
+  inputMode?: "tracker" | "sampler";
+  mutedPads?: Set<number>;
+  soloedPads?: Set<number>;
+  isRecording?: boolean;
+  playbackInfo?: PlaybackChannelInfo[];
+  patternBank?: number;
   onPadTrigger: (padIndex: number, bank: number) => void;
   onNoteOn: (midiNote: number) => void;
   onNoteOff: (midiNote: number) => void;
@@ -131,24 +143,40 @@ function Pad({
   index,
   bank,
   active,
+  muted,
+  soloed,
   onTrigger,
 }: {
   index: number;
   bank: number;
   active: boolean;
+  muted?: boolean;
+  soloed?: boolean;
   onTrigger: () => void;
 }) {
   const globalIndex = bank * PADS_PER_BANK + index;
   const digits = toSlimeKeys(globalIndex, 2);
 
+  let borderColor = active ? "#ffffff" : "#444444";
+  let backgroundColor = active ? "#2a2a2a" : "#0a0a0a";
+
+  if (muted) {
+    borderColor = active ? "#ff4444" : "#331111";
+    backgroundColor = active ? "#1a0808" : "#080404";
+  } else if (soloed) {
+    borderColor = active ? "#ffff00" : "#aaaa00";
+    backgroundColor = active ? "#2a2a00" : "#0a0a00";
+  }
+
   return (
     <button
       className="border-2 flex flex-col items-center justify-center cursor-pointer select-none"
       style={{
-        borderColor: active ? "#ffffff" : "#444444",
-        backgroundColor: active ? "#2a2a2a" : "#0a0a0a",
+        borderColor,
+        backgroundColor,
         width: "100%",
         height: "100%",
+        opacity: muted ? 0.5 : 1,
       }}
       onMouseDown={onTrigger}
       onTouchStart={(e) => { e.preventDefault(); onTrigger(); }}
@@ -277,6 +305,12 @@ function TrackerOctaveBlock({
 export function LivePads({
   bank,
   preset,
+  inputMode = "tracker",
+  mutedPads,
+  soloedPads,
+  isRecording = false,
+  playbackInfo = [],
+  patternBank = 0,
   onPadTrigger,
   onNoteOn,
   onNoteOff,
@@ -304,7 +338,10 @@ export function LivePads({
   }, []);
 
   // Listen for physical keyboard → light up on-screen keys + trigger notes
+  // Disabled in sampler mode — KoalaRouter handles keys instead
   useEffect(() => {
+    if (inputMode === "sampler") return;
+
     const heldKeys = new Set<string>();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -337,7 +374,7 @@ export function LivePads({
       window.removeEventListener("keydown", handleKeyDown, true);
       window.removeEventListener("keyup", handleKeyUp, true);
     };
-  }, [onNoteOn, onNoteOff]);
+  }, [onNoteOn, onNoteOff, inputMode]);
 
   const handlePadTrigger = useCallback(
     (index: number) => {
@@ -405,6 +442,46 @@ export function LivePads({
         </div>
       </div>
 
+      {/* Playback chain/pattern indicator + recording status */}
+      {(playbackInfo.length > 0 || isRecording) && (
+        <div
+          className="flex items-center gap-2 px-2 py-0.5 border-b flex-shrink-0"
+          style={{ borderColor: "#222222", minHeight: "16px" }}
+        >
+          {isRecording && (
+            <span style={{
+              fontSize: "8px",
+              color: "#ff4444",
+              letterSpacing: "1px",
+              animation: "blink 0.5s step-end infinite",
+            }}>
+              REC
+            </span>
+          )}
+          {playbackInfo.length > 0 && (
+            <div className="flex items-center gap-1" style={{ fontSize: "7px", color: "#666666", letterSpacing: "1px" }}>
+              <span style={{ color: "#888888" }}>PTN:</span>
+              {playbackInfo.map((ch, i) => (
+                <span key={i} style={{
+                  color: ch.chainId !== null ? "#aaaaaa" : "#333333",
+                  minWidth: "16px",
+                  textAlign: "center",
+                }}>
+                  {ch.chainId !== null
+                    ? `${ch.chainId.toString(16).toUpperCase()}:${ch.phraseRow.toString(16).toUpperCase().padStart(2, "0")}`
+                    : "--"}
+                </span>
+              ))}
+              {patternBank > 0 && (
+                <span style={{ color: "#555555", marginLeft: "4px" }}>
+                  PB:{patternBank}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main: pads + keyboard */}
       <div
         className="flex-1 flex min-h-0"
@@ -427,15 +504,20 @@ export function LivePads({
               height: "100%",
             }}
           >
-            {Array.from({ length: 16 }, (_, i) => (
-              <Pad
-                key={i}
-                index={i}
-                bank={bank}
-                active={activePad === i}
-                onTrigger={() => handlePadTrigger(i)}
-              />
-            ))}
+            {Array.from({ length: 16 }, (_, i) => {
+              const globalIdx = bank * PADS_PER_BANK + i;
+              return (
+                <Pad
+                  key={i}
+                  index={i}
+                  bank={bank}
+                  active={activePad === i}
+                  muted={mutedPads?.has(globalIdx)}
+                  soloed={soloedPads?.has(globalIdx)}
+                  onTrigger={() => handlePadTrigger(i)}
+                />
+              );
+            })}
           </div>
         </div>
 

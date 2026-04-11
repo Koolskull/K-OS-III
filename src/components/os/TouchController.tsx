@@ -38,9 +38,11 @@ const BTN_GAP = 4;
 const CROSS_SIZE = BTN_SIZE * 3 + BTN_GAP * 2;
 
 const CIRCLE_STYLE: React.CSSProperties = {
-  width: `${BTN_SIZE}px`,
-  height: `${BTN_SIZE}px`,
-  border: "1px solid #666666",
+  width: "100%",
+  height: "100%",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "#666666",
   backgroundColor: "#0a0a0a",
   color: "#888888",
   fontFamily: "var(--dm-font-primary)",
@@ -212,7 +214,9 @@ const KEY_STYLE: React.CSSProperties = {
   flex: "1",
   maxWidth: "32px",
   height: "32px",
-  border: "1px solid #555555",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "#555555",
   backgroundColor: "#0a0a0a",
   color: "#ffffff",
   fontFamily: "var(--dm-font-primary)",
@@ -226,7 +230,9 @@ const KEY_STYLE: React.CSSProperties = {
 
 const WIDE_KEY_STYLE: React.CSSProperties = {
   height: "32px",
-  border: "1px solid #555555",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "#555555",
   backgroundColor: "#0a0a0a",
   color: "#888888",
   fontFamily: "var(--dm-font-primary)",
@@ -311,11 +317,108 @@ function TouchKeyboard({
 
 // ── MAIN COMPONENT ──
 
+/** D-pad cross grid */
+function DpadCross({ inputRouter, size = BTN_SIZE, gap = BTN_GAP }: { inputRouter: InputRouter | null; size?: number; gap?: number }) {
+  const crossSize = size * 3 + gap * 2;
+  return (
+    <div
+      style={{
+        width: `${crossSize}px`,
+        height: `${crossSize}px`,
+        display: "grid",
+        gridTemplateColumns: `${size}px ${size}px ${size}px`,
+        gridTemplateRows: `${size}px ${size}px ${size}px`,
+        gap: `${gap}px`,
+      }}
+    >
+      <div />
+      <DpadButton dir="up" label="UP" inputRouter={inputRouter} />
+      <div />
+      <DpadButton dir="left" label="LT" inputRouter={inputRouter} />
+      <div />
+      <DpadButton dir="right" label="RT" inputRouter={inputRouter} />
+      <div />
+      <DpadButton dir="down" label="DN" inputRouter={inputRouter} />
+      <div />
+    </div>
+  );
+}
+
+/** Action buttons cross grid */
+function ActionCross({ inputRouter, size = BTN_SIZE, gap = BTN_GAP }: { inputRouter: InputRouter | null; size?: number; gap?: number }) {
+  const crossSize = size * 3 + gap * 2;
+  return (
+    <div
+      style={{
+        width: `${crossSize}px`,
+        height: `${crossSize}px`,
+        display: "grid",
+        gridTemplateColumns: `${size}px ${size}px ${size}px`,
+        gridTemplateRows: `${size}px ${size}px ${size}px`,
+        gap: `${gap}px`,
+      }}
+    >
+      <div />
+      <ModButton label="SH" modifier="shift" inputRouter={inputRouter} />
+      <div />
+      <ActionButton label="SP" action="play_stop" inputRouter={inputRouter} />
+      <div />
+      <ModButton label="W" modifier="w" inputRouter={inputRouter} />
+      <div />
+      <ModButton label="Q" modifier="q" inputRouter={inputRouter} />
+      <div />
+    </div>
+  );
+}
+
+const RAIL_SIZE = 36;
+const RAIL_GAP = 3;
+const RAIL_WIDTH = RAIL_SIZE * 3 + RAIL_GAP * 2 + 12; // cross + padding
+
+/** Left rail for PSP-style sides layout (D-pad) */
+export function TouchRailLeft({ inputRouter }: { inputRouter: InputRouter | null }) {
+  return (
+    <div
+      className="dm-touch-controller"
+      style={{
+        width: `${RAIL_WIDTH}px`,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRight: "1px solid #1a1a1a",
+      }}
+    >
+      <DpadCross inputRouter={inputRouter} size={RAIL_SIZE} gap={RAIL_GAP} />
+    </div>
+  );
+}
+
+/** Right rail for PSP-style sides layout (action buttons) */
+export function TouchRailRight({ inputRouter }: { inputRouter: InputRouter | null }) {
+  return (
+    <div
+      className="dm-touch-controller"
+      style={{
+        width: `${RAIL_WIDTH}px`,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderLeft: "1px solid #1a1a1a",
+      }}
+    >
+      <ActionCross inputRouter={inputRouter} size={RAIL_SIZE} gap={RAIL_GAP} />
+    </div>
+  );
+}
+
 export function TouchController({ inputRouter, isTextInput, onTextChar }: TouchControllerProps) {
   if (isTextInput) {
     return <TouchKeyboard onChar={onTextChar} inputRouter={inputRouter} />;
   }
 
+  // Bottom layout (portrait / Game Boy style)
   return (
     <div
       className="dm-touch-controller"
@@ -328,55 +431,8 @@ export function TouchController({ inputRouter, isTextInput, onTextChar }: TouchC
         flexShrink: 0,
       }}
     >
-      {/* Left: D-pad cross */}
-      <div
-        style={{
-          width: `${CROSS_SIZE}px`,
-          height: `${CROSS_SIZE}px`,
-          display: "grid",
-          gridTemplateColumns: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
-          gridTemplateRows: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
-          gap: `${BTN_GAP}px`,
-        }}
-      >
-        {/* Row 1: _, UP, _ */}
-        <div />
-        <DpadButton dir="up" label="UP" inputRouter={inputRouter} />
-        <div />
-        {/* Row 2: LEFT, _, RIGHT */}
-        <DpadButton dir="left" label="LT" inputRouter={inputRouter} />
-        <div />
-        <DpadButton dir="right" label="RT" inputRouter={inputRouter} />
-        {/* Row 3: _, DOWN, _ */}
-        <div />
-        <DpadButton dir="down" label="DN" inputRouter={inputRouter} />
-        <div />
-      </div>
-
-      {/* Right: Action buttons cross */}
-      <div
-        style={{
-          width: `${CROSS_SIZE}px`,
-          height: `${CROSS_SIZE}px`,
-          display: "grid",
-          gridTemplateColumns: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
-          gridTemplateRows: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
-          gap: `${BTN_GAP}px`,
-        }}
-      >
-        {/* Row 1: _, SHIFT (North), _ */}
-        <div />
-        <ModButton label="SH" modifier="shift" inputRouter={inputRouter} />
-        <div />
-        {/* Row 2: SPACE (West), _, W (East) */}
-        <ActionButton label="SP" action="play_stop" inputRouter={inputRouter} />
-        <div />
-        <ModButton label="W" modifier="w" inputRouter={inputRouter} />
-        {/* Row 3: _, Q (South), _ */}
-        <div />
-        <ModButton label="Q" modifier="q" inputRouter={inputRouter} />
-        <div />
-      </div>
+      <DpadCross inputRouter={inputRouter} />
+      <ActionCross inputRouter={inputRouter} />
     </div>
   );
 }

@@ -169,6 +169,13 @@ export class InputRouter {
     if (code === "KeyQ") {
       this.state.q = true;
       this.qUsedAsModifier = false;
+      // Q pressed while W held = delete (same as W pressed while Q held)
+      if (this.state.w) {
+        this.qUsedAsModifier = true;
+        e.preventDefault();
+        this.emit("delete");
+        return;
+      }
       return;
     }
     if (code === "KeyW") {

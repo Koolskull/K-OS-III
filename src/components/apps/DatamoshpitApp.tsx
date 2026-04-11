@@ -41,6 +41,8 @@ import { InstrumentPlayground } from "@/components/apps/datamoshpit/instruments/
 import { buildFieldLayout, getNavigableRows } from "@/components/apps/datamoshpit/instruments/instrumentFields";
 import { FileBrowser } from "@/components/apps/datamoshpit/instruments/FileBrowser";
 import { PhraseEditor, PHRASE_COL_COUNT, PHRASE_COLS } from "@/components/apps/datamoshpit/tracker/PhraseEditor";
+import { ChainEditor, CHAIN_COL_COUNT, CHAIN_COLS } from "@/components/apps/datamoshpit/tracker/ChainEditor";
+import { SongEditor, SONG_COL_COUNT } from "@/components/apps/datamoshpit/tracker/SongEditor";
 import { ScreenMap, navigateScreen } from "@/components/os/ScreenMap";
 import { Preferences } from "@/components/os/Preferences";
 import type { PreferencesData, ScalePreset } from "@/components/os/Preferences";
@@ -49,9 +51,15 @@ import { InputRouter } from "@/lib/InputRouter";
 import type { InputAction } from "@/lib/InputRouter";
 import { AudioEngine } from "@/engine/audio/AudioEngine";
 import { TrackerEngine } from "@/engine/tracker/TrackerEngine";
+import { LiveVoiceManager } from "@/engine/live/LiveVoiceManager";
+import { PadRecorder } from "@/engine/live/PadRecorder";
+import { KoalaRouter } from "@/lib/KoalaRouter";
+import type { KoalaAction } from "@/lib/KoalaRouter";
+
+export type InputMode = "tracker" | "sampler";
 import { downloadProject, openProjectPicker } from "@/engine/project/ProjectIO";
 import { useOrientation } from "@/hooks/useOrientation";
-import { TouchController } from "@/components/os/TouchController";
+import { TouchController, TouchRailLeft, TouchRailRight } from "@/components/os/TouchController";
 
 // ── PROJECT SCREEN FIELDS ──
 const PROJ_ROWS = {
@@ -113,6 +121,14 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
   const [activePhraseRow, setActivePhraseRow] = useState(0);
   const [activePhraseCol, setActivePhraseCol] = useState(0);
   const [activeChannel, setActiveChannel] = useState(0);
+  const [activeChain, setActiveChain] = useState(0);
+  const [chainCursorRow, setChainCursorRow] = useState(0);
+  const [chainCursorCol, setChainCursorCol] = useState(0);
+  const [songCursorRow, setSongCursorRow] = useState(0);
+  const [songCursorCol, setSongCursorCol] = useState(0);
+  const [playMode, setPlayMode] = useState<"song" | "live">("song");
+  const [mutedChannels, setMutedChannels] = useState<Set<number>>(new Set());
+  const [soloedChannels, setSoloedChannels] = useState<Set<number>>(new Set());
   const [instCursorRow, setInstCursorRow] = useState(0);
   const [instCursorCol, setInstCursorCol] = useState(0);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("hex");
@@ -120,6 +136,17 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
   const [playing, setPlaying] = useState(false);
   const [liveBank, setLiveBank] = useState(0);
   const [livePreset, setLivePreset] = useState(0);
+  const [inputMode, setInputMode] = useState<InputMode>("tracker");
+  const [mutedPads, setMutedPads] = useState<Set<number>>(new Set());
+  const [soloedPads, setSoloedPads] = useState<Set<number>>(new Set());
+  const [activeScene, setActiveScene] = useState(0);
+  const [pendingScene, setPendingScene] = useState<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [lastTriggeredPad, setLastTriggeredPad] = useState(0);
+  const [patternBank, setPatternBank] = useState(0); // offsets scene indices by 8
+  const [playbackInfo, setPlaybackInfo] = useState<Array<{
+    chainId: number | null; phraseId: number | null; phraseRow: number;
+  }>>([]);
   const [preferences, setPreferences] = useState<PreferencesData>({
     displayScale: "auto",
     font: "kongtext",
@@ -134,7 +161,10 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
 
   const [demoLoaded, setDemoLoaded] = useState(false);
   const inputRef = useRef<InputRouter | null>(null);
+  const koalaRef = useRef<KoalaRouter | null>(null);
   const engineRef = useRef<TrackerEngine | null>(null);
+  const liveRef = useRef<LiveVoiceManager | null>(null);
+  const recorderRef = useRef<PadRecorder | null>(null);
 
   // Refs to avoid stale closures in InputRouter callback
   const activePhraseRowRef = useRef(activePhraseRow);
@@ -143,16 +173,34 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
   const instCursorColRef = useRef(instCursorCol);
   const activeScreenRef = useRef(activeScreen);
   const activeInstrumentRef = useRef(activeInstrument);
+  const activeChainRef = useRef(activeChain);
+  const chainCursorRowRef = useRef(chainCursorRow);
+  const chainCursorColRef = useRef(chainCursorCol);
+  const songCursorRowRef = useRef(songCursorRow);
+  const songCursorColRef = useRef(songCursorCol);
   const projectRef = useRef(project);
   const projCursorRowRef = useRef(projCursorRow);
   const projNameCursorRef = useRef(projNameCursor);
   const lastUsedInstrumentRef = useRef(0);
+  const inputModeRef = useRef(inputMode);
+  const liveBankRef = useRef(liveBank);
+  const patternBankRef = useRef(patternBank);
+  const lastTriggeredPadRef = useRef(lastTriggeredPad);
+  inputModeRef.current = inputMode;
+  liveBankRef.current = liveBank;
+  patternBankRef.current = patternBank;
+  lastTriggeredPadRef.current = lastTriggeredPad;
   activePhraseRowRef.current = activePhraseRow;
   activePhraseColRef.current = activePhraseCol;
   instCursorRowRef.current = instCursorRow;
   instCursorColRef.current = instCursorCol;
   activeScreenRef.current = activeScreen;
   activeInstrumentRef.current = activeInstrument;
+  activeChainRef.current = activeChain;
+  chainCursorRowRef.current = chainCursorRow;
+  chainCursorColRef.current = chainCursorCol;
+  songCursorRowRef.current = songCursorRow;
+  songCursorColRef.current = songCursorCol;
   projectRef.current = project;
   projCursorRowRef.current = projCursorRow;
   projNameCursorRef.current = projNameCursor;
@@ -167,14 +215,24 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
     });
   }, [demoLoaded]);
 
-  // Initialize tracker engine
+  // Initialize tracker engine + live voice manager
   useEffect(() => {
     if (!engineRef.current) {
       engineRef.current = new TrackerEngine();
     }
+    if (!liveRef.current) {
+      liveRef.current = new LiveVoiceManager();
+    }
+    if (!recorderRef.current) {
+      recorderRef.current = new PadRecorder();
+    }
     return () => {
       engineRef.current?.dispose();
       engineRef.current = null;
+      liveRef.current?.dispose();
+      liveRef.current = null;
+      recorderRef.current?.dispose();
+      recorderRef.current = null;
     };
   }, []);
 
@@ -184,12 +242,24 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
     if (!engine) return;
     if (engine.isPlaying()) {
       engine.updateProject(project);
-      return;
+    } else {
+      engine.loadProject(project);
+      engine.onTick((_tick, _ch, row) => {
+        setActivePhraseRow(row);
+        // Update playback info for live display (throttled to channel 0)
+        if (_ch === 0) {
+          setPlaybackInfo(engine.getPlaybackState());
+        }
+      });
+      engine.onSceneChange((active, pending) => {
+        setActiveScene(active);
+        setPendingScene(pending);
+      });
     }
-    engine.loadProject(project);
-    engine.onTick((_tick, _ch, row) => {
-      setActivePhraseRow(row);
-    });
+    // Share sample pool with live voice manager
+    if (liveRef.current) {
+      liveRef.current.setSamplePool(engine.getSamplePool());
+    }
   }, [project]);
 
   // Apply user-chosen display scale override to body
@@ -212,12 +282,15 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
     }
   }, []);
 
-  // Enable/disable InputRouter based on focus
+  // Enable/disable InputRouter and KoalaRouter based on focus + mode
   useEffect(() => {
     if (inputRef.current) {
-      inputRef.current.enabled = isFocused && !presetBrowserOpen;
+      inputRef.current.enabled = isFocused && !presetBrowserOpen && inputMode === "tracker";
     }
-  }, [isFocused, presetBrowserOpen]);
+    if (koalaRef.current) {
+      koalaRef.current.enabled = isFocused && inputMode === "sampler";
+    }
+  }, [isFocused, presetBrowserOpen, inputMode]);
 
   // W key toggles preset browser on instrument screen
   useEffect(() => {
@@ -267,6 +340,25 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
           setActiveScreen((current) => {
             const next = navigateScreen(current, dir);
             if (!next) return current;
+            // Song → Chain: jump to the chain under cursor
+            if (next === "chain" && current === "song") {
+              const songRow = projectRef.current.song.rows[songCursorRowRef.current];
+              const chainId = songRow?.chains[songCursorColRef.current];
+              if (chainId != null) {
+                const chainIdx = projectRef.current.chains.findIndex((c) => c.id === chainId);
+                if (chainIdx >= 0) setActiveChain(chainIdx);
+              }
+            }
+            // Chain → Phrase: jump to the phrase under cursor
+            if (next === "phrase" && current === "chain") {
+              const chain = projectRef.current.chains[activeChainRef.current];
+              const step = chain?.steps[chainCursorRowRef.current];
+              if (step?.phrase != null) {
+                // Phrase exists, we'll view it
+                // TODO: setActivePhrase when multi-phrase editing is supported
+              }
+            }
+            // Phrase → Instrument: select instrument under cursor
             if (next === "instrument" && current === "phrase") {
               const phrase = projectRef.current.phrases[0];
               const row = phrase?.rows[activePhraseRowRef.current];
@@ -285,6 +377,10 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
             setInstCursorRow((r) => Math.max(0, r - 1));
           } else if (activeScreenRef.current === "project") {
             setProjCursorRow((r) => Math.max(0, r - 1));
+          } else if (activeScreenRef.current === "chain") {
+            setChainCursorRow((r) => Math.max(0, r - 1));
+          } else if (activeScreenRef.current === "song") {
+            setSongCursorRow((r) => Math.max(0, r - 1));
           } else {
             setActivePhraseRow((r) => Math.max(0, r - 1));
           }
@@ -299,6 +395,13 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
             });
           } else if (activeScreenRef.current === "project") {
             setProjCursorRow((r) => Math.min(PROJ_ROW_COUNT - 1, r + 1));
+          } else if (activeScreenRef.current === "chain") {
+            setChainCursorRow((r) => {
+              const chain = projectRef.current.chains[activeChainRef.current];
+              return Math.min((chain?.steps.length ?? 16) - 1, r + 1);
+            });
+          } else if (activeScreenRef.current === "song") {
+            setSongCursorRow((r) => Math.min(projectRef.current.song.rows.length - 1, r + 1));
           } else {
             setActivePhraseRow((r) => Math.min((projectRef.current.phrases[0]?.rows.length ?? 16) - 1, r + 1));
           }
@@ -310,6 +413,10 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
             if (projCursorRowRef.current === PROJ_ROWS.NAME) {
               setProjNameCursor((c) => Math.max(0, c - 1));
             }
+          } else if (activeScreenRef.current === "chain") {
+            setChainCursorCol((c) => Math.max(0, c - 1));
+          } else if (activeScreenRef.current === "song") {
+            setSongCursorCol((c) => Math.max(0, c - 1));
           } else if (activeScreenRef.current === "phrase") {
             setActivePhraseCol((c) => Math.max(0, c - 1));
           }
@@ -327,6 +434,10 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
             if (projCursorRowRef.current === PROJ_ROWS.NAME) {
               setProjNameCursor((c) => Math.min(MAX_NAME_LEN - 1, c + 1));
             }
+          } else if (activeScreenRef.current === "chain") {
+            setChainCursorCol((c) => Math.min(CHAIN_COL_COUNT - 1, c + 1));
+          } else if (activeScreenRef.current === "song") {
+            setSongCursorCol((c) => Math.min(projectRef.current.song.channels - 1, c + 1));
           } else if (activeScreenRef.current === "phrase") {
             setActivePhraseCol((c) => Math.min(PHRASE_COL_COUNT - 1, c + 1));
           }
@@ -455,6 +566,56 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               phrases[0] = { ...p, rows };
               return { ...prev, phrases };
             });
+          } else if (activeScreenRef.current === "chain") {
+            const dir = action === "value_up" || action === "value_right" ? 1 : -1;
+            const coarse = action === "value_up" || action === "value_down";
+            const curRow = chainCursorRowRef.current;
+            const curCol = chainCursorColRef.current;
+            setProject((prev) => {
+              const chains = [...prev.chains];
+              const chain = chains[activeChainRef.current];
+              if (!chain) return prev;
+              const steps = [...chain.steps];
+              const step = { ...steps[curRow] };
+
+              if (curCol === CHAIN_COLS.PHRASE) {
+                const inc = coarse ? 0x10 * dir : dir;
+                if (step.phrase === null) {
+                  // Find next unused phrase ID
+                  const usedIds = new Set(prev.phrases.map((p) => p.id));
+                  let nextId = 0;
+                  while (usedIds.has(nextId)) nextId++;
+                  step.phrase = nextId;
+                } else {
+                  step.phrase = Math.max(0, Math.min(0xFF, step.phrase + inc));
+                }
+              } else if (curCol === CHAIN_COLS.TRANS) {
+                const inc = coarse ? 12 * dir : dir;
+                step.transpose = Math.max(-24, Math.min(24, step.transpose + inc));
+              }
+
+              steps[curRow] = step;
+              chains[activeChainRef.current] = { ...chain, steps };
+              return { ...prev, chains };
+            });
+          } else if (activeScreenRef.current === "song") {
+            const dir = action === "value_up" || action === "value_right" ? 1 : -1;
+            const coarse = action === "value_up" || action === "value_down";
+            const curRow = songCursorRowRef.current;
+            const curCol = songCursorColRef.current;
+            setProject((prev) => {
+              const rows = [...prev.song.rows];
+              const row = { ...rows[curRow], chains: [...rows[curRow].chains] };
+              const current = row.chains[curCol];
+              const inc = coarse ? 0x10 * dir : dir;
+              if (current === null) {
+                row.chains[curCol] = 0;
+              } else {
+                row.chains[curCol] = Math.max(0, Math.min(0xFF, current + inc));
+              }
+              rows[curRow] = row;
+              return { ...prev, song: { ...prev.song, rows } };
+            });
           }
           break;
         }
@@ -463,6 +624,22 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         case "sw_up":
           if (activeScreenRef.current === "instrument") {
             setActiveInstrument((i) => Math.min(0xFF, i + 0x10));
+          } else if (activeScreenRef.current === "chain") {
+            // Switch to next chain (create if needed)
+            setActiveChain((c) => {
+              const next = c + 1;
+              const proj = projectRef.current;
+              if (next >= proj.chains.length) {
+                // Create a new chain
+                const newChain = {
+                  id: proj.chains.length,
+                  steps: Array.from({ length: 16 }, () => ({ phrase: null, transpose: 0 })),
+                };
+                setProject((prev) => ({ ...prev, chains: [...prev.chains, newChain] }));
+              }
+              return next;
+            });
+            setChainCursorRow(0);
           } else if (activeScreenRef.current === "phrase") {
             setProject((prev) => {
               if (prev.phrases.length === 0) return prev;
@@ -475,6 +652,13 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               };
               return { ...prev, phrases };
             });
+          } else if (activeScreenRef.current === "song") {
+            // Toggle live/song mode
+            setPlayMode((m) => {
+              const next = m === "song" ? "live" : "song";
+              engineRef.current?.setPlayMode(next);
+              return next;
+            });
           } else if (activeScreenRef.current === "live") {
             setLiveBank((b) => Math.min(63, b + 1));
           }
@@ -482,6 +666,16 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         case "sw_down":
           if (activeScreenRef.current === "instrument") {
             setActiveInstrument((i) => Math.max(0, i - 0x10));
+          } else if (activeScreenRef.current === "chain") {
+            setActiveChain((c) => Math.max(0, c - 1));
+            setChainCursorRow(0);
+          } else if (activeScreenRef.current === "song") {
+            // Toggle live/song mode (same as sw_up)
+            setPlayMode((m) => {
+              const next = m === "song" ? "live" : "song";
+              engineRef.current?.setPlayMode(next);
+              return next;
+            });
           } else if (activeScreenRef.current === "phrase") {
             setProject((prev) => {
               if (prev.phrases.length === 0) return prev;
@@ -502,6 +696,13 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         case "sw_left":
           if (activeScreenRef.current === "instrument") {
             setActiveInstrument((i) => Math.max(0, i - 1));
+          } else if (activeScreenRef.current === "song") {
+            // Mute channel under cursor
+            const engine = engineRef.current;
+            if (engine) {
+              engine.toggleChannelMute(songCursorColRef.current);
+              setMutedChannels(engine.getMutedChannels());
+            }
           } else if (activeScreenRef.current === "live") {
             setLivePreset((p) => Math.max(0, p - 1));
           }
@@ -509,6 +710,13 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         case "sw_right":
           if (activeScreenRef.current === "instrument") {
             setActiveInstrument((i) => Math.min(0xFF, i + 1));
+          } else if (activeScreenRef.current === "song") {
+            // Solo channel under cursor
+            const engine = engineRef.current;
+            if (engine) {
+              engine.toggleChannelSolo(songCursorColRef.current);
+              setSoloedChannels(engine.getSoloedChannels());
+            }
           } else if (activeScreenRef.current === "live") {
             setLivePreset((p) => Math.min(63, p + 1));
           }
@@ -522,8 +730,9 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               engine.stop();
               setPlaying(false);
             } else {
+              const startRow = activeScreenRef.current === "song" ? songCursorRowRef.current : 0;
               AudioEngine.getInstance().init().then(async () => {
-                await engine.play();
+                await engine.play(startRow);
                 setPlaying(true);
               });
             }
@@ -588,6 +797,70 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               phrases[0] = { ...p, rows };
               return { ...prev, phrases };
             });
+          } else if (activeScreenRef.current === "chain") {
+            const placeRow = chainCursorRowRef.current;
+            const placeCol = chainCursorColRef.current;
+            setProject((prev) => {
+              const chains = [...prev.chains];
+              const chain = chains[activeChainRef.current];
+              if (!chain) return prev;
+              const steps = [...chain.steps];
+              const step = { ...steps[placeRow] };
+
+              if (placeCol === CHAIN_COLS.PHRASE) {
+                if (step.phrase === null) {
+                  // Find next unused phrase ID, or use 0
+                  const usedIds = new Set(prev.phrases.map((p) => p.id));
+                  let nextId = 0;
+                  while (usedIds.has(nextId)) nextId++;
+                  step.phrase = nextId;
+                  // Create the phrase if it doesn't exist
+                  if (!prev.phrases.find((p) => p.id === nextId)) {
+                    const newPhrase = {
+                      id: nextId,
+                      rows: Array.from({ length: 16 }, () => ({
+                        note: null, instrument: null, effect1: null, effect2: null, slice: null,
+                      })),
+                    };
+                    steps[placeRow] = step;
+                    chains[activeChainRef.current] = { ...chain, steps };
+                    return { ...prev, chains, phrases: [...prev.phrases, newPhrase] };
+                  }
+                }
+              } else if (placeCol === CHAIN_COLS.TRANS) {
+                // Reset transpose to 0
+                step.transpose = 0;
+              }
+
+              steps[placeRow] = step;
+              chains[activeChainRef.current] = { ...chain, steps };
+              return { ...prev, chains };
+            });
+          } else if (activeScreenRef.current === "song") {
+            const placeRow = songCursorRowRef.current;
+            const placeCol = songCursorColRef.current;
+            setProject((prev) => {
+              const rows = [...prev.song.rows];
+              const row = { ...rows[placeRow], chains: [...rows[placeRow].chains] };
+              if (row.chains[placeCol] === null) {
+                // Find next unused chain ID
+                const usedIds = new Set(prev.chains.map((c) => c.id));
+                let nextId = 0;
+                while (usedIds.has(nextId)) nextId++;
+                row.chains[placeCol] = nextId;
+                // Create the chain if it doesn't exist
+                if (!prev.chains.find((c) => c.id === nextId)) {
+                  const newChain = {
+                    id: nextId,
+                    steps: Array.from({ length: 16 }, () => ({ phrase: null, transpose: 0 })),
+                  };
+                  rows[placeRow] = row;
+                  return { ...prev, song: { ...prev.song, rows }, chains: [...prev.chains, newChain] };
+                }
+              }
+              rows[placeRow] = row;
+              return { ...prev, song: { ...prev.song, rows } };
+            });
           }
           break;
         case "delete":
@@ -645,6 +918,36 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               phrases[0] = { ...p, rows };
               return { ...prev, phrases };
             });
+          } else if (activeScreenRef.current === "chain") {
+            const delRow = chainCursorRowRef.current;
+            const delCol = chainCursorColRef.current;
+            setProject((prev) => {
+              const chains = [...prev.chains];
+              const chain = chains[activeChainRef.current];
+              if (!chain) return prev;
+              const steps = [...chain.steps];
+              const step = { ...steps[delRow] };
+
+              if (delCol === CHAIN_COLS.PHRASE) {
+                step.phrase = null;
+              } else if (delCol === CHAIN_COLS.TRANS) {
+                step.transpose = 0;
+              }
+
+              steps[delRow] = step;
+              chains[activeChainRef.current] = { ...chain, steps };
+              return { ...prev, chains };
+            });
+          } else if (activeScreenRef.current === "song") {
+            const delRow = songCursorRowRef.current;
+            const delCol = songCursorColRef.current;
+            setProject((prev) => {
+              const rows = [...prev.song.rows];
+              const row = { ...rows[delRow], chains: [...rows[delRow].chains] };
+              row.chains[delCol] = null;
+              rows[delRow] = row;
+              return { ...prev, song: { ...prev.song, rows } };
+            });
           }
           break;
 
@@ -668,6 +971,162 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
       router.detach();
     };
   }, [project.song.channels]);
+
+  // ── KOALA ROUTER SETUP ──
+  useEffect(() => {
+    const router = new KoalaRouter();
+    koalaRef.current = router;
+    router.attach();
+
+    const unsub = router.onAction(async (action: KoalaAction) => {
+      switch (action.type) {
+        case "pad_down": {
+          await AudioEngine.getInstance().init();
+          const bank = liveBankRef.current;
+          const instIndex = bank * 16 + action.padIndex;
+          const inst = projectRef.current.instruments[instIndex];
+          const recorder = recorderRef.current;
+
+          // If recorder is active and this is the recording pad, stop recording
+          if (recorder?.isRecording()) {
+            const recPad = recorder.getRecordingPad();
+            if (recPad && recPad.padIndex === action.padIndex && recPad.bank === bank) {
+              const sample = await recorder.stopRecording();
+              if (sample) {
+                // Add sample to project and assign to instrument
+                setProject((prev) => {
+                  const newSamples = [...prev.samples, sample];
+                  const newInstruments = [...prev.instruments];
+                  if (newInstruments[instIndex]) {
+                    newInstruments[instIndex] = {
+                      ...newInstruments[instIndex],
+                      type: "sample",
+                      sampleId: sample.id,
+                    };
+                  }
+                  return { ...prev, samples: newSamples, instruments: newInstruments };
+                });
+              }
+              setIsRecording(false);
+              break;
+            }
+          }
+
+          // If pad has no sample, start recording
+          if (!inst || (inst.type === "sample" && inst.sampleId == null && !inst.sampleUrl)) {
+            if (recorder && !recorder.isRecording()) {
+              const started = await recorder.startRecording(action.padIndex, bank);
+              if (started) setIsRecording(true);
+            }
+            break;
+          }
+
+          // Otherwise trigger the pad
+          setLastTriggeredPad(action.padIndex);
+          liveRef.current?.triggerPad(action.padIndex, bank, projectRef.current.instruments);
+          break;
+        }
+        case "pad_up":
+          break;
+        case "play_stop": {
+          const engine = engineRef.current;
+          if (engine) {
+            if (engine.isPlaying()) {
+              engine.stop();
+              setPlaying(false);
+            } else {
+              await AudioEngine.getInstance().init();
+              await engine.play();
+              setPlaying(true);
+            }
+          }
+          break;
+        }
+        case "bank_prev":
+          setLiveBank((b) => Math.max(0, b - 1));
+          break;
+        case "bank_next":
+          setLiveBank((b) => Math.min(63, b + 1));
+          break;
+        case "pattern_bank_prev":
+          setPatternBank((b) => Math.max(0, b - 1));
+          break;
+        case "pattern_bank_next":
+          setPatternBank((b) => b + 1);
+          break;
+        case "scene_launch": {
+          const engine = engineRef.current;
+          if (engine) {
+            // Scene index offset by pattern bank (8 scenes per bank)
+            const sceneRow = patternBankRef.current * 8 + action.sceneIndex;
+            engine.queueScene(sceneRow);
+            setPendingScene(sceneRow);
+          }
+          break;
+        }
+        case "solo_toggle": {
+          const live = liveRef.current;
+          if (live) {
+            live.toggleSolo(action.padIndex, liveBankRef.current);
+            setSoloedPads(new Set(live.getSoloedPads()));
+          }
+          break;
+        }
+        case "mute_toggle": {
+          const live = liveRef.current;
+          if (live) {
+            live.toggleMute(action.padIndex, liveBankRef.current);
+            setMutedPads(new Set(live.getMutedPads()));
+          }
+          break;
+        }
+        case "delete_sample": {
+          // Delete sample from last-triggered pad
+          const bank = liveBankRef.current;
+          const padIdx = lastTriggeredPadRef.current;
+          const idx = bank * 16 + padIdx;
+          setProject((prev) => {
+            const newInstruments = [...prev.instruments];
+            if (newInstruments[idx] && newInstruments[idx].type === "sample") {
+              newInstruments[idx] = {
+                ...newInstruments[idx],
+                sampleId: undefined,
+                sampleUrl: undefined,
+              };
+            }
+            return { ...prev, instruments: newInstruments };
+          });
+          break;
+        }
+        case "record_toggle":
+          break;
+      }
+    });
+
+    return () => {
+      unsub();
+      router.detach();
+    };
+  }, []);
+
+  // ── INPUT MODE TOGGLE (backtick key) ──
+  useEffect(() => {
+    const handleToggle = (e: KeyboardEvent) => {
+      if (e.code === "Backquote") {
+        e.preventDefault();
+        e.stopPropagation();
+        setInputMode((m) => {
+          const next = m === "tracker" ? "sampler" : "tracker";
+          // Auto-switch to live screen when entering sampler mode
+          if (next === "sampler") setActiveScreen("live");
+          return next;
+        });
+      }
+    };
+    // Use capture phase so this fires before both routers
+    window.addEventListener("keydown", handleToggle, true);
+    return () => window.removeEventListener("keydown", handleToggle, true);
+  }, []);
 
   // Clamp instrument cursor when instrument type or slot changes
   const currentInst = project.instruments[activeInstrument];
@@ -786,6 +1245,29 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
           <span
             style={{
               fontFamily: "var(--dm-font-primary)",
+              fontSize: "8px",
+              color: inputMode === "sampler" ? "#ffffff" : "#555555",
+              backgroundColor: inputMode === "sampler" ? "#333333" : "transparent",
+              padding: "0 2px",
+            }}
+          >
+            {inputMode === "tracker" ? "TRKR" : "SMPL"}
+          </span>
+          {inputMode === "sampler" && (
+            <span
+              style={{
+                fontFamily: "var(--dm-font-primary)",
+                fontSize: "8px",
+                color: pendingScene !== null ? "#ffff00" : "#888888",
+                letterSpacing: "1px",
+              }}
+            >
+              SC:{activeScene}{pendingScene !== null ? `→${pendingScene}` : ""}
+            </span>
+          )}
+          <span
+            style={{
+              fontFamily: "var(--dm-font-primary)",
               fontSize: "9px",
               color: "#888888",
             }}
@@ -819,8 +1301,12 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         ))}
       </div>
 
-      {/* Main content area */}
-      <div className="flex-1 relative overflow-hidden overflow-y-auto">
+      {/* Main row: optional left rail, content, optional right rail */}
+      <div className="flex-1 flex min-h-0" style={{ flexDirection: "row" }}>
+        {!isPortrait && activeScreen !== "live" && (
+          <TouchRailLeft inputRouter={inputRef.current} />
+        )}
+        <div className="flex-1 relative overflow-hidden overflow-y-auto min-w-0">
         {activeScreen === "preferences" && (
           <Preferences
             preferences={preferences}
@@ -901,14 +1387,31 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         )}
 
         {activeScreen === "song" && (
-          <div className="p-2" style={{ fontSize: "10px", color: "#888888" }}>
-            [ SONG - CH:{activeChannel} - 8 CHANNELS x 256 ROWS ]
+          <div className="h-full">
+            <SongEditor
+              song={project.song}
+              activeRow={songCursorRow}
+              activeCol={songCursorCol}
+              playbackRow={playing ? activeScene : -1}
+              playMode={playMode}
+              mutedChannels={mutedChannels}
+              soloedChannels={soloedChannels}
+              onRowSelect={setSongCursorRow}
+              onColSelect={setSongCursorCol}
+            />
           </div>
         )}
 
-        {activeScreen === "chain" && (
-          <div className="p-2" style={{ fontSize: "10px", color: "#888888" }}>
-            [ CHAIN EDITOR - CH:{activeChannel} - 16 STEPS ]
+        {activeScreen === "chain" && project.chains.length > 0 && (
+          <div className="h-full">
+            <ChainEditor
+              chain={project.chains[activeChain] ?? project.chains[0]}
+              activeRow={chainCursorRow}
+              activeCol={chainCursorCol}
+              phraseCount={project.phrases.length}
+              onRowSelect={setChainCursorRow}
+              onColSelect={setChainCursorCol}
+            />
           </div>
         )}
 
@@ -1059,17 +1562,30 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
             <LivePads
               bank={liveBank}
               preset={livePreset}
-              onPadTrigger={(padIndex, bank) => {
-                // TODO: trigger sample/instrument assigned to pad
+              inputMode={inputMode}
+              mutedPads={mutedPads}
+              soloedPads={soloedPads}
+              isRecording={isRecording}
+              playbackInfo={playbackInfo}
+              patternBank={patternBank}
+              onPadTrigger={async (padIndex, bank) => {
+                await AudioEngine.getInstance().init();
+                liveRef.current?.triggerPad(padIndex, bank, project.instruments);
               }}
-              onNoteOn={(midiNote) => {
-                // TODO: trigger note on active instrument
+              onNoteOn={async (midiNote) => {
+                await AudioEngine.getInstance().init();
+                const inst = project.instruments[activeInstrumentRef.current];
+                if (inst) liveRef.current?.noteOn(midiNote, inst);
               }}
               onNoteOff={(midiNote) => {
-                // TODO: release note
+                liveRef.current?.noteOff(midiNote);
               }}
             />
           </div>
+        )}
+        </div>
+        {!isPortrait && activeScreen !== "live" && (
+          <TouchRailRight inputRouter={inputRef.current} />
         )}
       </div>
 
@@ -1091,7 +1607,9 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               letterSpacing: "1px",
             }}
           >
-            ARROWS:MOVE  Q+:EDIT  [/]:INST  W:BROWSE  SPACE:PLAY
+            {inputMode === "tracker"
+              ? "ARROWS:MOVE  Q+:EDIT  [/]:INST  W:BROWSE  SPACE:PLAY  `:SMPL"
+              : "PADS:ZXCV/1234  SCENE:YUIO/HJKL  [/]:BANK  {/}:PTN  N+:SOLO  B+:MUTE  BS:DEL  `:TRKR"}
           </span>
         </div>
         <span
@@ -1106,7 +1624,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         </span>
       </div>
 
-      {/* Touch controller */}
+      {/* Touch controller — bottom bar in portrait only (landscape uses side rails) */}
       {isPortrait && activeScreen !== "live" && (
         <TouchController
           inputRouter={inputRef.current}

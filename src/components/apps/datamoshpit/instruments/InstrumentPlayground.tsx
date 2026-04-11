@@ -215,6 +215,8 @@ function MovementCurve({ moveA, moveB }: { moveA: number; moveB: number }) {
     <div
       className="px-1"
       style={{
+        height: `${MOVE_CURVE_HEIGHT}px`,
+        overflow: "hidden",
         fontFamily: "var(--dm-font-primary)",
         fontSize: "8px",
         lineHeight: "8px",

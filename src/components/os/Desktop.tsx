@@ -28,7 +28,7 @@ const ICONS: DesktopIcon[] = [
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
   { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
   { id: "games", label: "GAMES", glyph: ">" },
-  { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
+  // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
 ];
 
 export function Desktop({ onLaunchApp }: DesktopProps) {

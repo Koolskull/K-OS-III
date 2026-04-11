@@ -33,9 +33,10 @@ import { DatamoshpitApp } from "@/components/apps/DatamoshpitApp";
 import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
-import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
+// PicoTracker disabled — Datamoshpit covers this workflow
+// import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
-type AppId = "datamoshpit" | "bible" | "games" | "kooldraw" | "picotracker";
+type AppId = "datamoshpit" | "bible" | "games" | "kooldraw";
 
 interface OpenWindow {
   id: string;
@@ -50,7 +51,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
   kooldraw: { title: "SPRITE EDITOR", width: 800, height: 600 },
-  picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
+  // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
 let windowCounter = 0;
@@ -193,9 +194,9 @@ export default function KoolskullOS() {
           {win.appId === "kooldraw" && (
             <KoolDrawApp isFocused={win.id === focusedWindowId} />
           )}
-          {win.appId === "picotracker" && (
+          {/* {win.appId === "picotracker" && (
             <PicoTrackerApp isFocused={win.id === focusedWindowId} />
-          )}
+          )} */}
         </AppWindow>
       ))}
 

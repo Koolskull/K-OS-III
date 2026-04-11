@@ -1,0 +1,35 @@
+/*
+ *                    ☦
+ *            ╔══════════════════╗
+ *            ║  THE HOLY        ║
+ *            ║  ROSARY          ║
+ *            ╚══════════════════╝
+ *
+ *   Condensed Rosary prayers for K-OS III boot sequence.
+ */
+
+export const ROSARY_PRAYERS: string[] = [
+  "IN THE NAME OF THE FATHER, AND OF THE SON,",
+  "AND OF THE HOLY SPIRIT. AMEN.",
+  "",
+  "OUR FATHER, WHO ART IN HEAVEN,",
+  "HALLOWED BE THY NAME; THY KINGDOM COME,",
+  "THY WILL BE DONE, ON EARTH AS IT IS IN HEAVEN.",
+  "GIVE US THIS DAY OUR DAILY BREAD,",
+  "AND FORGIVE US OUR TRESPASSES,",
+  "AS WE FORGIVE THOSE WHO TRESPASS AGAINST US;",
+  "AND LEAD US NOT INTO TEMPTATION,",
+  "BUT DELIVER US FROM EVIL. AMEN.",
+  "",
+  "HAIL MARY, FULL OF GRACE, THE LORD IS WITH THEE;",
+  "BLESSED ART THOU AMONG WOMEN,",
+  "AND BLESSED IS THE FRUIT OF THY WOMB, JESUS.",
+  "HOLY MARY, MOTHER OF GOD, PRAY FOR US SINNERS,",
+  "NOW AND AT THE HOUR OF OUR DEATH. AMEN.",
+  "",
+  "GLORY BE TO THE FATHER, AND TO THE SON,",
+  "AND TO THE HOLY SPIRIT, AS IT WAS IN THE BEGINNING,",
+  "IS NOW, AND EVER SHALL BE, WORLD WITHOUT END. AMEN.",
+  "",
+  "☦ ☦ ☦",
+];

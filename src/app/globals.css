@@ -1,0 +1,663 @@
+/*
+ * ☦ Blessed be these styles. ☦
+ * DATAMOSHPIT - Global Stylesheet
+ * No rounded corners. No anti-aliasing. No compromise.
+ */
+
+@import "tailwindcss";
+
+/* ══════════════════════════════════════
+   FONT FACES - From the bgcardbuilder
+   and k-os-ui archives
+   ══════════════════════════════════════ */
+
+/* PRIMARY: Kongtext - pixel bitmap, the KOOLSKULL standard */
+@font-face {
+  font-family: 'kongtext';
+  src: url('/fonts/kongtext-webfont.woff2') format('woff2'),
+       url('/fonts/kongtext-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* SECONDARY: Courier Pixel - monospaced pixel */
+@font-face {
+  font-family: 'courier-pixel';
+  src: url('/fonts/courier-pixel-monospaced-webfont.woff2') format('woff2'),
+       url('/fonts/courier-pixel-monospaced-webfont.woff') format('woff'),
+       url('/fonts/courier-pixel-monospaced-webfont.eot') format('embedded-opentype'),
+       url('/fonts/courier-pixel-monospaced-webfont.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Hina Mincho - Japanese serif */
+@font-face {
+  font-family: 'hina-mincho';
+  src: url('/fonts/Hina-Mincho-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Remilia Mincho - Japanese serif variant */
+@font-face {
+  font-family: 'remilia-mincho';
+  src: url('/fonts/remiliamincho-regular-webfont.woff2') format('woff2'),
+       url('/fonts/remiliamincho-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Akshar */
+@font-face {
+  font-family: 'akshar';
+  src: url('/fonts/akshar-regular-webfont.woff2') format('woff2'),
+       url('/fonts/akshar-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'akshar';
+  src: url('/fonts/akshar-light-webfont.woff2') format('woff2'),
+       url('/fonts/akshar-light-webfont.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'akshar';
+  src: url('/fonts/akshar-medium-webfont.woff2') format('woff2'),
+       url('/fonts/akshar-medium-webfont.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'akshar-contrast';
+  src: url('/fonts/akshar-contrastbold-webfont.woff2') format('woff2'),
+       url('/fonts/akshar-contrastbold-webfont.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Alphazet */
+@font-face {
+  font-family: 'alphazet';
+  src: url('/fonts/alphazet-light-webfont.woff2') format('woff2'),
+       url('/fonts/alphazet-light-webfont.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'alphazet';
+  src: url('/fonts/alphazet-semibold-webfont.woff2') format('woff2'),
+       url('/fonts/alphazet-semibold-webfont.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* AT Writer - typewriter style */
+@font-face {
+  font-family: 'atwriter';
+  src: url('/fonts/atwriter-webfont.woff2') format('woff2'),
+       url('/fonts/atwriter-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* CC Superhuman */
+@font-face {
+  font-family: 'ccsuperhuman';
+  src: url('/fonts/ccsuperhuman-regular-webfont.woff2') format('woff2'),
+       url('/fonts/ccsuperhuman-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Coral Pixels - pixel art font */
+@font-face {
+  font-family: 'coralpixels';
+  src: url('/fonts/coralpixels-regular-webfont.woff2') format('woff2'),
+       url('/fonts/coralpixels-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fresh ID Condensed */
+@font-face {
+  font-family: 'freshid-condensed';
+  src: url('/fonts/freshidcondensed-regular-webfont.woff2') format('woff2'),
+       url('/fonts/freshidcondensed-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'freshid-condensed';
+  src: url('/fonts/freshidcondensed-medium-webfont.woff2') format('woff2'),
+       url('/fonts/freshidcondensed-medium-webfont.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Geet */
+@font-face {
+  font-family: 'geet';
+  src: url('/fonts/geet-regular-webfont.woff2') format('woff2'),
+       url('/fonts/geet-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Jacquard 24 - cross-stitch pixel */
+@font-face {
+  font-family: 'jacquard24';
+  src: url('/fonts/jacquard24-regular-webfont.woff2') format('woff2'),
+       url('/fonts/jacquard24-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'jacquard24-charted';
+  src: url('/fonts/jacquard24charted-regular-webfont.woff2') format('woff2'),
+       url('/fonts/jacquard24charted-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Jazzy Pixel */
+@font-face {
+  font-family: 'jazzypixel';
+  src: url('/fonts/jazzypixel-webfont.woff2') format('woff2'),
+       url('/fonts/jazzypixel-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Jersey */
+@font-face {
+  font-family: 'jersey15';
+  src: url('/fonts/jersey15-regular-webfont.woff2') format('woff2'),
+       url('/fonts/jersey15-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'jersey25';
+  src: url('/fonts/jersey25-regular-webfont.woff2') format('woff2'),
+       url('/fonts/jersey25-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* JV Miyo Pro - Japanese style */
+@font-face {
+  font-family: 'jvmiyopro';
+  src: url('/fonts/jvmiyoproregular-webfont.woff2') format('woff2'),
+       url('/fonts/jvmiyoproregular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'jvmiyopro';
+  src: url('/fonts/jvmiyopro_bold-webfont.woff2') format('woff2'),
+       url('/fonts/jvmiyopro_bold-webfont.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Kirana */
+@font-face {
+  font-family: 'kirana';
+  src: url('/fonts/kirana-webfont.woff2') format('woff2'),
+       url('/fonts/kirana-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Larase */
+@font-face {
+  font-family: 'larase';
+  src: url('/fonts/larase-webfont.woff2') format('woff2'),
+       url('/fonts/larase-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Micro 5 - tiny pixel font */
+@font-face {
+  font-family: 'micro5';
+  src: url('/fonts/micro5-regular-webfont.woff2') format('woff2'),
+       url('/fonts/micro5-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'micro5-charted';
+  src: url('/fonts/micro5charted-regular-webfont.woff2') format('woff2'),
+       url('/fonts/micro5charted-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Rolliv */
+@font-face {
+  font-family: 'rolliv';
+  src: url('/fonts/rolliv-webfont.woff2') format('woff2'),
+       url('/fonts/rolliv-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Shoutspace */
+@font-face {
+  font-family: 'shoutspace';
+  src: url('/fonts/shoutspace-webfont.woff2') format('woff2'),
+       url('/fonts/shoutspace-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Source Sans Pro */
+@font-face {
+  font-family: 'source-sans-pro';
+  src: url('/fonts/sourcesanspro-regular-webfont.woff2') format('woff2'),
+       url('/fonts/sourcesanspro-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Speed PX Watch */
+@font-face {
+  font-family: 'speedpxwatch';
+  src: url('/fonts/speedpxwatch-regular-webfont.woff2') format('woff2'),
+       url('/fonts/speedpxwatch-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'speedpxwatch';
+  src: url('/fonts/speedpxwatch-italic-webfont.woff2') format('woff2'),
+       url('/fonts/speedpxwatch-italic-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Star Rust */
+@font-face {
+  font-family: 'star-rust';
+  src: url('/fonts/star_rust-webfont.woff2') format('woff2'),
+       url('/fonts/star_rust-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Tipo Movin CDMX */
+@font-face {
+  font-family: 'tipo-movin-cdmx';
+  src: url('/fonts/tipo_movin_cdmx_regular-webfont.woff2') format('woff2'),
+       url('/fonts/tipo_movin_cdmx_regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Type Right */
+@font-face {
+  font-family: 'type-right';
+  src: url('/fonts/type_right-webfont.woff2') format('woff2'),
+       url('/fonts/type_right-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* WMX Yo Supa */
+@font-face {
+  font-family: 'wmxyosupa';
+  src: url('/fonts/wmxyosupa-regular-webfont.woff2') format('woff2'),
+       url('/fonts/wmxyosupa-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Sometype Mono */
+@font-face {
+  font-family: 'sometype-mono';
+  src: url('/fonts/sometype-mono.regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'sometype-mono';
+  src: url('/fonts/sometype-mono.bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'sometype-mono';
+  src: url('/fonts/sometype-mono.bold-italic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'sometype-mono';
+  src: url('/fonts/sometype-mono.medium-italic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ══════════════════════════════════════
+   CSS VARIABLES
+   ══════════════════════════════════════ */
+
+:root {
+  --dm-bg: #000000;
+  --dm-fg: #ffffff;
+  --dm-fg-dim: #666666;
+  --dm-fg-bright: #ffffff;
+  --dm-border: #ffffff;
+  --dm-border-dim: #333333;
+  --dm-active: #1a1a1a;
+  --dm-highlight: #2a2a2a;
+
+  /* Font stacks */
+  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  --dm-font-secondary: 'courier-pixel', 'Courier New', monospace;
+  --dm-font-display: 'coralpixels', 'jazzypixel', 'kongtext', monospace;
+  --dm-font-japanese: 'jvmiyopro', 'hina-mincho', 'remilia-mincho', serif;
+  --dm-font-fallback: 'Courier New', monospace;
+
+  /* Slimentologika sprite size */
+  --dm-slime-size: 16px;
+
+  /* Current display scale (1 = base, 2 = 1080p, 3 = 1440p, 4 = 4K) */
+  --dm-scale: 1;
+}
+
+/* ══════════════════════════════════════
+   GLOBAL RESETS
+   ══════════════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 0 !important;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  text-rendering: optimizeSpeed;
+}
+
+html, body {
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--dm-font-primary);
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Kill all rounded corners aggressively */
+button, input, select, textarea, div, span, a {
+  border-radius: 0 !important;
+}
+
+/* Slimentologika sprite digit inline display
+   Sized to 1ch so each glyph matches one monospaced character exactly. */
+.slime-digit {
+  display: inline-block;
+  width: 1ch;
+  height: 1ch;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  vertical-align: baseline;
+}
+
+/* Scrollbar styling - pixel perfect */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+  border: 1px solid #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+  border: 1px solid #333333;
+}
+
+/* No tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch controller - circle buttons override global border-radius: 0 */
+.dm-touch-btn-circle {
+  border-radius: 50% !important;
+}
+
+/* Touch controller container */
+.dm-touch-controller {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE SCALING
+   Pixel-perfect nearest-neighbor upscale.
+   Body shrinks to 1/Nth of viewport,
+   then CSS transform scales it back up Nx.
+   ══════════════════════════════════════ */
+
+/* -- TINY: Miyoo Mini / sub-480px handhelds -- */
+@media (max-width: 480px) {
+  :root {
+    --dm-slime-size: 8px;
+    --dm-scale: 1;
+  }
+
+  body {
+    font-size: 7px;
+  }
+}
+
+/* -- BASE: tablets / small laptops (481px–1279px) -- */
+/* No override needed — uses default :root values */
+
+/* ══════════════════════════════════════
+   SOMETYPE MONO WEIGHT CYCLE
+   On HD displays, font rapidly flickers
+   through Bold → Bold-Italic → Medium-Italic → Regular
+   on first load, then settles on Regular.
+   ══════════════════════════════════════ */
+
+@keyframes dm-font-cycle {
+  0%   { font-weight: 700; font-style: normal; }
+  8%   { font-weight: 700; font-style: normal; }
+  10%  { font-weight: 700; font-style: italic; }
+  18%  { font-weight: 700; font-style: italic; }
+  20%  { font-weight: 500; font-style: italic; }
+  28%  { font-weight: 500; font-style: italic; }
+  30%  { font-weight: 400; font-style: normal; }
+  38%  { font-weight: 400; font-style: normal; }
+  40%  { font-weight: 700; font-style: normal; }
+  45%  { font-weight: 700; font-style: italic; }
+  50%  { font-weight: 500; font-style: italic; }
+  55%  { font-weight: 700; font-style: normal; }
+  58%  { font-weight: 400; font-style: normal; }
+  62%  { font-weight: 700; font-style: italic; }
+  66%  { font-weight: 500; font-style: italic; }
+  70%  { font-weight: 400; font-style: normal; }
+  75%  { font-weight: 700; font-style: normal; }
+  78%  { font-weight: 400; font-style: normal; }
+  82%  { font-weight: 500; font-style: italic; }
+  85%  { font-weight: 400; font-style: normal; }
+  90%  { font-weight: 700; font-style: italic; }
+  93%  { font-weight: 400; font-style: normal; }
+  100% { font-weight: 400; font-style: normal; }
+}
+
+.dm-font-cycle {
+  animation: dm-font-cycle 1.2s ease-out forwards;
+}
+
+/* -- 2X: 1080p desktops (1280px–2559px) -- */
+@media (min-width: 1280px) {
+  body {
+    width: 50vw;
+    height: 50vh;
+    transform: scale(2);
+    transform-origin: top left;
+    overflow: hidden;
+    font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+
+  :root {
+    --dm-slime-size: 24px;
+    --dm-scale: 2;
+    --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+}
+
+/* -- 3X: 1440p / ultrawide (2560px–3839px) -- */
+@media (min-width: 2560px) {
+  body {
+    width: 33.334vw;
+    height: 33.334vh;
+    transform: scale(3);
+    transform-origin: top left;
+    overflow: hidden;
+    font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+
+  :root {
+    --dm-slime-size: 32px;
+    --dm-scale: 3;
+    --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+}
+
+/* -- 4X: 4K desktops (3840px+) -- */
+@media (min-width: 3840px) {
+  body {
+    width: 25vw;
+    height: 25vh;
+    transform: scale(4);
+    transform-origin: top left;
+    overflow: hidden;
+    font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+
+  :root {
+    --dm-slime-size: 32px;
+    --dm-scale: 4;
+    --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  }
+}
+
+/* ══════════════════════════════════════
+   MANUAL SCALE OVERRIDES
+   Applied via body class from Preferences.
+   These override the media query defaults.
+   ══════════════════════════════════════ */
+
+body.dm-scale-tiny {
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  font-size: 7px !important;
+  --dm-slime-size: 8px;
+  --dm-scale: 1;
+}
+
+body.dm-scale-1x {
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  --dm-slime-size: 16px;
+  --dm-scale: 1;
+}
+
+body.dm-scale-2x {
+  width: 50vw !important;
+  height: 50vh !important;
+  transform: scale(2) !important;
+  transform-origin: top left !important;
+  overflow: hidden !important;
+  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  --dm-slime-size: 24px;
+  --dm-scale: 2;
+  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+}
+
+body.dm-scale-3x {
+  width: 33.334vw !important;
+  height: 33.334vh !important;
+  transform: scale(3) !important;
+  transform-origin: top left !important;
+  overflow: hidden !important;
+  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  --dm-slime-size: 32px;
+  --dm-scale: 3;
+  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+}
+
+body.dm-scale-4x {
+  width: 25vw !important;
+  height: 25vh !important;
+  transform: scale(4) !important;
+  transform-origin: top left !important;
+  overflow: hidden !important;
+  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  --dm-slime-size: 32px;
+  --dm-scale: 4;
+  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+}

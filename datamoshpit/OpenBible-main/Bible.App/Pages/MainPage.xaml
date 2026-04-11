@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<pages:BasePage
+    x:Class="Bible.App.Pages.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:m="clr-namespace:Bible.App.Models"
+    xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:pages="clr-namespace:Bible.App.Pages"
+    xmlns:views="clr-namespace:Bible.App.Views"
+    xmlns:vm="clr-namespace:Bible.App.ViewModels"
+    x:DataType="vm:MainPageViewModel"
+    x:TypeArguments="vm:MainPageViewModel">
+    <!--
+    <ContentPage.BindingContext>
+        <vm:MainPageViewModel />
+    </ContentPage.BindingContext>
+    -->
+    <!--<ContentPage.ToolbarItems>
+        <ToolbarItem
+            Command="{Binding NavigateCommand}"
+            CommandParameter="{x:Type views:SettingsPage}"
+            IconImageSource="{StaticResource FontIconSettings}"
+            Text="Setup" />
+    </ContentPage.ToolbarItems>-->
+
+    <Shell.TitleView>
+        <StackLayout>
+            <HorizontalStackLayout Padding="0,0" Spacing="15">
+                <Picker
+                    x:Name="bibleLanguagePicker"
+                    ItemsSource="{Binding Languages, Mode=OneTime}"
+                    SelectedIndexChanged="OnLanguageSelectionChanged"
+                    SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
+                    WidthRequest="90" />
+                <Picker
+                    x:Name="bibleTranslationPicker"
+                    ItemDisplayBinding="{Binding DisplayText}"
+                    ItemsSource="{Binding Translations, Mode=OneWay}"
+                    SelectedItem="{Binding SelectedTranslation, Mode=TwoWay}"
+                    WidthRequest="240">
+                    <Picker.Behaviors>
+                        <mct:EventToCommandBehavior
+                            Command="{Binding TranslationSelectedCommand}"
+                            CommandParameter="{Binding Source={x:Reference bibleTranslationPicker}, Path=SelectedItem, Mode=OneWay}"
+                            EventName="SelectedIndexChanged" />
+                    </Picker.Behaviors>
+                </Picker>
+            </HorizontalStackLayout>
+        </StackLayout>
+    </Shell.TitleView>
+
+    <Grid RowDefinitions="*,50">
+        <CollectionView
+            x:Name="chapterCollectionView"
+            ItemsSource="{Binding Source={x:Reference bibleBookPicker}, Path=SelectedItem, Mode=OneWay}"
+            Scrolled="OnChapterCollectionViewScrolled">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="m:ChapterUiModel">
+                    <VerticalStackLayout>
+                        <views:ChapterView BindingContext="{Binding .}" />
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <HorizontalStackLayout
+            Grid.Row="1"
+            Padding="15,0"
+            Spacing="15">
+            <Picker
+                x:Name="bibleBookPicker"
+                ItemDisplayBinding="{Binding Name, Mode=OneWay}"
+                ItemsSource="{Binding Bible, Mode=OneWay}"
+                SelectedIndex="{Binding BookIndex, Mode=TwoWay}"
+                SelectedIndexChanged="OnBookSelectionChanged"
+                WidthRequest="160" />
+            <Picker
+                x:Name="bibleChapterPicker"
+                ItemDisplayBinding="{Binding Id, Mode=OneWay}"
+                ItemsSource="{Binding Source={x:Reference bibleBookPicker}, Path=SelectedItem, Mode=OneWay}"
+                SelectedIndex="{Binding ChapterIndex, Mode=TwoWay}"
+                SelectedIndexChanged="OnChapterSelectionChanged"
+                WidthRequest="70" />
+            <Label
+                Text="{Binding Source={x:Reference bibleBookPicker}, Path=SelectedItem.Copyright, StringFormat='© {0}'}"
+                TextColor="Gray"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+        <Grid.GestureRecognizers>
+            <SwipeGestureRecognizer Direction="Left" Swiped="OnSwipeLeft" />
+            <SwipeGestureRecognizer Direction="Right" Swiped="OnSwipeRight" />
+        </Grid.GestureRecognizers>
+    </Grid>
+
+</pages:BasePage>

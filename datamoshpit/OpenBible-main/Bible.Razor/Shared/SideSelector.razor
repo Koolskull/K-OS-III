@@ -1,0 +1,25 @@
+@using Bible.Backend.Models
+@using Bible.Backend.Services
+
+<ListGenericItemsTemplate TItem="BibleBookNav" ItemList="@ItemList" Context="book">
+    <ItemTemplate>
+        <a href="@($"{IsoLanguage}/{Version}/1")">@book.Name</a>
+    </ItemTemplate>
+</ListGenericItemsTemplate>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public bool Expanded { get; set; }
+
+    [Parameter]
+    public IEnumerable<BibleBookNav>? ItemList { get; set; }
+
+    [CascadingParameter(Name = "SelectedLanguage")]
+    public string IsoLanguage { get; set; } = BibleBookNavService.DefaultLanguage;
+
+    [CascadingParameter(Name = "SelectedVersion")]
+    public string Version { get; set; } = BibleBookNavService.GetVersion(BibleBookNavService.DefaultLanguage);
+}

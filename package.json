@@ -1,0 +1,42 @@
+{
+  "name": "koolskull-os-iii",
+  "version": "0.1.0",
+  "description": "KOOLSKULL Operating System III — A web-based OS for media production.",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "tracker",
+    "midi",
+    "music",
+    "fm-synthesis",
+    "ym2612",
+    "datamoshpit"
+  ],
+  "author": "2kool Productions",
+  "license": "ISC",
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@theatre/core": "^0.7.2",
+    "@theatre/r3f": "^0.7.2",
+    "@theatre/studio": "^0.7.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "jszip": "^3.10.1",
+    "next": "^16.1.6",
+    "postcss": "^8.5.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.2.1",
+    "three": "^0.183.2",
+    "tone": "^15.1.22",
+    "typescript": "^5.9.3"
+  }
+}

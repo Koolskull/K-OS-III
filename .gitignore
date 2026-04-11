@@ -1,0 +1,64 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+
+# production
+build/
+dist/
+
+# misc
+.DS_Store
+*.pem
+*.log
+.env
+.env.*
+
+# debug
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# large game assets (too big for GitHub)
+datamoshpit/games/SuperTux-v0.6.3-WASM/
+public/games/supertux/
+
+# ide
+.vscode/
+.idea/
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+
+# production
+build/
+dist/
+
+# misc
+.DS_Store
+*.pem
+*.log
+.env
+.env.*
+
+# debug
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# ide
+.vscode/
+.idea/

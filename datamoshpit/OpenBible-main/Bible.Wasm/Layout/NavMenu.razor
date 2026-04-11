@@ -1,0 +1,116 @@
+﻿@using System.Diagnostics.CodeAnalysis
+@using Bible.Backend.Models
+@using Bible.Backend.Services
+@using Bible.Wasm.Shared
+@inject IBibleBookNavService MenuService
+
+<MudNavMenu>
+    <MudExpansionPanels Elevation="0" Class="mb-2">
+        <MudExpansionPanel Text="Select Language & Version" Expanded="true">
+            <MudSelect T="string" Label="Language" @bind-Value="_selectedLanguage" Dense="true" Class="ml-2">
+                @foreach (var lang in BibleBookNavService.IsoLanguages)
+                {
+                    <MudSelectItem T="string" Value="@lang.Key">@lang.Value[0]</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="string" Label="Version" @bind-Value="_selectedVersion" Dense="true" Class="ml-2">
+                @foreach (var version in CurrentVersions)
+                {
+                    <MudSelectItem T="string" Value="@version">@version</MudSelectItem>
+                }
+            </MudSelect>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    <MudNavLink Href="" Match="NavLinkMatch.All">Open Bible</MudNavLink>
+    <MudNavLink Href="feed" Match="NavLinkMatch.Prefix">Daily Verse</MudNavLink>
+    <MudNavLink Href="enrich" Match="NavLinkMatch.Prefix">Unihan Enricher</MudNavLink>
+    <MudNavLink Href="stream" Match="NavLinkMatch.Prefix">Stream Demo</MudNavLink>
+
+    <CascadingValue Name="SelectedLanguage" Value="_selectedLanguage">
+        <CascadingValue Name="SelectedVersion" Value="_selectedVersion">
+            <SideSelector Title="Old Testament" ItemList="@oldTestament" />
+            <SideSelector Title="New Testament" ItemList="@newTestament" Expanded="true" />
+        </CascadingValue>
+    </CascadingValue>
+</MudNavMenu>
+
+@code {
+    [Parameter]
+    public EventCallback<string> SelectedLanguageChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SelectedVersionChanged { get; set; }
+
+    [Parameter]
+    public string SelectedLanguage { get; set; } = default!;
+
+    [Parameter]
+    public string SelectedVersion { get; set; } = default!;
+
+    private IReadOnlyList<BibleBookNav>? oldTestament;
+    private IReadOnlyList<BibleBookNav>? newTestament;
+
+    private IReadOnlyList<string> CurrentVersions =>
+        BibleBookNavService.BibleVersions.TryGetValue(_selectedLanguage, out var versions) ? versions : Array.Empty<string>();
+
+    private string _selectedLanguage = default!;
+    private string _selectedVersion = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        oldTestament = MenuService.OldTestamentBooks;
+        newTestament = MenuService.NewTestamentBooks;
+
+        // Initialize selections with parameters or defaults
+        _selectedLanguage = SelectedLanguage ?? BibleBookNavService.DefaultLanguage;
+        _selectedVersion = SelectedVersion ?? BibleBookNavService.GetVersion(_selectedLanguage);
+    }
+
+    private async Task OnLanguageChanged(string lang)
+    {
+        if (_selectedLanguage != lang)
+        {
+            _selectedLanguage = lang;
+
+            // Update versions accordingly
+            if (BibleBookNavService.BibleVersions.TryGetValue(_selectedLanguage, out var versions) && versions.Any())
+            {
+                _selectedVersion = versions.First();
+            }
+            else
+            {
+                _selectedVersion = null!;
+            }
+
+            await SelectedLanguageChanged.InvokeAsync(_selectedLanguage);
+            await SelectedVersionChanged.InvokeAsync(_selectedVersion);
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnVersionChanged(string version)
+    {
+        if (_selectedVersion != version)
+        {
+            _selectedVersion = version;
+            await SelectedVersionChanged.InvokeAsync(_selectedVersion);
+            StateHasChanged();
+        }
+    }
+
+    // Two-way bind helpers for MudSelect components
+    private string LanguageValue
+    {
+        get => _selectedLanguage;
+        set => _ = OnLanguageChanged(value);
+    }
+
+    private string VersionValue
+    {
+        get => _selectedVersion;
+        set => _ = OnVersionChanged(value);
+    }
+}

@@ -1,0 +1,28 @@
+title: Cryptography Basics
+slug: cryptography-basics
+summary: >
+  Hashing, symmetric vs asymmetric, digital signatures, key derivation, why seed
+  phrases work the way they do. Prerequisite for the privacy and wallet tracks.
+  Concept-first; math is introduced only when it earns its place.
+prerequisites: []
+estimated_hours: 8
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: Why cryptography matters before you touch a wallet
+    status: stub
+  - file: 02-hashing.md
+    title: Hashing — what a hash is, what it isn't, why it shows up everywhere
+    status: stub
+  - file: 03-symmetric-vs-asymmetric.md
+    title: Symmetric vs asymmetric — two very different problems
+    status: stub
+  - file: 04-digital-signatures.md
+    title: Digital signatures — proving who, without revealing what
+    status: stub
+  - file: 05-key-derivation.md
+    title: Key derivation, BIP-39 seed phrases, and what your wallet is actually storing
+    status: stub
+  - file: 06-where-this-lives-in-the-os.md
+    title: Where K-OS uses each of these primitives, and why
+    status: stub

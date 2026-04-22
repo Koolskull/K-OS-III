@@ -69,7 +69,9 @@ Monoculture of interpretation is a failure mode. Plural discourse — even when 
 
 This is not "all views are equal." It is not a mandate to teach every fringe claim. It is a refusal to flatten debate into a verdict the project hasn't earned the right to deliver.
 
-This commitment shapes the Reference (`public/reference/`), the Reader Notes (`docs/READER_NOTES/`), and the education tracks (`public/education/`). It does **not** apply to technical specs — a function either returns the right value or it doesn't.
+This commitment shapes the **defaults** in the Reference (`public/reference/`), the Reader Notes (`docs/READER_NOTES/`), and the education tracks (`public/education/`). It does **not** apply to technical specs — a function either returns the right value or it doesn't.
+
+**Critically: this is the editorial stance of the defaults, not a constraint on the user.** K-OS is local-first and source-available by design. Users have permissionless access to edit any entry, swap the entire corpus, connect to alternative Reference sources (community-maintained, friend-curated, federated, IPFS-published), build their own curation tools, or fork the project entirely. The editorial work exists to provide a sane, opinionated *starting point* so the OS is useful out of the box. **Customization is encouraged.** The defaults are ours; the OS is the user's.
 
 Full statement: [`docs/EPISTEMIC_STANCE.md`](./docs/EPISTEMIC_STANCE.md).
 

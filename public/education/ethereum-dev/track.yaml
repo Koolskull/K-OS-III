@@ -1,0 +1,46 @@
+title: Ethereum Developer
+slug: ethereum-dev
+summary: >
+  The flagship K-OS curriculum. Start from "what is Ethereum" and finish able to read
+  mainnet contracts, write and test your own, deploy to a testnet, and understand
+  what is happening at every layer of an EVM application. No prior crypto required.
+prerequisites: []
+estimated_hours: 24
+flagship: true
+lessons:
+  - file: 01-introduction.md
+    title: What this track is, and what you'll be able to do
+    status: written
+  - file: 02-accounts-and-contracts.md
+    title: Accounts, contracts, and how Ethereum thinks about state
+    status: stub
+  - file: 03-gas-and-the-evm.md
+    title: Gas, the EVM, and the cost of computation on a public ledger
+    status: stub
+  - file: 04-solidity-basics.md
+    title: Solidity basics — types, functions, storage, and events
+    status: stub
+  - file: 05-local-development.md
+    title: Local development with Foundry (and a note on Hardhat)
+    status: stub
+  - file: 06-testing.md
+    title: Testing — unit tests, fuzz tests, invariant tests
+    status: stub
+  - file: 07-deployment.md
+    title: Deploying to a testnet, then to mainnet
+    status: stub
+  - file: 08-reading-mainnet-contracts.md
+    title: How to read a real mainnet contract you didn't write
+    status: stub
+  - file: 09-common-vulnerabilities.md
+    title: Common vulnerabilities — reentrancy, access control, integer issues, oracle manipulation
+    status: stub
+  - file: 10-account-abstraction.md
+    title: Account abstraction, smart-contract wallets, and what's changed since EOAs
+    status: stub
+  - file: 11-l2s.md
+    title: L2s at a high level — rollups, data availability, bridges
+    status: stub
+  - file: 12-where-to-go-next.md
+    title: Where to go next — projects to study, audits to read, research to follow
+    status: stub

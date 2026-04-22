@@ -1,0 +1,26 @@
+title: Reading Codebases
+slug: reading-codebases
+summary: >
+  A meta-track on how to read unfamiliar codebases — orient in a large repo, use
+  git history as a learning tool, read tests first, build a mental model from
+  entry points. Quietly important; most developer learning fails not at syntax but
+  at orientation.
+prerequisites: []
+estimated_hours: 4
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: Why most developers can't read other people's code (and how to fix it)
+    status: stub
+  - file: 02-orienting.md
+    title: Orienting in an unfamiliar repo — the first 30 minutes
+    status: stub
+  - file: 03-git-as-a-learning-tool.md
+    title: Git history as a learning tool — blame, log, bisect
+    status: stub
+  - file: 04-read-tests-first.md
+    title: Read the tests first — why tests are the cheapest documentation
+    status: stub
+  - file: 05-mental-models-from-entry-points.md
+    title: Building a mental model from entry points outward
+    status: stub

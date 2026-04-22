@@ -1,0 +1,25 @@
+title: Bitcoin
+slug: bitcoin
+summary: >
+  UTXO model, script basics, Lightning at a high level, how Bitcoin wallets differ
+  from EVM wallets. A companion track for users and developers operating in the
+  Bitcoin ecosystem; smaller than the Ethereum track by design.
+prerequisites: [cryptography-basics]
+estimated_hours: 6
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: How Bitcoin thinks about money
+    status: stub
+  - file: 02-utxos.md
+    title: UTXOs — why "balance" is a derived concept, not a stored one
+    status: stub
+  - file: 03-script.md
+    title: Bitcoin Script basics — what it can and can't express
+    status: stub
+  - file: 04-wallet-types.md
+    title: Wallet types — single-sig, multisig, watch-only, and what they protect against
+    status: stub
+  - file: 05-lightning.md
+    title: Lightning at a high level — payment channels, routing, and the tradeoffs
+    status: stub

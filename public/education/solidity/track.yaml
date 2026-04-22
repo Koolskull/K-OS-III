@@ -1,0 +1,28 @@
+title: Solidity (Deep Dive)
+slug: solidity
+summary: >
+  A deeper Solidity track that follows ethereum-dev. Storage layout, gas optimization,
+  design patterns, security patterns, audit-readiness. For developers who already
+  ship contracts and want to ship them better.
+prerequisites: [ethereum-dev]
+estimated_hours: 18
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: Who this track is for and what it assumes
+    status: stub
+  - file: 02-storage-layout.md
+    title: Storage layout, slot packing, and why the bytecode looks like that
+    status: stub
+  - file: 03-gas-optimization.md
+    title: Gas optimization that is actually worth doing (and what isn't)
+    status: stub
+  - file: 04-design-patterns.md
+    title: Design patterns — proxies, access control, factory, registry, escrow
+    status: stub
+  - file: 05-security-patterns.md
+    title: Security patterns — pull payments, checks-effects-interactions, reentrancy guards, pause switches
+    status: stub
+  - file: 06-audit-readiness.md
+    title: What an audit-ready contract looks like and how to get there
+    status: stub

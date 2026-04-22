@@ -1,0 +1,28 @@
+title: Monero
+slug: monero
+summary: >
+  Why Monero, ring signatures and stealth addresses at a conceptual level, view keys,
+  wallet hygiene, running a node. A companion track for users who choose financial
+  privacy and want to operate Monero correctly rather than just hold it.
+prerequisites: [cryptography-basics, privacy]
+estimated_hours: 6
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: Why Monero exists, and what it actually provides
+    status: stub
+  - file: 02-ring-signatures.md
+    title: Ring signatures — sender ambiguity at a conceptual level
+    status: stub
+  - file: 03-stealth-addresses.md
+    title: Stealth addresses — receiver ambiguity at a conceptual level
+    status: stub
+  - file: 04-view-keys.md
+    title: View keys — selective disclosure without giving up control
+    status: stub
+  - file: 05-wallet-hygiene.md
+    title: Wallet hygiene — what leaks, what doesn't, what to never do
+    status: stub
+  - file: 06-running-a-node.md
+    title: Running your own node — why it matters and how to start
+    status: stub

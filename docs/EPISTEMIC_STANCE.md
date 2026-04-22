@@ -4,6 +4,26 @@ This is the canonical statement of how K-OS handles disagreement, contested topi
 
 ---
 
+## Read this first: the stance applies to *defaults*. The user is sovereign.
+
+Everything in this document describes the **default editorial behavior** of K-OS — the data the OS ships with, the framing applied to that data, and the editorial discipline the project's contributors follow when adding to it.
+
+**The user is not bound by any of it.**
+
+K-OS is local-first and source-available by design. The Reference (`public/reference/`), the Reader Notes (`docs/READER_NOTES/`), and the Education tracks (`public/education/`) are all plain markdown files on the user's own device. A user can:
+
+- **Edit any default entry** — fix it, expand it, replace it, delete it.
+- **Swap the entire corpus** — point K-OS at a different Reference database, a community-curated one, a friend's, their own.
+- **Connect to alternative sources** — federated reference databases, IPFS-published corpora, an entirely different curriculum.
+- **Build their own curation tools** — the data formats are simple markdown with YAML frontmatter; nothing in the system is locked.
+- **Fork the project** — and ship a version of K-OS with a completely different editorial stance.
+
+K-OS's editorial work exists to give the user **a sane, opinionated default** so the OS works the moment they open it without first requiring them to assemble their own knowledge base. **Customization is encouraged**, not a workaround. The defaults are a starting point, not an authority.
+
+This framing is foundational. Everything below describes how the *defaults* are written. Users who choose to live with the defaults get the editorial care described below. Users who choose to curate their own get the same software and the same freedom.
+
+---
+
 ## Why this matters for a creative OS
 
 Creative work dies under received opinion. The people most harmed by flattened narratives — single official accounts presented without the surrounding debate — are artists, researchers, students, and children. People making things need to be trusted with the question of what's true, not handed verdicts.
@@ -58,6 +78,8 @@ Technical specifications. A function either returns the right value or it doesn'
 Because the alternative — picking a verdict and presenting it as settled — is what most software, most platforms, most curricula, and most encyclopedias already do. The world has enough of that. K-OS is small enough to do something different.
 
 A reader who finishes a K-OS document on a contested topic should be able to say: *I now know what the mainstream view holds, what the strongest dissenting view holds, what evidence each side relies on, and where to keep reading on my own.* That is the contract.
+
+And if a reader doesn't want our defaults at all — wants to delete what we shipped, swap it for their own corpus, connect to a different Reference, build their own curriculum — that's not a workaround. That's the system working as designed. The defaults are ours; the OS is theirs.
 
 ---
 

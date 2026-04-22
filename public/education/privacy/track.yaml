@@ -1,0 +1,31 @@
+title: Privacy
+slug: privacy
+summary: >
+  Threat modeling for normal people, metadata vs content, Tor basics, why Monero
+  exists, OPSEC hygiene for developers, device hygiene, the real-world limits of
+  privacy tooling — honest, not hype.
+prerequisites: [cryptography-basics]
+estimated_hours: 10
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: Threat modeling — who, what, why
+    status: stub
+  - file: 02-metadata-vs-content.md
+    title: Metadata vs content, and which one usually betrays you
+    status: stub
+  - file: 03-tor-basics.md
+    title: Tor — what it does, what it doesn't, when to use it
+    status: stub
+  - file: 04-why-monero.md
+    title: Why Monero exists and what financial privacy actually requires
+    status: stub
+  - file: 05-developer-opsec.md
+    title: Developer OPSEC — secrets, credentials, the things in your terminal history
+    status: stub
+  - file: 06-device-hygiene.md
+    title: Device hygiene — phones, laptops, browsers, signers
+    status: stub
+  - file: 07-honest-limits.md
+    title: The honest limits of privacy tooling, and what nothing protects against
+    status: stub

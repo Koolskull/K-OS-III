@@ -1,5 +1,7 @@
 # K-OS III
 
+> **🟡 EARLY BETA — `0.2.0-beta.1`.** Working, buildable, but rough. Datamoshpit's tracker, sprite editor, and per-instrument visual system are in. Save format may break before `0.3`. Save your projects locally and don't ship anything you can't afford to lose.
+
 **A fake operating system that runs in your browser and actually makes music, art, and on-chain work.** Built for Ethereum developers, artists, and makers — first.
 
 > **Who this is for, in priority order:** Ethereum / EVM developers first, then tracker and chiptune musicians, pixel artists, handheld Linux tinkerers, privacy-curious builders, and Christian creatives. This ordering is deliberate — see [`VISION.md`](./VISION.md).

@@ -82,6 +82,25 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
         ☦ K-OS
       </button>
 
+      {/* BETA badge — visible reminder this is a 0.2.0-beta.1 build */}
+      <span
+        title="K-OS III 0.2.0-beta.1 — early beta. Expect rough edges."
+        style={{
+          fontFamily: "var(--dm-font-primary)",
+          fontSize: "9px",
+          color: "#000000",
+          backgroundColor: "#ffff00",
+          padding: "1px 4px",
+          marginLeft: "4px",
+          letterSpacing: "1px",
+          flexShrink: 0,
+          imageRendering: "pixelated",
+          border: "1px solid #000000",
+        }}
+      >
+        BETA
+      </span>
+
       {/* Divider */}
       <div style={{ width: "2px", height: "24px", backgroundColor: "#333333", flexShrink: 0 }} />
 

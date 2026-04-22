@@ -23,6 +23,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { Instrument, ProjectSample } from "@/types/tracker";
 import { loadTFI } from "@/engine/instruments/TFIParser";
 import { loadGenMDMBank } from "@/engine/instruments/GenMDMParser";
+import { assetUrl } from "@/lib/assets";
 
 const ROW_HEIGHT = 16;
 const VISIBLE_ROWS = 20;
@@ -70,9 +71,9 @@ export function FileBrowser({
   // Load manifests on mount
   useEffect(() => {
     Promise.all([
-      fetch("/Instruments/genmdm-manifest.json").then((r) => r.json()).catch(() => []),
-      fetch("/Instruments/tfm-manifest.json").then((r) => r.json()).catch(() => ({})),
-      fetch("/Instruments/sample-manifest.json").then((r) => r.json()).catch(() => ({})),
+      fetch(assetUrl("/Instruments/genmdm-manifest.json")).then((r) => r.json()).catch(() => []),
+      fetch(assetUrl("/Instruments/tfm-manifest.json")).then((r) => r.json()).catch(() => ({})),
+      fetch(assetUrl("/Instruments/sample-manifest.json")).then((r) => r.json()).catch(() => ({})),
     ]).then(([genmdmFiles, tfmManifest, sampleManifest]: [string[], Record<string, string[]>, Record<string, string[]>]) => {
       tfmManifestRef.current = tfmManifest;
       sampleManifestRef.current = sampleManifest;
@@ -132,7 +133,7 @@ export function FileBrowser({
       );
       setLoading(false);
     } else if (folder.type === "genmdm") {
-      loadGenMDMBank(`/Instruments/GenMDM/${folder.key}`, 0).then((instruments) => {
+      loadGenMDMBank(assetUrl(`/Instruments/GenMDM/${folder.key}`), 0).then((instruments) => {
         setFiles(
           instruments.map((inst) => ({
             name: inst.name,
@@ -166,7 +167,7 @@ export function FileBrowser({
       onLoadPreset({ ...file.instrument, id: currentInstrumentId });
       setStatus(`LOADED: ${file.name}`);
     } else if (file.type === "tfi") {
-      const inst = await loadTFI(file.url, currentInstrumentId, file.name.slice(0, 16).toUpperCase());
+      const inst = await loadTFI(assetUrl(file.url), currentInstrumentId, file.name.slice(0, 16).toUpperCase());
       if (inst) {
         onLoadPreset(inst);
         setStatus(`LOADED: ${file.name}`);
@@ -175,7 +176,7 @@ export function FileBrowser({
       // Fetch WAV as ArrayBuffer and import into project sample pool
       setStatus("IMPORTING...");
       try {
-        const resp = await fetch(file.url);
+        const resp = await fetch(assetUrl(file.url));
         const data = await resp.arrayBuffer();
         const name = file.name.replace(/\.wav$/i, "").slice(0, 24).toUpperCase();
         const sample: ProjectSample = {

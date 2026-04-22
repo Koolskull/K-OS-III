@@ -18,6 +18,7 @@ import { AudioEngine } from "@/engine/audio/AudioEngine";
 import { FMSynthVoice } from "@/engine/synth/FMSynth";
 import { SamplerVoice } from "@/engine/synth/SamplerVoice";
 import { SamplePool } from "@/engine/samples/SamplePool";
+import { assetUrl } from "@/lib/assets";
 
 interface ChannelState {
   songRow: number;
@@ -127,13 +128,16 @@ export class TrackerEngine {
       }
     }
 
-    // Preload any new sample URLs not yet cached
+    // Preload any new sample URLs not yet cached. sampleUrl is stored as a
+    // project-relative path; assetUrl() resolves it against the build's
+    // asset base (env-driven, see src/lib/assets.ts).
     for (const inst of project.instruments) {
       if (inst.type === "sample" && inst.sampleUrl && !inst.sampleId && !this.sampleBuffers.has(inst.sampleUrl)) {
-        Tone.ToneAudioBuffer.fromUrl(inst.sampleUrl).then((buf) => {
+        const fetchUrl = assetUrl(inst.sampleUrl);
+        Tone.ToneAudioBuffer.fromUrl(fetchUrl).then((buf) => {
           this.sampleBuffers.set(inst.sampleUrl!, buf);
         }).catch((e) => {
-          console.warn(`[ENGINE] Failed to hot-load: ${inst.sampleUrl}`, e);
+          console.warn(`[ENGINE] Failed to hot-load: ${fetchUrl}`, e);
         });
       }
     }
@@ -150,12 +154,13 @@ export class TrackerEngine {
     // Load URL-based samples (legacy / fallback)
     for (const inst of project.instruments) {
       if (inst.type === "sample" && inst.sampleUrl && !inst.sampleId && !this.sampleBuffers.has(inst.sampleUrl)) {
-        const url = inst.sampleUrl;
+        const url = inst.sampleUrl;             // project-relative
+        const fetchUrl = assetUrl(url);          // build-resolved
         loads.push(
-          Tone.ToneAudioBuffer.fromUrl(url).then((buf) => {
+          Tone.ToneAudioBuffer.fromUrl(fetchUrl).then((buf) => {
             this.sampleBuffers.set(url, buf);
           }).catch((e) => {
-            console.warn(`[ENGINE] Failed to load: ${url}`, e);
+            console.warn(`[ENGINE] Failed to load: ${fetchUrl}`, e);
           })
         );
       }

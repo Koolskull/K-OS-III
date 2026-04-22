@@ -22,6 +22,7 @@
 import React from "react";
 import type { SlimeHexKey } from "@/types/tracker";
 import { slimeSpritePath, toSlimeKeys } from "@/types/tracker";
+import { assetUrl } from "@/lib/assets";
 
 interface SlimeDigitProps {
   hexKey: SlimeHexKey;
@@ -38,7 +39,7 @@ export function SlimeGlyph({ hexKey, size }: SlimeDigitProps) {
   if (size != null) {
     return (
       <img
-        src={slimeSpritePath(hexKey)}
+        src={assetUrl(slimeSpritePath(hexKey))}
         alt={hexKey}
         className="slime-digit"
         draggable={false}
@@ -52,7 +53,7 @@ export function SlimeGlyph({ hexKey, size }: SlimeDigitProps) {
   }
   return (
     <img
-      src={slimeSpritePath(hexKey)}
+      src={assetUrl(slimeSpritePath(hexKey))}
       alt={hexKey}
       className="slime-digit"
       draggable={false}

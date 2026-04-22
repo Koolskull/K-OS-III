@@ -33,6 +33,7 @@ import { DatamoshpitApp } from "@/components/apps/DatamoshpitApp";
 import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
+import { assetUrl } from "@/lib/assets";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
@@ -215,7 +216,7 @@ export default function KoolskullOS() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "url(/gifs/screenglitch.gif)",
+          backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           opacity: 0.07,

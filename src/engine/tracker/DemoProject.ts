@@ -13,6 +13,7 @@
 import type { ProjectData, ProjectSample, Instrument, PhraseRow, Phrase, Chain, Song } from "@/types/tracker";
 import { createBlankChain, createBlankTable, createDefaultInstrument } from "./ProjectFactory";
 import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
+import { assetUrl } from "@/lib/assets";
 
 const SAMPLE_PATH = "/Instruments/samples";
 
@@ -55,7 +56,7 @@ export async function createDemoProject(): Promise<ProjectData> {
   // Fetch sample WAVs as ArrayBuffers and embed in project
   const samples: ProjectSample[] = await Promise.all(
     DEMO_SAMPLES.map(async (def) => {
-      const resp = await fetch(`${SAMPLE_PATH}/${def.filename}`);
+      const resp = await fetch(assetUrl(`${SAMPLE_PATH}/${def.filename}`));
       const data = await resp.arrayBuffer();
       return { id: def.id, name: def.name, data };
     }),

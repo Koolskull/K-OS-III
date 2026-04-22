@@ -10,13 +10,14 @@
  */
 
 import type { KjvBible, BibleBookMeta } from "@/types/bible";
+import { assetUrl } from "@/lib/assets";
 
 let cachedBible: KjvBible | null = null;
 
 /** Fetch and cache the KJV Bible text */
 export async function loadKjvBible(): Promise<KjvBible> {
   if (cachedBible) return cachedBible;
-  const res = await fetch("/bible/kjv.json");
+  const res = await fetch(assetUrl("/bible/kjv.json"));
   cachedBible = await res.json();
   return cachedBible!;
 }

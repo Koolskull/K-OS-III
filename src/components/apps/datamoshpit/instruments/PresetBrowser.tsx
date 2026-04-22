@@ -24,6 +24,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { Instrument } from "@/types/tracker";
 import { loadTFI } from "@/engine/instruments/TFIParser";
 import { loadGenMDMBank } from "@/engine/instruments/GenMDMParser";
+import { assetUrl } from "@/lib/assets";
 
 const ROW_HEIGHT = 16;
 const VISIBLE_ROWS = 20;
@@ -63,8 +64,8 @@ export function PresetBrowser({ onLoadPreset, onClose, currentInstrumentId }: Pr
   // Load manifests on mount
   useEffect(() => {
     Promise.all([
-      fetch("/Instruments/genmdm-manifest.json").then((r) => r.json()).catch(() => []),
-      fetch("/Instruments/tfm-manifest.json").then((r) => r.json()).catch(() => ({})),
+      fetch(assetUrl("/Instruments/genmdm-manifest.json")).then((r) => r.json()).catch(() => []),
+      fetch(assetUrl("/Instruments/tfm-manifest.json")).then((r) => r.json()).catch(() => ({})),
     ]).then(([genmdmFiles, tfmManifest]: [string[], Record<string, string[]>]) => {
       tfmManifestRef.current = tfmManifest;
       const allBanks: PresetBank[] = [];
@@ -103,7 +104,7 @@ export function PresetBrowser({ onLoadPreset, onClose, currentInstrumentId }: Pr
     patchScrollRef.current = 0;
 
     if (bank.type === "genmdm") {
-      loadGenMDMBank(`/Instruments/GenMDM/${bank.key}`, 0).then((instruments) => {
+      loadGenMDMBank(assetUrl(`/Instruments/GenMDM/${bank.key}`), 0).then((instruments) => {
         setPatches(
           instruments.map((inst) => ({
             name: inst.name,
@@ -136,7 +137,7 @@ export function PresetBrowser({ onLoadPreset, onClose, currentInstrumentId }: Pr
     if (patch.type === "genmdm" && patch.instrument) {
       onLoadPreset({ ...patch.instrument, id: currentInstrumentId });
     } else if (patch.type === "tfi") {
-      const inst = await loadTFI(patch.url, currentInstrumentId, patch.name.slice(0, 16).toUpperCase());
+      const inst = await loadTFI(assetUrl(patch.url), currentInstrumentId, patch.name.slice(0, 16).toUpperCase());
       if (inst) onLoadPreset(inst);
     }
   }, [patches, patchCursor, currentInstrumentId, onLoadPreset]);

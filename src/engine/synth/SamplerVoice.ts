@@ -30,12 +30,16 @@ export class SamplerVoice {
   }
 
   async loadSample(url: string): Promise<void> {
+    // url is a project-relative path — resolve against the configured asset
+    // base (env-driven; see src/lib/assets.ts).
+    const { assetUrl } = await import("@/lib/assets");
+    const resolved = assetUrl(url);
     try {
-      this.buffer = await Tone.ToneAudioBuffer.fromUrl(url);
+      this.buffer = await Tone.ToneAudioBuffer.fromUrl(resolved);
       this._loaded = true;
-      console.log(`[SAMPLER] Loaded: ${url}`);
+      console.log(`[SAMPLER] Loaded: ${resolved}`);
     } catch (e) {
-      console.warn(`[SAMPLER] Failed: ${url}`, e);
+      console.warn(`[SAMPLER] Failed: ${resolved}`, e);
     }
   }
 

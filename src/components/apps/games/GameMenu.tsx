@@ -29,6 +29,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { gameAssetUrl } from "@/lib/assets";
 
 interface GameEntry {
   id: string;
@@ -324,7 +325,7 @@ export function GameMenu() {
         {storageReady ? (
           <iframe
             ref={iframeRef}
-            src={activeGame.src}
+            src={gameAssetUrl(activeGame.src)}
             className="flex-1 w-full border-0"
             style={{ backgroundColor: "#000000" }}
             allow="autoplay; gamepad; storage-access"

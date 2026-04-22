@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:export": "K_OS_EXPORT=true NEXT_PUBLIC_BASE_PATH=/k-os next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "preview:export": "npm run build:export && cd out && python3 -m http.server 4044"
   },
   "keywords": [
     "tracker",

@@ -13,6 +13,7 @@ import type {
   ProjectData, Song, Chain, Phrase, Table,
   Instrument, PhraseRow, TableRow, FMOperator,
 } from "@/types/tracker";
+import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
 
 function emptyPhraseRow(): PhraseRow {
   return { note: null, instrument: null, effect1: null, effect2: null, slice: null };
@@ -67,6 +68,7 @@ export function createDefaultInstrument(id: number, name: string): Instrument {
       defaultFMOperator({ ratio: 4, level: 20, sustain: 0 }),
     ],
     macros: [],
+    visual: defaultVisualForInstrument(id, "fm"),
   };
 }
 

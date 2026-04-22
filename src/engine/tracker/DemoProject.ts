@@ -12,6 +12,7 @@
 
 import type { ProjectData, ProjectSample, Instrument, PhraseRow, Phrase, Chain, Song } from "@/types/tracker";
 import { createBlankChain, createBlankTable, createDefaultInstrument } from "./ProjectFactory";
+import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
 
 const SAMPLE_PATH = "/Instruments/samples";
 
@@ -38,6 +39,7 @@ function sampleInstrument(id: number, name: string, sampleId: number): Instrumen
     sampleId,
     sampleLoop: false,
     macros: [],
+    visual: defaultVisualForInstrument(id, "sample"),
   };
 }
 

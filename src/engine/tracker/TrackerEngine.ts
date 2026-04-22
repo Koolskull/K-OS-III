@@ -276,8 +276,41 @@ export class TrackerEngine {
       const chain = chains.find((c) => c.id === chainId);
       if (!chain) continue;
 
-      const step = chain.steps[state.chainStep];
-      if (!step || step.phrase === null) continue;
+      // Find a populated chain step starting from state.chainStep.
+      // If the current step is null (can happen if the user cleared it live
+      // mid-playback, or playback started on a non-zero chainStep), we walk
+      // forward and then wrap back from step 0 — mirrors LGPT's behavior
+      // where the chain loops within its populated region.
+      let step = chain.steps[state.chainStep];
+      if (!step || step.phrase === null) {
+        let found = -1;
+        for (let s = state.chainStep + 1; s < chain.steps.length; s++) {
+          if (chain.steps[s]?.phrase !== null && chain.steps[s]?.phrase !== undefined) {
+            found = s; break;
+          }
+        }
+        if (found === -1) {
+          for (let s = 0; s <= state.chainStep; s++) {
+            if (chain.steps[s]?.phrase !== null && chain.steps[s]?.phrase !== undefined) {
+              found = s; break;
+            }
+          }
+        }
+        if (found === -1) {
+          // Chain is fully empty — advance to next populated song row
+          state.chainStep = 0;
+          state.phraseRow = 0;
+          state.songRow = this.findNextSongRow(song, ch, state.songRow + 1);
+          if (ch === 0) {
+            this.activeSongRow = state.songRow;
+            this.sceneCallback?.(this.activeSongRow, this.pendingSongRow);
+          }
+          continue;
+        }
+        state.chainStep = found;
+        state.phraseRow = 0;
+        step = chain.steps[found];
+      }
 
       const phrase = phrases.find((p) => p.id === step.phrase);
       if (!phrase) continue;
@@ -321,13 +354,21 @@ export class TrackerEngine {
           this.sceneCallback?.(this.activeSongRow, null);
         } else {
           state.chainStep++;
-          if (state.chainStep >= chain.steps.length || chain.steps[state.chainStep]?.phrase === null) {
+          if (state.chainStep >= chain.steps.length) {
+            // Reached the literal end of 16 steps — advance to the next
+            // populated song row for this channel. Mirrors LGPT behavior
+            // where the chain only "yields" the channel at step 16.
             state.chainStep = 0;
             state.songRow = this.findNextSongRow(song, ch, state.songRow + 1);
             if (ch === 0) {
               this.activeSongRow = state.songRow;
               this.sceneCallback?.(this.activeSongRow, this.pendingSongRow);
             }
+          } else if (chain.steps[state.chainStep]?.phrase === null) {
+            // Hit an empty step mid-chain — loop back to step 0. The
+            // populated-step lookup at the top of the next tick handles the
+            // edge case where step 0 is itself empty.
+            state.chainStep = 0;
           }
         }
       }

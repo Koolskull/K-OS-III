@@ -1,0 +1,96 @@
+name: Deploy to GitHub Pages
+
+# Builds K-OS III as a static export and publishes to GitHub Pages.
+# The same out/ artifact also drops to the artifacts folder so it can be
+# downloaded and rsynced to other targets (e.g. 2kool.tv/k-os).
+#
+# Trigger: push to master, or manual dispatch.
+# Manual setup needed once (see docs/DEPLOYMENT.md):
+#   1. Repo Settings → Pages → Source = "GitHub Actions"
+#   2. Set NEXT_PUBLIC_BASE_PATH below to match your deployed URL path
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Required for the deploy-pages action to write Pages content
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deploy at a time. New runs cancel queued ones.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Path prefix the app is served under. Same value works for any host
+  # mounting K-OS at /k-os (koolskull.github.io/k-os, 2kool.tv/k-os, ...).
+  # Change this if you want a different URL path.
+  NEXT_PUBLIC_BASE_PATH: /k-os
+  # Optional: absolute URL of an external assets host. Leave empty to serve
+  # assets from the same Pages deploy at <BASE_PATH>/.
+  # Example: https://koolskull.github.io/k-os-assets
+  NEXT_PUBLIC_ASSET_BASE: ""
+  # Optional: absolute URL where game WASM bundles live (often a GitHub
+  # Releases artifact since SuperTux's data file is too big for repos).
+  # Example: https://github.com/Koolskull/K-OS-III/releases/download/v0.2.0-beta.1
+  NEXT_PUBLIC_GAMES_BASE: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build static export
+        env:
+          K_OS_EXPORT: "true"
+        run: npm run build
+
+      - name: Patch CSS asset paths for basePath
+        # Next.js does NOT auto-prefix url() refs in user CSS files.
+        # globals.css references /fonts/... — rewrite those to
+        # ${BASE_PATH}/fonts/... so they resolve under the deploy path.
+        if: env.NEXT_PUBLIC_BASE_PATH != ''
+        run: |
+          set -e
+          BP="${NEXT_PUBLIC_BASE_PATH}"
+          # Two passes: bare /fonts/ and quoted '/fonts/' / "/fonts/"
+          find out -name "*.css" -print0 | xargs -0 sed -i "s|url(/fonts/|url(${BP}/fonts/|g"
+          find out -name "*.css" -print0 | xargs -0 sed -i "s|url('/fonts/|url('${BP}/fonts/|g"
+          find out -name "*.css" -print0 | xargs -0 sed -i "s|url(\"/fonts/|url(\"${BP}/fonts/|g"
+          # Same for /gifs/ if any CSS file references them
+          find out -name "*.css" -print0 | xargs -0 sed -i "s|url(/gifs/|url(${BP}/gifs/|g" || true
+
+      - name: Add .nojekyll
+        # Stops GitHub Pages from stripping _next/ (Jekyll ignores underscored dirs)
+        run: touch out/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

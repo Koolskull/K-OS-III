@@ -8,8 +8,16 @@
  *   for the cursor-navigable instrument editor.
  */
 
-import type { Instrument, FMOperator, ProjectSample } from "@/types/tracker";
+import type {
+  Instrument, FMOperator, ProjectSample,
+  InstrumentVisual, VisualSource, VisualTriggerMode,
+} from "@/types/tracker";
+import { VISUAL_FRAMES_MIN, VISUAL_FRAMES_MAX } from "@/types/tracker";
 import { SAMPLE_MANIFEST, sampleIndexFromUrl } from "@/engine/instruments/sampleManifest";
+import {
+  defaultVisualForInstrument,
+  rollVisualForInstrument,
+} from "@/components/apps/datamoshpit/visuals/scene-vm";
 
 export interface InstrumentField {
   key: string;
@@ -260,6 +268,10 @@ export function buildFieldLayout(inst: Instrument, projectSamples?: ProjectSampl
     }
   }
 
+  // Per-instrument visual section — toggle reveals the controls
+  rows.push({ type: "separator", label: "VISUAL" });
+  for (const r of visualRows(inst)) rows.push(r);
+
   return rows;
 }
 
@@ -270,4 +282,379 @@ export function getNavigableRows(layout: LayoutRow[]): InstrumentField[][] {
   return layout
     .filter((r): r is { type: "fields"; fields: InstrumentField[] } => r.type === "fields")
     .map((r) => r.fields);
+}
+
+/* ------------------------------------------------------------------ */
+/*  VISUAL section                                                     */
+/* ------------------------------------------------------------------ */
+
+const VISUAL_SOURCES: VisualSource[] = [
+  "none", "color", "image", "video", "shader", "model", "iframe",
+];
+const VISUAL_SOURCE_LABELS: Record<VisualSource, string> = {
+  none: "NONE", color: "COLOR", image: "IMAGE", video: "VIDEO",
+  shader: "SHADER", model: "MODEL", iframe: "IFRAME",
+};
+
+const VISUAL_TRIGGERS: VisualTriggerMode[] = [
+  "play-from-start", "play-from-frame", "pitch-mapped", "velocity-amp", "none",
+];
+const VISUAL_TRIGGER_LABELS: Record<VisualTriggerMode, string> = {
+  "play-from-start": "START",
+  "play-from-frame": "FRAME",
+  "pitch-mapped":    "PITCH",
+  "velocity-amp":    "VELAMP",
+  "none":            "NONE",
+};
+
+const SHADER_IDS = ["plasma", "crt-feedback", "glitch-block"] as const;
+
+function ensureVisual(inst: Instrument): InstrumentVisual {
+  return inst.visual ?? defaultVisualForInstrument(inst.id, inst.type);
+}
+
+function patchVisual(inst: Instrument, patch: Partial<InstrumentVisual>): Instrument {
+  return { ...inst, visual: { ...ensureVisual(inst), ...patch } };
+}
+
+function visualEnabledField(): InstrumentField {
+  return {
+    key: "v_enabled", label: "ENABL",
+    min: 0, max: 1, digits: 0,
+    get: (i) => (ensureVisual(i).enabled ? 1 : 0),
+    set: (i, v) => patchVisual(i, { enabled: v === 1 }),
+    display: (i) => (ensureVisual(i).enabled ? "ON" : "OFF"),
+  };
+}
+
+function visualSeedField(): InstrumentField {
+  // SEED isn't stored — every change re-rolls all the random fields. We use
+  // the field's "value" purely as an Q-flick counter for the user (00..FF).
+  // Internally we feed it as the seedOffset to rollVisualForInstrument.
+  return {
+    key: "v_seed", label: "RND",
+    min: 0, max: 0xFF, digits: 2,
+    // We don't persist a seed on the visual; show a stable 00 unless the user just bumped it.
+    // The displayed value is derived from a transient prop on visual we add below.
+    get: (i) => (ensureVisual(i)._seed ?? 0) as number,
+    set: (i, v) => {
+      const cur = ensureVisual(i);
+      const rolled = rollVisualForInstrument(i.id, i.type, cur.enabled, v);
+      // preserve user-set color/asset/etc that they might want to keep across re-rolls?
+      // For v0: re-rolling fully replaces the random fields. Power users edit individual
+      // fields after they find a roll they like.
+      return { ...i, visual: { ...rolled, _seed: v } };
+    },
+  };
+}
+
+function visualSourceField(): InstrumentField {
+  return {
+    key: "v_src", label: "SRC",
+    min: 0, max: VISUAL_SOURCES.length - 1, digits: 0,
+    get: (i) => VISUAL_SOURCES.indexOf(ensureVisual(i).source),
+    set: (i, v) => patchVisual(i, { source: VISUAL_SOURCES[v] }),
+    display: (i) => VISUAL_SOURCE_LABELS[ensureVisual(i).source],
+  };
+}
+
+function visualColorField(): InstrumentField {
+  // Single hex byte cycles through a 256-entry palette generated per the value.
+  // Lets the user Q-flick colors without a full color picker.
+  return {
+    key: "v_color", label: "COLOR",
+    min: 0, max: 0xFF, digits: 2,
+    get: (i) => paletteIndexFromColor(ensureVisual(i).color ?? "#ffffff"),
+    set: (i, v) => patchVisual(i, { color: paletteColor(v) }),
+    display: (i) => ensureVisual(i).color ?? "#FFFFFF",
+  };
+}
+
+function visualShaderField(): InstrumentField {
+  return {
+    key: "v_shader", label: "SHADR",
+    min: 0, max: SHADER_IDS.length - 1, digits: 0,
+    get: (i) => Math.max(0, SHADER_IDS.indexOf((ensureVisual(i).shaderId ?? "plasma") as typeof SHADER_IDS[number])),
+    set: (i, v) => patchVisual(i, { shaderId: SHADER_IDS[v] }),
+    display: (i) => (ensureVisual(i).shaderId ?? "plasma").toUpperCase(),
+  };
+}
+
+/* ---- Asset action fields (intercepted by DatamoshpitApp) ---- */
+
+/** Read-only display of the current asset reference */
+function visualAssetUrlField(): InstrumentField {
+  return {
+    key: "v_asset_url", label: "ASSET",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,
+    display: (i) => {
+      const url = ensureVisual(i).assetUrl;
+      if (!url) return "[NONE]";
+      if (url.startsWith("data:")) return "[EMBEDDED]";
+      const tail = url.split("/").pop();
+      return tail && tail.length > 16 ? tail.slice(0, 14) + ".." : (tail || url);
+    },
+  };
+}
+
+/** Action: open native file picker and load the chosen file as a data URL */
+function visualAssetLoadField(): InstrumentField {
+  return {
+    key: "v_asset_load", label: "LOAD",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[PICK FILE]",
+  };
+}
+
+/** Action: open the KoolDraw sprite editor embedded; result becomes the asset */
+function visualAssetDrawField(): InstrumentField {
+  return {
+    key: "v_asset_draw", label: "DRAW",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[KOOLDRAW]",
+  };
+}
+
+/** Action: clear the asset reference */
+function visualAssetClearField(): InstrumentField {
+  return {
+    key: "v_asset_clear", label: "CLR",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[X]",
+  };
+}
+
+/** Action: open the InstrumentTimelineEditor modal for fine-grained keyframe authoring */
+function visualTimelineEditField(): InstrumentField {
+  return {
+    key: "v_timeline_open", label: "TLINE",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: (i) => {
+      const kfs = ensureVisual(i).customKeyframes;
+      return kfs && kfs.length > 0 ? `[EDIT (${kfs.length}KF)]` : "[EDIT]";
+    },
+  };
+}
+
+/** Action: clear the user's custom keyframes (revert to auto-generated) */
+function visualTimelineClearField(): InstrumentField {
+  return {
+    key: "v_timeline_clear", label: "TCLR",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[REVERT TO AUTO]",
+  };
+}
+
+/** Field keys that DatamoshpitApp must intercept rather than calling field.set */
+export const VISUAL_ACTION_FIELD_KEYS = new Set([
+  "v_asset_load",
+  "v_asset_draw",
+  "v_asset_clear",
+  "v_timeline_open",
+  "v_timeline_clear",
+]);
+
+function visualWidthField(): InstrumentField {
+  return {
+    key: "v_w", label: "W",
+    min: 8, max: 1024, digits: 3,
+    get: (i) => ensureVisual(i).width,
+    set: (i, v) => patchVisual(i, { width: Math.max(8, Math.min(1024, v)) }),
+  };
+}
+function visualHeightField(): InstrumentField {
+  return {
+    key: "v_h", label: "H",
+    min: 8, max: 1024, digits: 3,
+    get: (i) => ensureVisual(i).height,
+    set: (i, v) => patchVisual(i, { height: Math.max(8, Math.min(1024, v)) }),
+  };
+}
+function visualPosXField(): InstrumentField {
+  return {
+    key: "v_px", label: "X",
+    min: 0, max: 0xFF, digits: 2,
+    get: (i) => ensureVisual(i).posX,
+    set: (i, v) => patchVisual(i, { posX: v }),
+  };
+}
+function visualPosYField(): InstrumentField {
+  return {
+    key: "v_py", label: "Y",
+    min: 0, max: 0xFF, digits: 2,
+    get: (i) => ensureVisual(i).posY,
+    set: (i, v) => patchVisual(i, { posY: v }),
+  };
+}
+
+function visualLengthField(): InstrumentField {
+  return {
+    key: "v_len", label: "LEN",
+    min: VISUAL_FRAMES_MIN, max: VISUAL_FRAMES_MAX, digits: 2,
+    get: (i) => ensureVisual(i).totalFrames,
+    set: (i, v) => patchVisual(i, {
+      totalFrames: Math.max(VISUAL_FRAMES_MIN, Math.min(VISUAL_FRAMES_MAX, v)),
+    }),
+  };
+}
+
+function visualTriggerField(): InstrumentField {
+  return {
+    key: "v_trig", label: "TRIG",
+    min: 0, max: VISUAL_TRIGGERS.length - 1, digits: 0,
+    get: (i) => VISUAL_TRIGGERS.indexOf(ensureVisual(i).triggerMode),
+    set: (i, v) => patchVisual(i, { triggerMode: VISUAL_TRIGGERS[v] }),
+    display: (i) => VISUAL_TRIGGER_LABELS[ensureVisual(i).triggerMode],
+  };
+}
+
+function visualTriggerFrameField(): InstrumentField {
+  return {
+    key: "v_trigframe", label: "TFRM",
+    min: 1, max: VISUAL_FRAMES_MAX, digits: 2,
+    get: (i) => ensureVisual(i).triggerFrame ?? 1,
+    set: (i, v) => patchVisual(i, { triggerFrame: v }),
+  };
+}
+
+function visualPitchLoField(): InstrumentField {
+  return {
+    key: "v_plo", label: "PLO",
+    min: 0, max: 127, digits: 2,
+    get: (i) => ensureVisual(i).pitchLo ?? 36,
+    set: (i, v) => {
+      const cur = ensureVisual(i);
+      const hi = cur.pitchHi ?? 96;
+      // Keep PLO < PHI so the range never inverts
+      return patchVisual(i, { pitchLo: Math.min(v, hi - 1) });
+    },
+  };
+}
+
+function visualPitchHiField(): InstrumentField {
+  return {
+    key: "v_phi", label: "PHI",
+    min: 0, max: 127, digits: 2,
+    get: (i) => ensureVisual(i).pitchHi ?? 96,
+    set: (i, v) => {
+      const cur = ensureVisual(i);
+      const lo = cur.pitchLo ?? 36;
+      return patchVisual(i, { pitchHi: Math.max(v, lo + 1) });
+    },
+  };
+}
+
+/**
+ * Build the rows for the VISUAL section. When the visual is disabled, only
+ * the ENABL toggle row is shown — toggling on reveals the rest.
+ */
+function visualRows(inst: Instrument): LayoutRow[] {
+  const v = ensureVisual(inst);
+  const rows: LayoutRow[] = [];
+  rows.push({ type: "fields", fields: [visualEnabledField()] });
+
+  if (!v.enabled) return rows;
+
+  rows.push({ type: "fields", fields: [visualSeedField()] });
+  rows.push({ type: "fields", fields: [visualSourceField()] });
+
+  // Only show the source-specific field that's relevant
+  if (v.source === "color") {
+    rows.push({ type: "fields", fields: [visualColorField()] });
+  } else if (v.source === "shader") {
+    rows.push({ type: "fields", fields: [visualShaderField()] });
+  } else if (v.source === "image" || v.source === "video" || v.source === "model" || v.source === "iframe") {
+    // Asset reference + LOAD/DRAW/CLEAR action triplet
+    rows.push({ type: "fields", fields: [visualAssetUrlField()] });
+    rows.push({ type: "fields", fields: [visualAssetLoadField()] });
+    if (v.source === "image") {
+      // KoolDraw embed currently produces PNG only — only offered for image source
+      rows.push({ type: "fields", fields: [visualAssetDrawField()] });
+    }
+    if (v.assetUrl) {
+      rows.push({ type: "fields", fields: [visualAssetClearField()] });
+    }
+  }
+
+  rows.push({ type: "fields", fields: [visualWidthField(), visualHeightField()] });
+  rows.push({ type: "fields", fields: [visualPosXField(), visualPosYField()] });
+  rows.push({ type: "fields", fields: [visualLengthField()] });
+  rows.push({ type: "fields", fields: [visualTriggerField()] });
+
+  // Trigger-mode-specific extras
+  if (v.triggerMode === "play-from-frame") {
+    rows.push({ type: "fields", fields: [visualTriggerFrameField()] });
+  } else if (v.triggerMode === "pitch-mapped") {
+    rows.push({ type: "fields", fields: [visualPitchLoField(), visualPitchHiField()] });
+  }
+
+  // Per-instrument keyframe timeline editor (modal)
+  rows.push({ type: "fields", fields: [visualTimelineEditField()] });
+  if (v.customKeyframes && v.customKeyframes.length > 0) {
+    rows.push({ type: "fields", fields: [visualTimelineClearField()] });
+  }
+
+  return rows;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Color palette helpers                                              */
+/* ------------------------------------------------------------------ */
+
+/** 256-entry HSL palette traversed by Q-flick. Index 0 = white, 255 = near-black. */
+function paletteColor(idx: number): string {
+  const i = Math.max(0, Math.min(255, Math.round(idx))) | 0;
+  if (i === 0) return "#ffffff";
+  if (i === 255) return "#101010";
+  // Hues spread across 0..360, with mid lightness; saturated.
+  const h = Math.round((i / 255) * 360);
+  const s = 80;
+  const l = 55;
+  return hslToHex(h, s, l);
+}
+
+function paletteIndexFromColor(hex: string): number {
+  // Fast inverse: parse hex → approximate hue → palette index.
+  const rgb = hex.replace("#", "");
+  if (rgb.length < 6) return 0;
+  const r = parseInt(rgb.slice(0, 2), 16) / 255;
+  const g = parseInt(rgb.slice(2, 4), 16) / 255;
+  const b = parseInt(rgb.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  if (max === min) return r > 0.7 ? 0 : 255;
+  const d = max - min;
+  let h = 0;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h = Math.round(h * 60);
+  if (h < 0) h += 360;
+  return Math.round((h / 360) * 255);
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100);
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l / 100 - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }

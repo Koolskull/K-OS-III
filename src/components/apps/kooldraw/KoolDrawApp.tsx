@@ -33,8 +33,27 @@ import {
 } from "@/lib/SpriteUtils";
 import { SpriteCanvas } from "./SpriteCanvas";
 
+/**
+ * When KoolDraw is launched as an embedded asset editor (e.g. from Datamoshpit's
+ * F4 instrument page → DRAW), the host passes this object. KoolDraw renders a
+ * compact top action bar with USE / CANCEL, exports the active frame composited
+ * to a PNG data URL, and hands it back through onUse.
+ */
+export interface KoolDrawEmbeddedMode {
+  /** Initial canvas size (defaults to 32x32) */
+  initialWidth?: number;
+  initialHeight?: number;
+  /** Called with a PNG data URL of the active composited frame */
+  onUse: (dataUrl: string) => void;
+  /** Called when the user dismisses without using the result */
+  onCancel: () => void;
+  /** Optional title shown in the embedded action bar */
+  title?: string;
+}
+
 interface KoolDrawAppProps {
   isFocused: boolean;
+  embeddedMode?: KoolDrawEmbeddedMode;
 }
 
 const TOOLS: { id: ToolId; label: string; key: string }[] = [
@@ -48,8 +67,14 @@ const TOOLS: { id: ToolId; label: string; key: string }[] = [
 
 const MAX_HISTORY = 100;
 
-export function KoolDrawApp({ isFocused }: KoolDrawAppProps) {
-  const [project, setProject] = useState<SpriteProject>(() => createBlankSprite("SPRITE", 32, 32));
+export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
+  const [project, setProject] = useState<SpriteProject>(() =>
+    createBlankSprite(
+      "SPRITE",
+      embeddedMode?.initialWidth ?? 32,
+      embeddedMode?.initialHeight ?? 32,
+    ),
+  );
   const [activeTool, setActiveTool] = useState<ToolId>("pen");
   const [primaryColor, setPrimaryColor] = useState<PackedColor>(hexToPackedColor("#ffffff"));
   const [penSize, setPenSize] = useState(1);
@@ -278,6 +303,61 @@ export function KoolDrawApp({ isFocused }: KoolDrawAppProps) {
         color: "#ffffff",
       }}
     >
+      {/* Embedded host action bar (e.g. Datamoshpit instrument visual editor) */}
+      {embeddedMode ? (
+        <div
+          className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0"
+          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: "22px" }}
+        >
+          <span style={{ color: "#ffff00", letterSpacing: "2px" }}>
+            {embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                // Composite the active frame and hand back as PNG data URL
+                const composited = compositeFrame(
+                  project.layers,
+                  activeFrameIndex,
+                  project.width,
+                  project.height,
+                );
+                const canvas = frameToCanvas(composited, 1);
+                const dataUrl = canvas.toDataURL("image/png");
+                embeddedMode.onUse(dataUrl);
+              }}
+              style={{
+                background: "#ffff00",
+                color: "#000",
+                border: "1px solid #000",
+                fontFamily: "monospace",
+                fontSize: 10,
+                padding: "1px 6px",
+                cursor: "pointer",
+                imageRendering: "pixelated",
+              }}
+            >
+              USE THIS SPRITE
+            </button>
+            <button
+              onClick={() => embeddedMode.onCancel()}
+              style={{
+                background: "#000",
+                color: "#fff",
+                border: "1px solid #fff",
+                fontFamily: "monospace",
+                fontSize: 10,
+                padding: "1px 6px",
+                cursor: "pointer",
+                imageRendering: "pixelated",
+              }}
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Top bar */}
       <div
         className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0"

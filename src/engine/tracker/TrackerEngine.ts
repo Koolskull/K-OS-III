@@ -30,6 +30,20 @@ interface ChannelState {
   activeVoiceType: "fm" | "sample" | null;
 }
 
+/**
+ * Per-note event emitted whenever a row triggers a note. Subscribers (e.g.
+ * Scene VMs) use these to drive visual triggers in lockstep with audio.
+ */
+export interface NoteEvent {
+  channel: number;     // 0..7
+  note: number;        // MIDI note number after transpose
+  velocity: number;    // 0..127 (constant for now — phrase rows have no velocity column)
+  tick: number;        // global tick counter at trigger time
+  phraseRow: number;
+  instrument: number | null;
+  type: "on" | "off";
+}
+
 export class TrackerEngine {
   private audio: AudioEngine;
   private project: ProjectData | null = null;
@@ -37,6 +51,8 @@ export class TrackerEngine {
   private playing = false;
   private scheduleId: number | null = null;
   private tickCallback: ((tick: number, channel: number, row: number) => void) | null = null;
+  /** Per-note event listeners. Multiple Scene VMs / visualizers can subscribe. */
+  private noteListeners: Set<(ev: NoteEvent) => void> = new Set();
 
   /** Scene queueing — pending song row to jump to at next phrase boundary */
   private pendingSongRow: number | null = null;
@@ -153,6 +169,21 @@ export class TrackerEngine {
     this.tickCallback = cb;
   }
 
+  /**
+   * Subscribe to per-note trigger events. Returns an unsubscribe function.
+   * Used by Scene VMs and any future audio-reactive visualizer.
+   */
+  onNoteEvent(cb: (ev: NoteEvent) => void): () => void {
+    this.noteListeners.add(cb);
+    return () => { this.noteListeners.delete(cb); };
+  }
+
+  private emitNote(ev: NoteEvent): void {
+    this.noteListeners.forEach((l) => {
+      try { l(ev); } catch (e) { console.error("[ENGINE] note listener error", e); }
+    });
+  }
+
   async play(startRow = 0): Promise<void> {
     if (!this.project || this.playing) return;
 
@@ -254,7 +285,7 @@ export class TrackerEngine {
       const row = phrase.rows[state.phraseRow];
       if (row) {
         if (isAudible) {
-          this.processRow(row, state, instruments, step.transpose, time);
+          this.processRow(row, state, instruments, step.transpose, time, ch, tick);
         }
         this.tickCallback?.(tick, ch, state.phraseRow);
       }
@@ -342,6 +373,8 @@ export class TrackerEngine {
     instruments: Instrument[],
     transpose: number,
     time: number,
+    ch: number,
+    tick: number,
   ): void {
     // Set instrument
     if (row.instrument !== null) {
@@ -359,6 +392,7 @@ export class TrackerEngine {
     if (row.note !== null) {
       this.chokeChannel(state, time);
       const note = row.note + transpose;
+      let fired = false;
 
       if (state.activeVoiceType === "sample" && state.currentInstrument !== null) {
         const inst = this.project?.instruments.find((i) => i.id === state.currentInstrument);
@@ -370,10 +404,25 @@ export class TrackerEngine {
           if (buf) {
             state.samplerVoice.setBuffer(buf);
             state.samplerVoice.triggerAttack(note, row.slice ?? null, time, inst);
+            fired = true;
           }
         }
       } else if (state.fmVoice) {
         state.fmVoice.triggerAttack(note, time);
+        fired = true;
+      }
+
+      // Fire visual note event in lockstep with the audio trigger
+      if (fired && this.noteListeners.size > 0) {
+        this.emitNote({
+          channel: ch,
+          note,
+          velocity: 100,
+          tick,
+          phraseRow: state.phraseRow,
+          instrument: state.currentInstrument,
+          type: "on",
+        });
       }
     }
 

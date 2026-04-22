@@ -1,3 +1,38 @@
+# K-OS III
+
+**A fake operating system that runs in your browser and actually makes music, art, and on-chain work.** Built for Ethereum developers, artists, and makers — first.
+
+> **Who this is for, in priority order:** Ethereum / EVM developers first, then tracker and chiptune musicians, pixel artists, handheld Linux tinkerers, privacy-curious builders, and Christian creatives. This ordering is deliberate — see [`VISION.md`](./VISION.md).
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tone.js](https://img.shields.io/badge/Audio-Tone.js-orange)](https://tonejs.github.io/)
+[![License: TBD](https://img.shields.io/badge/license-TBD-lightgrey)](./LICENSE)
+[![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-8A2BE2)](https://claude.com/claude-code)
+
+## Screenshots
+
+| Boot sequence | Datamoshpit (Phrase) | Sprite editor | Desktop |
+|---|---|---|---|
+| ![boot](./public/screenshots/boot.png) | ![datamoshpit](./public/screenshots/datamoshpit-phrase.png) | ![sprite](./public/screenshots/sprite-editor.png) | ![desktop](./public/screenshots/desktop.png) |
+
+> Placeholders. See [`public/screenshots/README.md`](./public/screenshots/README.md) for what each shot should capture and how to contribute one.
+
+## Try it in 30 seconds
+
+```bash
+git clone https://github.com/Koolskull/K-OS-III.git
+cd K-OS-III
+npm install --legacy-peer-deps
+npm run dev
+```
+
+Open `http://localhost:3000` — the boot sequence runs, the desktop loads, double-click an app icon. That's it.
+
+Live demo: `[DEMO_URL]` *(coming soon — this is a placeholder until the deploy lands; see `docs/SEED_ISSUES.md`)*.
+
+---
+
 ```
                               ☦
 

@@ -192,6 +192,98 @@ export interface Instrument {
 
   // Macro controllers (user-assignable)
   macros: MacroController[];
+
+  // Per-instrument visual — short scene that fires when this instrument's notes trigger.
+  // Quick-settings live on the F4 Instrument page; the full timeline editor (cutscene
+  // editor) lets the user replace the auto-generated scene with a custom manifest.
+  visual?: InstrumentVisual;
+}
+
+// ──────────────────────────────────────
+// PER-INSTRUMENT VISUALS
+// Each instrument carries a tiny scene that visualizes its sound.
+// 8 frames minimum, 128 frames maximum.
+// ──────────────────────────────────────
+
+/** What the visual element actually IS */
+export type VisualSource =
+  | "none"      // no visual
+  | "color"     // flat colored rectangle (no asset)
+  | "image"     // PNG / JPG / GIF (animated GIFs animate via the browser)
+  | "video"     // MP4 / WebM
+  | "shader"    // GLSL fragment shader from registry (id)
+  | "model"     // GLTF / GLB
+  | "iframe";   // arbitrary HTML5 visualizer URL
+
+/** How the instrument's notes drive the scene playhead */
+export type VisualTriggerMode =
+  | "play-from-start"  // every note resets to frame 1 and plays forward
+  | "play-from-frame"  // every note jumps to a configured frame and plays forward
+  | "pitch-mapped"     // note pitch maps the playhead within its full length
+  | "velocity-amp"     // playhead loops; velocity scales noise amplitude (continuous)
+  | "none";            // visual ignores notes (continuous loop only)
+
+export const VISUAL_FRAMES_MIN = 8;
+export const VISUAL_FRAMES_MAX = 128;
+
+export interface InstrumentVisual {
+  enabled: boolean;
+  source: VisualSource;
+  // Source-specific data (only one populated per source):
+  color?: string;       // for "color" — CSS hex
+  assetUrl?: string;    // for "image" | "video" — local /public path or URL
+  shaderId?: string;    // for "shader" — id from shader registry
+  modelUrl?: string;    // for "model"
+  iframeUrl?: string;   // for "iframe"
+  // Sizing & position
+  width: number;        // px before scale, 1..1024
+  height: number;       // px before scale, 1..1024
+  posX: number;         // 0..255 (display 00-FF), normalized /255 → 0..1 of viewport
+  posY: number;         // 0..255
+  // Timeline
+  totalFrames: number;  // VISUAL_FRAMES_MIN..VISUAL_FRAMES_MAX
+  triggerMode: VisualTriggerMode;
+  /** For "play-from-frame": target frame */
+  triggerFrame?: number;
+  /** For "pitch-mapped": MIDI note that maps to frame 1 (default 36 = C2) */
+  pitchLo?: number;
+  /** For "pitch-mapped": MIDI note that maps to the last frame (default 96 = C7) */
+  pitchHi?: number;
+  /** Hold playhead while note is sustained (vs. always play through) */
+  holdOnNote?: boolean;
+  /** Editor-only: last RND seed offset, so the F4 RND counter has a stable display value. */
+  _seed?: number;
+  /**
+   * User-customized keyframe sequence. When present, the Scene VM uses these
+   * instead of the auto-generated set from manifestFromInstrumentVisual.
+   * Edited via the timeline editor (TIMELINE row on F4).
+   *
+   * Each entry: { frame, mode: "linear|bezier|hold|...", x, y, scaleX, scaleY,
+   *   rotation, opacity, brightness?, blur?, hueRotate?, saturate? }
+   *
+   * Frame numbers are 1-indexed and clamped to 1..totalFrames at edit time.
+   * x/y are normalized 0..1 of the viewport.
+   */
+  customKeyframes?: VisualKeyframe[];
+}
+
+/** Mirrors TransformKeyframe from the Scene VM; redeclared here so tracker.ts
+ *  doesn't take a runtime dependency on the Scene VM module. Shape MUST stay
+ *  compatible with TransformKeyframe in
+ *  components/apps/datamoshpit/visuals/scene-vm/lib/types.ts. */
+export interface VisualKeyframe {
+  frame: number;
+  mode: "linear" | "bezier" | "hold" | "bounce-in" | "bounce-out" | "bounce-both";
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  opacity: number;
+  brightness?: number;
+  blur?: number;
+  hueRotate?: number;
+  saturate?: number;
 }
 
 /** User-assignable macro controller */

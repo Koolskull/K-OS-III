@@ -15,7 +15,7 @@
  *  current language via NavCtx.
  */
 
-import React, { Suspense, useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ARTICLES,
   ARTICLES_BY_SLUG,
@@ -32,6 +32,68 @@ import {
   type Lang,
 } from "@/lib/doc/articles";
 import { NavCtx, ArticleTitle, SubtleNote, SeeAlso, Crossref } from "./elements";
+
+// Static article imports — bundled with the Manual chunk.
+// Done this way (not React.lazy) because Turbopack's hot reload occasionally
+// invalidates lazy chunk hashes mid-session and the browser can't fetch the
+// renamed chunk, throwing ChunkLoadError. Static imports tie article bodies
+// to the parent module — they always load when Manual loads.
+// English
+import EnWelcome from "@/lib/doc/articles/en/welcome";
+import EnWhatIsATracker from "@/lib/doc/articles/en/what-is-a-tracker";
+import EnHexadecimal from "@/lib/doc/articles/en/hexadecimal";
+import EnTerminalBasics from "@/lib/doc/articles/en/terminal-basics";
+import EnRunningKOSLocally from "@/lib/doc/articles/en/running-k-os-locally";
+import EnSongChainPhrase from "@/lib/doc/articles/en/song-chain-phrase";
+import EnEffectCommands from "@/lib/doc/articles/en/effect-commands";
+import EnSlimentologika from "@/lib/doc/articles/en/slimentologika";
+import EnPerInstrumentVisuals from "@/lib/doc/articles/en/per-instrument-visuals";
+import EnSceneVM from "@/lib/doc/articles/en/scene-vm";
+import EnDmpitFormat from "@/lib/doc/articles/en/dmpit-format";
+import EnTheRules from "@/lib/doc/articles/en/the-rules";
+import EnGlossary from "@/lib/doc/articles/en/glossary";
+// Spanish
+import EsWelcome from "@/lib/doc/articles/es/welcome";
+import EsWhatIsATracker from "@/lib/doc/articles/es/what-is-a-tracker";
+import EsHexadecimal from "@/lib/doc/articles/es/hexadecimal";
+import EsTerminalBasics from "@/lib/doc/articles/es/terminal-basics";
+import EsRunningKOSLocally from "@/lib/doc/articles/es/running-k-os-locally";
+import EsSongChainPhrase from "@/lib/doc/articles/es/song-chain-phrase";
+import EsEffectCommands from "@/lib/doc/articles/es/effect-commands";
+import EsSlimentologika from "@/lib/doc/articles/es/slimentologika";
+import EsPerInstrumentVisuals from "@/lib/doc/articles/es/per-instrument-visuals";
+import EsSceneVM from "@/lib/doc/articles/es/scene-vm";
+import EsDmpitFormat from "@/lib/doc/articles/es/dmpit-format";
+import EsTheRules from "@/lib/doc/articles/es/the-rules";
+import EsGlossary from "@/lib/doc/articles/es/glossary";
+// Japanese
+import JaWelcome from "@/lib/doc/articles/ja/welcome";
+import JaWhatIsATracker from "@/lib/doc/articles/ja/what-is-a-tracker";
+import JaHexadecimal from "@/lib/doc/articles/ja/hexadecimal";
+import JaTerminalBasics from "@/lib/doc/articles/ja/terminal-basics";
+import JaRunningKOSLocally from "@/lib/doc/articles/ja/running-k-os-locally";
+import JaSongChainPhrase from "@/lib/doc/articles/ja/song-chain-phrase";
+import JaEffectCommands from "@/lib/doc/articles/ja/effect-commands";
+import JaSlimentologika from "@/lib/doc/articles/ja/slimentologika";
+import JaPerInstrumentVisuals from "@/lib/doc/articles/ja/per-instrument-visuals";
+import JaSceneVM from "@/lib/doc/articles/ja/scene-vm";
+import JaDmpitFormat from "@/lib/doc/articles/ja/dmpit-format";
+import JaTheRules from "@/lib/doc/articles/ja/the-rules";
+import JaGlossary from "@/lib/doc/articles/ja/glossary";
+// Chinese
+import ZhWelcome from "@/lib/doc/articles/zh/welcome";
+import ZhWhatIsATracker from "@/lib/doc/articles/zh/what-is-a-tracker";
+import ZhHexadecimal from "@/lib/doc/articles/zh/hexadecimal";
+import ZhTerminalBasics from "@/lib/doc/articles/zh/terminal-basics";
+import ZhRunningKOSLocally from "@/lib/doc/articles/zh/running-k-os-locally";
+import ZhSongChainPhrase from "@/lib/doc/articles/zh/song-chain-phrase";
+import ZhEffectCommands from "@/lib/doc/articles/zh/effect-commands";
+import ZhSlimentologika from "@/lib/doc/articles/zh/slimentologika";
+import ZhPerInstrumentVisuals from "@/lib/doc/articles/zh/per-instrument-visuals";
+import ZhSceneVM from "@/lib/doc/articles/zh/scene-vm";
+import ZhDmpitFormat from "@/lib/doc/articles/zh/dmpit-format";
+import ZhTheRules from "@/lib/doc/articles/zh/the-rules";
+import ZhGlossary from "@/lib/doc/articles/zh/glossary";
 
 export interface ManualProps {
   initialSlug?: string | null;
@@ -134,13 +196,13 @@ function Header({
   return (
     <div
       style={{
-        backgroundColor: "#fff",
-        color: "#000",
+        backgroundColor: "#000",
+        color: "#fff",
         padding: "4px 12px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        borderBottom: "2px solid #000",
+        borderBottom: "2px solid #fff",
         fontFamily: "var(--dm-font-primary), monospace",
         fontSize: 11,
         letterSpacing: 2,
@@ -154,7 +216,7 @@ function Header({
           style={{
             background: "transparent",
             border: "none",
-            color: "#000",
+            color: "#fff",
             fontFamily: "inherit",
             fontSize: "inherit",
             letterSpacing: "inherit",
@@ -166,21 +228,21 @@ function Header({
           ☦ K-OS · {ui.indexTitle.toUpperCase()}
         </button>
         {article ? (
-          <span style={{ marginLeft: 8, color: "#444" }}>
+          <span style={{ marginLeft: 8, color: "#aaa" }}>
             / {article.i18n[lang].title.toUpperCase()}
           </span>
         ) : null}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-        <span style={{ fontSize: 9, color: "#666" }}>{ui.languageLabel}:</span>
+        <span style={{ fontSize: 9, color: "#aaa" }}>{ui.languageLabel}:</span>
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as Lang)}
           style={{
             background: "#000",
             color: "#fff",
-            border: "1px solid #000",
+            border: "1px solid #fff",
             fontFamily: "inherit",
             fontSize: 10,
             padding: "1px 4px",
@@ -195,7 +257,7 @@ function Header({
             </option>
           ))}
         </select>
-        <span style={{ fontSize: 9, color: "#444" }}>0.2.0-beta.1</span>
+        <span style={{ fontSize: 9, color: "#666" }}>0.2.0-beta.1</span>
       </div>
     </div>
   );
@@ -399,66 +461,66 @@ function ArticleListItem({
   );
 }
 
-const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.LazyExoticComponent<React.ComponentType>>> = {
+const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
   en: {
-    welcome: React.lazy(() => import("@/lib/doc/articles/en/welcome")),
-    "what-is-a-tracker": React.lazy(() => import("@/lib/doc/articles/en/what-is-a-tracker")),
-    hexadecimal: React.lazy(() => import("@/lib/doc/articles/en/hexadecimal")),
-    "terminal-basics": React.lazy(() => import("@/lib/doc/articles/en/terminal-basics")),
-    "running-k-os-locally": React.lazy(() => import("@/lib/doc/articles/en/running-k-os-locally")),
-    "song-chain-phrase": React.lazy(() => import("@/lib/doc/articles/en/song-chain-phrase")),
-    "effect-commands": React.lazy(() => import("@/lib/doc/articles/en/effect-commands")),
-    slimentologika: React.lazy(() => import("@/lib/doc/articles/en/slimentologika")),
-    "per-instrument-visuals": React.lazy(() => import("@/lib/doc/articles/en/per-instrument-visuals")),
-    "scene-vm": React.lazy(() => import("@/lib/doc/articles/en/scene-vm")),
-    "dmpit-format": React.lazy(() => import("@/lib/doc/articles/en/dmpit-format")),
-    "the-rules": React.lazy(() => import("@/lib/doc/articles/en/the-rules")),
-    glossary: React.lazy(() => import("@/lib/doc/articles/en/glossary")),
+    welcome: EnWelcome,
+    "what-is-a-tracker": EnWhatIsATracker,
+    hexadecimal: EnHexadecimal,
+    "terminal-basics": EnTerminalBasics,
+    "running-k-os-locally": EnRunningKOSLocally,
+    "song-chain-phrase": EnSongChainPhrase,
+    "effect-commands": EnEffectCommands,
+    slimentologika: EnSlimentologika,
+    "per-instrument-visuals": EnPerInstrumentVisuals,
+    "scene-vm": EnSceneVM,
+    "dmpit-format": EnDmpitFormat,
+    "the-rules": EnTheRules,
+    glossary: EnGlossary,
   },
   es: {
-    welcome: React.lazy(() => import("@/lib/doc/articles/es/welcome")),
-    "what-is-a-tracker": React.lazy(() => import("@/lib/doc/articles/es/what-is-a-tracker")),
-    hexadecimal: React.lazy(() => import("@/lib/doc/articles/es/hexadecimal")),
-    "terminal-basics": React.lazy(() => import("@/lib/doc/articles/es/terminal-basics")),
-    "running-k-os-locally": React.lazy(() => import("@/lib/doc/articles/es/running-k-os-locally")),
-    "song-chain-phrase": React.lazy(() => import("@/lib/doc/articles/es/song-chain-phrase")),
-    "effect-commands": React.lazy(() => import("@/lib/doc/articles/es/effect-commands")),
-    slimentologika: React.lazy(() => import("@/lib/doc/articles/es/slimentologika")),
-    "per-instrument-visuals": React.lazy(() => import("@/lib/doc/articles/es/per-instrument-visuals")),
-    "scene-vm": React.lazy(() => import("@/lib/doc/articles/es/scene-vm")),
-    "dmpit-format": React.lazy(() => import("@/lib/doc/articles/es/dmpit-format")),
-    "the-rules": React.lazy(() => import("@/lib/doc/articles/es/the-rules")),
-    glossary: React.lazy(() => import("@/lib/doc/articles/es/glossary")),
+    welcome: EsWelcome,
+    "what-is-a-tracker": EsWhatIsATracker,
+    hexadecimal: EsHexadecimal,
+    "terminal-basics": EsTerminalBasics,
+    "running-k-os-locally": EsRunningKOSLocally,
+    "song-chain-phrase": EsSongChainPhrase,
+    "effect-commands": EsEffectCommands,
+    slimentologika: EsSlimentologika,
+    "per-instrument-visuals": EsPerInstrumentVisuals,
+    "scene-vm": EsSceneVM,
+    "dmpit-format": EsDmpitFormat,
+    "the-rules": EsTheRules,
+    glossary: EsGlossary,
   },
   ja: {
-    welcome: React.lazy(() => import("@/lib/doc/articles/ja/welcome")),
-    "what-is-a-tracker": React.lazy(() => import("@/lib/doc/articles/ja/what-is-a-tracker")),
-    hexadecimal: React.lazy(() => import("@/lib/doc/articles/ja/hexadecimal")),
-    "terminal-basics": React.lazy(() => import("@/lib/doc/articles/ja/terminal-basics")),
-    "running-k-os-locally": React.lazy(() => import("@/lib/doc/articles/ja/running-k-os-locally")),
-    "song-chain-phrase": React.lazy(() => import("@/lib/doc/articles/ja/song-chain-phrase")),
-    "effect-commands": React.lazy(() => import("@/lib/doc/articles/ja/effect-commands")),
-    slimentologika: React.lazy(() => import("@/lib/doc/articles/ja/slimentologika")),
-    "per-instrument-visuals": React.lazy(() => import("@/lib/doc/articles/ja/per-instrument-visuals")),
-    "scene-vm": React.lazy(() => import("@/lib/doc/articles/ja/scene-vm")),
-    "dmpit-format": React.lazy(() => import("@/lib/doc/articles/ja/dmpit-format")),
-    "the-rules": React.lazy(() => import("@/lib/doc/articles/ja/the-rules")),
-    glossary: React.lazy(() => import("@/lib/doc/articles/ja/glossary")),
+    welcome: JaWelcome,
+    "what-is-a-tracker": JaWhatIsATracker,
+    hexadecimal: JaHexadecimal,
+    "terminal-basics": JaTerminalBasics,
+    "running-k-os-locally": JaRunningKOSLocally,
+    "song-chain-phrase": JaSongChainPhrase,
+    "effect-commands": JaEffectCommands,
+    slimentologika: JaSlimentologika,
+    "per-instrument-visuals": JaPerInstrumentVisuals,
+    "scene-vm": JaSceneVM,
+    "dmpit-format": JaDmpitFormat,
+    "the-rules": JaTheRules,
+    glossary: JaGlossary,
   },
   zh: {
-    welcome: React.lazy(() => import("@/lib/doc/articles/zh/welcome")),
-    "what-is-a-tracker": React.lazy(() => import("@/lib/doc/articles/zh/what-is-a-tracker")),
-    hexadecimal: React.lazy(() => import("@/lib/doc/articles/zh/hexadecimal")),
-    "terminal-basics": React.lazy(() => import("@/lib/doc/articles/zh/terminal-basics")),
-    "running-k-os-locally": React.lazy(() => import("@/lib/doc/articles/zh/running-k-os-locally")),
-    "song-chain-phrase": React.lazy(() => import("@/lib/doc/articles/zh/song-chain-phrase")),
-    "effect-commands": React.lazy(() => import("@/lib/doc/articles/zh/effect-commands")),
-    slimentologika: React.lazy(() => import("@/lib/doc/articles/zh/slimentologika")),
-    "per-instrument-visuals": React.lazy(() => import("@/lib/doc/articles/zh/per-instrument-visuals")),
-    "scene-vm": React.lazy(() => import("@/lib/doc/articles/zh/scene-vm")),
-    "dmpit-format": React.lazy(() => import("@/lib/doc/articles/zh/dmpit-format")),
-    "the-rules": React.lazy(() => import("@/lib/doc/articles/zh/the-rules")),
-    glossary: React.lazy(() => import("@/lib/doc/articles/zh/glossary")),
+    welcome: ZhWelcome,
+    "what-is-a-tracker": ZhWhatIsATracker,
+    hexadecimal: ZhHexadecimal,
+    "terminal-basics": ZhTerminalBasics,
+    "running-k-os-locally": ZhRunningKOSLocally,
+    "song-chain-phrase": ZhSongChainPhrase,
+    "effect-commands": ZhEffectCommands,
+    slimentologika: ZhSlimentologika,
+    "per-instrument-visuals": ZhPerInstrumentVisuals,
+    "scene-vm": ZhSceneVM,
+    "dmpit-format": ZhDmpitFormat,
+    "the-rules": ZhTheRules,
+    glossary: ZhGlossary,
   },
 };
 
@@ -486,9 +548,7 @@ function ArticleView({
         {" · "}
         <span style={{ color: "#ffff00" }}>{LANG_SHORT[lang]}</span>
       </SubtleNote>
-      <Suspense fallback={<div style={{ color: "#888" }}>{ui.loading}</div>}>
-        {Body ? <Body /> : <div style={{ color: "#ff5555" }}>{ui.notFound}</div>}
-      </Suspense>
+      {Body ? <Body /> : <div style={{ color: "#ff5555" }}>{ui.notFound}</div>}
       {article.seeAlso && article.seeAlso.length > 0 ? (
         <SeeAlso slugs={article.seeAlso} label={ui.seeAlso} />
       ) : null}

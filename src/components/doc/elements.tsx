@@ -9,7 +9,7 @@
  */
 
 import React from "react";
-import { ARTICLES_BY_SLUG } from "@/lib/doc/articles";
+import { ARTICLES_BY_SLUG, DEFAULT_LANG, type Lang } from "@/lib/doc/articles";
 
 /* ---- Article skeleton ---- */
 
@@ -275,21 +275,27 @@ export function Table({
 /* ---- Cross-references between articles ---- */
 
 export interface NavContext {
+  /** Currently displayed language (drives Crossref labels + Hex helper) */
+  lang: Lang;
   /** Called when a cross-ref link is activated. Receives the target slug
    *  (or null for the index). Implementations either call router.push()
    *  or update local state. */
   navigate: (slug: string | null) => void;
+  /** Called when the user picks a different language from the switcher. */
+  setLang?: (lang: Lang) => void;
 }
 
 export const NavCtx = React.createContext<NavContext>({
+  lang: DEFAULT_LANG,
   navigate: () => {
     /* no-op default; route mode wraps with real handler */
   },
 });
 
 /**
- * Cross-reference to another article. Renders a yellow link styled link
- * that routes (in route mode) or updates local state (in window mode).
+ * Cross-reference to another article. Renders a yellow link.
+ * Resolves label using the current language's i18n title; the slug stays
+ * language-neutral.
  */
 export function Crossref({
   to,
@@ -300,7 +306,7 @@ export function Crossref({
 }) {
   const ctx = React.useContext(NavCtx);
   const target = ARTICLES_BY_SLUG[to];
-  const label = children ?? target?.title ?? to;
+  const label = children ?? target?.i18n?.[ctx.lang]?.title ?? target?.i18n?.en?.title ?? to;
   if (!target) {
     return <span style={{ color: "#ff5555" }}>[missing: {to}]</span>;
   }
@@ -385,7 +391,8 @@ export function SubtleNote({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SeeAlso({ slugs }: { slugs: string[] }) {
+export function SeeAlso({ slugs, label }: { slugs: string[]; label: string }) {
+  const ctx = React.useContext(NavCtx);
   if (slugs.length === 0) return null;
   return (
     <div
@@ -404,19 +411,21 @@ export function SeeAlso({ slugs }: { slugs: string[] }) {
           marginBottom: 8,
         }}
       >
-        SEE ALSO
+        {label}
       </div>
       <ul style={{ paddingLeft: 16, listStyle: "square", color: "#dddddd", fontSize: 12 }}>
-        {slugs.map((s) => (
-          <li key={s}>
-            <Crossref to={s} />
-            {ARTICLES_BY_SLUG[s] ? (
-              <span style={{ color: "#888", marginLeft: 8 }}>
-                — {ARTICLES_BY_SLUG[s].oneLiner}
-              </span>
-            ) : null}
-          </li>
-        ))}
+        {slugs.map((s) => {
+          const target = ARTICLES_BY_SLUG[s];
+          const oneLiner = target?.i18n?.[ctx.lang]?.oneLiner ?? target?.i18n?.en?.oneLiner;
+          return (
+            <li key={s}>
+              <Crossref to={s} />
+              {oneLiner ? (
+                <span style={{ color: "#888", marginLeft: 8 }}>— {oneLiner}</span>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

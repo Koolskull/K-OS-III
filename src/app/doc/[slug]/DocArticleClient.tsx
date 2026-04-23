@@ -11,10 +11,18 @@ export default function DocArticleClient({ slug }: { slug: string }) {
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
       <Manual
         mode="route"
+        lang="en"
         initialSlug={initial}
         onSlugChange={(target) => {
           if (target === null) router.push(`/doc`);
           else router.push(`/doc/${target}`);
+        }}
+        onLangChange={(lang, current) => {
+          if (lang === "en") {
+            router.push(current ? `/doc/${current}` : `/doc`);
+          } else {
+            router.push(current ? `/doc/lang/${lang}/${current}` : `/doc/lang/${lang}`);
+          }
         }}
       />
     </div>

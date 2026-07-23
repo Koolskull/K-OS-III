@@ -1,9 +1,9 @@
 /*
  *                    ☦
- *            ╔══════════════════╗
+ *            ╔═══════════════════╗
  *            ║  K-OS III        ║
  *            ║  DESKTOP         ║
- *            ╚══════════════════╝
+ *            ╚═══════════════════╝
  *
  *   Desktop with icon grid. Double-click to launch apps.
  *   Classic Win98 layout: icons flow top-left, down then right.
@@ -29,6 +29,7 @@ const ICONS: DesktopIcon[] = [
   { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
+  { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
   // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
 ];
 

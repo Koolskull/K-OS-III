@@ -91,7 +91,7 @@ const GAME_KEY_MAPS: Record<string, Record<string, KeyMapping>> = {
 // Per-game help text for the top bar
 const GAME_HELP: Record<string, string> = {
   // supertux: "ARROWS:MOVE  SPACE:JUMP  Q:RUN  W:ACTION  ESC:EXIT",
-  keen:     "ARROWS:MOVE  Q:JUMP  W:POGO  Q+W:FIRE  ESC:EXIT",
+  keen:     "ARROWS:MOVE  Q:JUMP  W:POGO  SHOOT:FIRE  ESC:EXIT",
 };
 
 const DEFAULT_HELP = "ARROWS:MOVE  Q:ACTION  W:ALT  SPACE:CONFIRM  ESC:EXIT";
@@ -312,6 +312,23 @@ export function GameMenu() {
       return;
     }
 
+    // SHOOT = simultaneous JUMP (Q) + POGO (W) for Keen fire
+    if (kosCode === "SHOOT") {
+      const q = keyMap["KeyQ"];
+      const w = keyMap["KeyW"];
+      if (q) {
+        if (type === "keydown") heldMapped.add(q.key);
+        else heldMapped.delete(q.key);
+        dispatchToIframe(iframe, type, q, heldMapped, false);
+      }
+      if (w) {
+        if (type === "keydown") heldMapped.add(w.key);
+        else heldMapped.delete(w.key);
+        dispatchToIframe(iframe, type, w, heldMapped, false);
+      }
+      return;
+    }
+
     const mapped = keyMap[kosCode];
     if (mapped) {
       if (type === "keydown") heldMapped.add(mapped.key);
@@ -521,7 +538,40 @@ export function GameMenu() {
   );
 }
 
-/* ── MOBILE TOUCH PAD ── */
+/* ── MOBILE TOUCH PAD ──
+ * Matches Datamoshpit TouchController circle style exactly:
+ *   .dm-touch-btn-circle + CIRCLE_STYLE / ACTIVE_STYLE
+ */
+
+const BTN_SIZE = 48;
+const BTN_GAP = 4;
+
+const CIRCLE_STYLE: React.CSSProperties = {
+  width: BTN_SIZE,
+  height: BTN_SIZE,
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "#666666",
+  backgroundColor: "#0a0a0a",
+  color: "#888888",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: "8px",
+  letterSpacing: "1px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  touchAction: "none",
+  WebkitTouchCallout: "none",
+  userSelect: "none",
+  cursor: "pointer",
+};
+
+const ACTIVE_STYLE: React.CSSProperties = {
+  ...CIRCLE_STYLE,
+  backgroundColor: "#ffffff",
+  color: "#000000",
+  borderColor: "#ffffff",
+};
 
 function MobileTouchPad({
   onArrow,
@@ -532,50 +582,50 @@ function MobileTouchPad({
   onAction: (kosCode: string, type: "keydown" | "keyup") => void;
   help: string;
 }) {
-  const btnBase: React.CSSProperties = {
-    width: 52,
-    height: 52,
-    border: "2px solid #555",
-    backgroundColor: "#111",
-    color: "#fff",
-    fontFamily: "var(--dm-font-primary), monospace",
-    fontSize: 11,
-    letterSpacing: 1,
-    borderRadius: 4,
-    touchAction: "none",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
+
+  const setActive = (id: string, on: boolean) => {
+    setActiveKeys((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   };
 
   const bindHold = (
+    id: string,
     down: () => void,
     up: () => void,
   ): React.HTMLAttributes<HTMLButtonElement> => ({
     onPointerDown: (e) => {
       e.preventDefault();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      setActive(id, true);
       down();
     },
     onPointerUp: (e) => {
       e.preventDefault();
+      setActive(id, false);
       up();
     },
     onPointerCancel: (e) => {
       e.preventDefault();
+      setActive(id, false);
       up();
     },
     onContextMenu: (e) => e.preventDefault(),
   });
 
+  const styleFor = (id: string): React.CSSProperties =>
+    activeKeys.has(id) ? ACTIVE_STYLE : CIRCLE_STYLE;
+
   return (
     <div
-      className="flex-shrink-0 border-t-2"
+      className="dm-touch-controller flex-shrink-0 border-t-2"
       style={{
         borderColor: "#1a1a1a",
-        backgroundColor: "#050505",
+        backgroundColor: "#000000",
         padding: "10px 12px",
         paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         fontFamily: "var(--dm-font-primary)",
@@ -595,71 +645,79 @@ function MobileTouchPad({
           margin: "0 auto",
         }}
       >
-        {/* D-pad */}
+        {/* D-pad — circular, Datamoshpit style */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "52px 52px 52px",
-            gridTemplateRows: "52px 52px 52px",
-            gap: 4,
+            gridTemplateColumns: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
+            gridTemplateRows: `${BTN_SIZE}px ${BTN_SIZE}px ${BTN_SIZE}px`,
+            gap: BTN_GAP,
           }}
         >
           <div />
           <button
             type="button"
-            style={btnBase}
+            className="dm-touch-btn-circle"
+            style={styleFor("up")}
             {...bindHold(
+              "up",
               () => onArrow("up", "keydown"),
               () => onArrow("up", "keyup"),
             )}
           >
-            ▲
+            UP
           </button>
           <div />
           <button
             type="button"
-            style={btnBase}
+            className="dm-touch-btn-circle"
+            style={styleFor("left")}
             {...bindHold(
+              "left",
               () => onArrow("left", "keydown"),
               () => onArrow("left", "keyup"),
             )}
           >
-            ◀
+            LT
           </button>
-          <div style={{ ...btnBase, border: "1px solid #222", color: "#333", pointerEvents: "none" }}>
-            ·
-          </div>
+          <div />
           <button
             type="button"
-            style={btnBase}
+            className="dm-touch-btn-circle"
+            style={styleFor("right")}
             {...bindHold(
+              "right",
               () => onArrow("right", "keydown"),
               () => onArrow("right", "keyup"),
             )}
           >
-            ▶
+            RT
           </button>
           <div />
           <button
             type="button"
-            style={btnBase}
+            className="dm-touch-btn-circle"
+            style={styleFor("down")}
             {...bindHold(
+              "down",
               () => onArrow("down", "keydown"),
               () => onArrow("down", "keyup"),
             )}
           >
-            ▼
+            DN
           </button>
           <div />
         </div>
 
-        {/* Action buttons: JUMP (Q), POGO (W), FIRE tip, SPACE */}
+        {/* Action buttons: JUMP, POGO, SHOOT, SPACE */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
-              style={{ ...btnBase, width: 64, backgroundColor: "#1a1a00", borderColor: "#888800" }}
+              className="dm-touch-btn-circle"
+              style={styleFor("jump")}
               {...bindHold(
+                "jump",
                 () => onAction("KeyQ", "keydown"),
                 () => onAction("KeyQ", "keyup"),
               )}
@@ -668,8 +726,10 @@ function MobileTouchPad({
             </button>
             <button
               type="button"
-              style={{ ...btnBase, width: 64, backgroundColor: "#001a1a", borderColor: "#008888" }}
+              className="dm-touch-btn-circle"
+              style={styleFor("pogo")}
               {...bindHold(
+                "pogo",
                 () => onAction("KeyW", "keydown"),
                 () => onAction("KeyW", "keyup"),
               )}
@@ -679,17 +739,28 @@ function MobileTouchPad({
           </div>
           <button
             type="button"
-            style={{ ...btnBase, width: 136, height: 44, backgroundColor: "#1a001a", borderColor: "#880088" }}
+            className="dm-touch-btn-circle"
+            style={{ ...styleFor("shoot"), width: BTN_SIZE * 2 + BTN_GAP, borderRadius: 0 }}
             {...bindHold(
+              "shoot",
+              () => onAction("SHOOT", "keydown"),
+              () => onAction("SHOOT", "keyup"),
+            )}
+          >
+            SHOOT
+          </button>
+          <button
+            type="button"
+            className="dm-touch-btn-circle"
+            style={{ ...styleFor("space"), width: BTN_SIZE * 2 + BTN_GAP, borderRadius: 0 }}
+            {...bindHold(
+              "space",
               () => onAction("Space", "keydown"),
               () => onAction("Space", "keyup"),
             )}
           >
-            SPACE / SELECT
+            SPACE
           </button>
-          <div style={{ fontSize: 7, color: "#444", letterSpacing: 1 }}>
-            HOLD JUMP+POGO TO FIRE
-          </div>
         </div>
       </div>
     </div>

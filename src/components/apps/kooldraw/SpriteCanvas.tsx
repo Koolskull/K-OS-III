@@ -1,12 +1,13 @@
 /*
  *                    ☦
- *            ╔══════════════════╗
+ *            ╔═══════════════════╗
  *            ║  KOOLDRAW        ║
  *            ║  SPRITE CANVAS   ║
- *            ╚══════════════════╝
+ *            ╚═══════════════════╝
  *
  *   Main drawing canvas with zoom, pan, pixel grid.
  *   Handles mouse/touch input and routes to active tool.
+ *   Uses Pointer Events so finger-drag paints continuously on mobile.
  */
 
 "use client";
@@ -67,6 +68,7 @@ export function SpriteCanvas({
   const lastPixelRef = useRef<[number, number] | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
   const overlayRef = useRef<[number, number, PackedColor][]>([]);
+  const activePointerIdRef = useRef<number | null>(null);
 
   const activeLayer = layers[activeLayerIndex];
   const activeFrame = activeLayer?.frames[activeFrameIndex];
@@ -103,7 +105,6 @@ export function SpriteCanvas({
     ctx.clearRect(0, 0, cw, ch);
 
     // Checkerboard background for transparency
-    const cellSize = Math.max(4, zoom);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const isLight = (x + y) % 2 === 0;
@@ -192,7 +193,7 @@ export function SpriteCanvas({
         case "pen": {
           const pixels = getPenPixels(px, py, penSize);
           for (const [x, y] of pixels) setPixel(activeFrame, x, y, color);
-          // Interpolate from last position
+          // Interpolate from last position so drag draws a continuous stroke
           if (!isStart && lastPixelRef.current) {
             const [lx, ly] = lastPixelRef.current;
             const linePixels = getLinePixels(lx, ly, px, py);
@@ -276,33 +277,13 @@ export function SpriteCanvas({
     [activeFrame, tool, color, onPixelsChanged],
   );
 
-  // ── MOUSE HANDLERS ──
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button === 1) return; // middle-click for pan (handled separately)
-      const [px, py] = screenToPixel(e.clientX, e.clientY);
-      drawingRef.current = true;
-      lastPixelRef.current = null;
-      applyTool(px, py, true);
-    },
-    [screenToPixel, applyTool],
-  );
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!drawingRef.current) return;
-      const [px, py] = screenToPixel(e.clientX, e.clientY);
-      applyTool(px, py, false);
-    },
-    [screenToPixel, applyTool],
-  );
-
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent) => {
+  const endStroke = useCallback(
+    (clientX: number, clientY: number) => {
       if (!drawingRef.current) return;
       drawingRef.current = false;
+      activePointerIdRef.current = null;
       if (tool === "line" || tool === "rect") {
-        const [px, py] = screenToPixel(e.clientX, e.clientY);
+        const [px, py] = screenToPixel(clientX, clientY);
         commitShape(px, py);
       }
       lastPixelRef.current = null;
@@ -311,7 +292,75 @@ export function SpriteCanvas({
     [tool, screenToPixel, commitShape, render],
   );
 
-  // Zoom with wheel
+  // ── POINTER HANDLERS (mouse + touch + pen) ──
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Ignore secondary buttons / multi-touch extras for now
+      if (e.button !== 0 && e.pointerType === "mouse") return;
+      if (drawingRef.current) return;
+
+      e.preventDefault();
+      const canvas = canvasRef.current;
+      if (canvas) {
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {
+          // ignore if capture fails
+        }
+      }
+
+      activePointerIdRef.current = e.pointerId;
+      drawingRef.current = true;
+      lastPixelRef.current = null;
+      const [px, py] = screenToPixel(e.clientX, e.clientY);
+      applyTool(px, py, true);
+    },
+    [screenToPixel, applyTool],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!drawingRef.current) return;
+      if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
+
+      e.preventDefault();
+      const [px, py] = screenToPixel(e.clientX, e.clientY);
+      applyTool(px, py, false);
+    },
+    [screenToPixel, applyTool],
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
+      e.preventDefault();
+      const canvas = canvasRef.current;
+      if (canvas && activePointerIdRef.current !== null) {
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      }
+      endStroke(e.clientX, e.clientY);
+    },
+    [endStroke],
+  );
+
+  const handlePointerCancel = useCallback(
+    (e: React.PointerEvent) => {
+      if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
+      drawingRef.current = false;
+      activePointerIdRef.current = null;
+      overlayRef.current = [];
+      lastPixelRef.current = null;
+      shapeStartRef.current = null;
+      render();
+    },
+    [render],
+  );
+
+  // Zoom with wheel (desktop)
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
@@ -330,18 +379,20 @@ export function SpriteCanvas({
     >
       <canvas
         ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          if (drawingRef.current) {
-            drawingRef.current = false;
-            overlayRef.current = [];
-            lastPixelRef.current = null;
-          }
-        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onWheel={handleWheel}
-        style={{ imageRendering: "pixelated" }}
+        style={{
+          imageRendering: "pixelated",
+          // Critical for mobile: prevent browser from scrolling/zooming while drawing
+          touchAction: "none",
+          // Full hit area
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
       />
       {/* Zoom indicator */}
       <div
@@ -353,6 +404,7 @@ export function SpriteCanvas({
           fontSize: "8px",
           color: "#555555",
           letterSpacing: "1px",
+          pointerEvents: "none",
         }}
       >
         {zoom}X

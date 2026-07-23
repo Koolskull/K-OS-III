@@ -20,10 +20,8 @@
  *   NO other keys reach the game. This ensures every game is
  *   playable on the 8-button device.
  *
- *   When adding a new game:
- *   1. Add a GameEntry to GAMES[]
- *   2. Add a GAME_KEY_MAPS[id] mapping from K-OS buttons to game keys
- *   3. Add a GAME_HELP[id] string describing the controls
+ *   Mobile: game viewport is locked to 4:3; remaining space holds
+ *   a simple touch D-pad + action buttons.
  */
 
 "use client";
@@ -104,9 +102,6 @@ const PASSTHROUGH_KEYS = new Set([
   "Space", "Escape", "Enter",
 ]);
 
-// Track which K-OS action buttons are held for modifier state
-const KOS_ACTION_BUTTONS = new Set(["KeyQ", "KeyW", "ShiftLeft", "ShiftRight"]);
-
 function dispatchToIframe(
   iframe: HTMLIFrameElement,
   type: "keydown" | "keyup",
@@ -168,11 +163,33 @@ function dispatchPassthrough(
   canvas.dispatchEvent(new KeyboardEvent(type, init));
 }
 
+/** Synthetic key event from on-screen buttons */
+function makeSyntheticKey(code: string, key: string, keyCode: number): KeyboardEvent {
+  return new KeyboardEvent("keydown", {
+    key,
+    code,
+    keyCode,
+    which: keyCode,
+    bubbles: true,
+    cancelable: true,
+  });
+}
+
+const ARROW_MAP: Record<string, { key: string; code: string; keyCode: number }> = {
+  up:    { key: "ArrowUp",    code: "ArrowUp",    keyCode: 38 },
+  down:  { key: "ArrowDown",  code: "ArrowDown",  keyCode: 40 },
+  left:  { key: "ArrowLeft",  code: "ArrowLeft",  keyCode: 37 },
+  right: { key: "ArrowRight", code: "ArrowRight", keyCode: 39 },
+};
+
 export function GameMenu() {
   const [cursor, setCursor] = useState(0);
   const [activeGame, setActiveGame] = useState<GameEntry | null>(null);
   const [storageReady, setStorageReady] = useState(false);
+  const [showTouchPad, setShowTouchPad] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Shared held-modifier state for both keyboard and touch
+  const heldMappedRef = useRef<Set<string>>(new Set());
 
   // Request persistent storage on mount
   useEffect(() => {
@@ -183,12 +200,23 @@ export function GameMenu() {
     }
   }, []);
 
+  // Show touch pad on coarse pointers / narrow viewports
+  useEffect(() => {
+    const check = () => {
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      const narrow = window.innerWidth < 900 || window.innerHeight < 700;
+      setShowTouchPad(coarse || narrow);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   // Focus iframe canvas when game starts
   const focusGame = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
     iframe.focus();
-    // Also try to focus the canvas inside
     setTimeout(() => {
       const canvas = iframe.contentDocument?.querySelector("canvas");
       if (canvas) {
@@ -202,8 +230,7 @@ export function GameMenu() {
     if (!activeGame) return;
 
     const keyMap = GAME_KEY_MAPS[activeGame.id] ?? {};
-    // Track which mapped keys are currently held (by their mapped key name)
-    const heldMapped = new Set<string>();
+    const heldMapped = heldMappedRef.current;
 
     const handleKey = (e: KeyboardEvent, type: "keydown" | "keyup") => {
       const iframe = iframeRef.current;
@@ -264,6 +291,35 @@ export function GameMenu() {
     };
   }, [activeGame]);
 
+  // Touch control helpers — feed same pipeline as keyboard
+  const sendArrow = useCallback((dir: keyof typeof ARROW_MAP, type: "keydown" | "keyup") => {
+    const iframe = iframeRef.current;
+    if (!iframe || !activeGame) return;
+    const m = ARROW_MAP[dir];
+    const evt = makeSyntheticKey(m.code, m.key, m.keyCode);
+    dispatchPassthrough(iframe, type, evt, heldMappedRef.current);
+  }, [activeGame]);
+
+  const sendAction = useCallback((kosCode: string, type: "keydown" | "keyup") => {
+    const iframe = iframeRef.current;
+    if (!iframe || !activeGame) return;
+    const keyMap = GAME_KEY_MAPS[activeGame.id] ?? {};
+    const heldMapped = heldMappedRef.current;
+
+    if (kosCode === "Space") {
+      const evt = makeSyntheticKey("Space", " ", 32);
+      dispatchPassthrough(iframe, type, evt, heldMapped);
+      return;
+    }
+
+    const mapped = keyMap[kosCode];
+    if (mapped) {
+      if (type === "keydown") heldMapped.add(mapped.key);
+      else heldMapped.delete(mapped.key);
+      dispatchToIframe(iframe, type, mapped, heldMapped, false);
+    }
+  }, [activeGame]);
+
   // Menu keyboard navigation
   useEffect(() => {
     if (activeGame) return;
@@ -299,7 +355,7 @@ export function GameMenu() {
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [cursor, activeGame]);
 
-  // If a game is running, show it fullscreen in an iframe
+  // If a game is running, show it with optional mobile touch pad
   if (activeGame) {
     return (
       <div
@@ -318,25 +374,69 @@ export function GameMenu() {
           <span style={{ fontSize: "9px", color: "#ffffff", letterSpacing: "2px" }}>
             {activeGame.name}
           </span>
-          <span style={{ fontSize: "7px", color: "#333333", letterSpacing: "1px" }}>
-            {GAME_HELP[activeGame.id] ?? DEFAULT_HELP}
-          </span>
+          <button
+            onClick={() => setActiveGame(null)}
+            style={{
+              border: "1px solid #555",
+              background: "#000",
+              color: "#aaa",
+              fontFamily: "var(--dm-font-primary)",
+              fontSize: "8px",
+              letterSpacing: "1px",
+              padding: "2px 8px",
+              cursor: "pointer",
+            }}
+          >
+            EXIT
+          </button>
         </div>
-        {storageReady ? (
-          <iframe
-            ref={iframeRef}
-            src={gameAssetUrl(activeGame.src)}
-            className="flex-1 w-full border-0"
-            style={{ backgroundColor: "#000000" }}
-            allow="autoplay; gamepad; storage-access"
-            onLoad={focusGame}
-          />
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
+
+        {/* Game viewport — locked to 4:3, centered */}
+        <div
+          className="flex-1 min-h-0 flex items-center justify-center"
+          style={{ backgroundColor: "#000", position: "relative" }}
+        >
+          {storageReady ? (
+            <div
+              style={{
+                // 4:3 box that fits inside available space
+                width: "min(100%, calc((100% - 0px) * 4 / 3))",
+                maxWidth: "100%",
+                aspectRatio: "4 / 3",
+                maxHeight: "100%",
+                position: "relative",
+              }}
+            >
+              <iframe
+                ref={iframeRef}
+                src={gameAssetUrl(activeGame.src)}
+                title={activeGame.name}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: 0,
+                  backgroundColor: "#000000",
+                }}
+                allow="autoplay; gamepad; storage-access"
+                onLoad={focusGame}
+              />
+            </div>
+          ) : (
             <span style={{ color: "#555555", fontSize: "9px", letterSpacing: "2px", fontFamily: "var(--dm-font-primary)" }}>
               REQUESTING STORAGE...
             </span>
-          </div>
+          )}
+        </div>
+
+        {/* Mobile touch control pad */}
+        {showTouchPad && (
+          <MobileTouchPad
+            onArrow={sendArrow}
+            onAction={sendAction}
+            help={GAME_HELP[activeGame.id] ?? DEFAULT_HELP}
+          />
         )}
       </div>
     );
@@ -416,6 +516,181 @@ export function GameMenu() {
         <span style={{ fontSize: "8px", color: "#555555", letterSpacing: "1px" }}>
           UP/DN:SELECT  W:PLAY  SHIFT+Q+UUDD:EXIT
         </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── MOBILE TOUCH PAD ── */
+
+function MobileTouchPad({
+  onArrow,
+  onAction,
+  help,
+}: {
+  onArrow: (dir: "up" | "down" | "left" | "right", type: "keydown" | "keyup") => void;
+  onAction: (kosCode: string, type: "keydown" | "keyup") => void;
+  help: string;
+}) {
+  const btnBase: React.CSSProperties = {
+    width: 52,
+    height: 52,
+    border: "2px solid #555",
+    backgroundColor: "#111",
+    color: "#fff",
+    fontFamily: "var(--dm-font-primary), monospace",
+    fontSize: 11,
+    letterSpacing: 1,
+    borderRadius: 4,
+    touchAction: "none",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
+  const bindHold = (
+    down: () => void,
+    up: () => void,
+  ): React.HTMLAttributes<HTMLButtonElement> => ({
+    onPointerDown: (e) => {
+      e.preventDefault();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      down();
+    },
+    onPointerUp: (e) => {
+      e.preventDefault();
+      up();
+    },
+    onPointerCancel: (e) => {
+      e.preventDefault();
+      up();
+    },
+    onContextMenu: (e) => e.preventDefault(),
+  });
+
+  return (
+    <div
+      className="flex-shrink-0 border-t-2"
+      style={{
+        borderColor: "#1a1a1a",
+        backgroundColor: "#050505",
+        padding: "10px 12px",
+        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        fontFamily: "var(--dm-font-primary)",
+      }}
+    >
+      <div style={{ fontSize: 7, color: "#555", letterSpacing: 1, marginBottom: 8, textAlign: "center" }}>
+        {help}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 16,
+          maxWidth: 420,
+          margin: "0 auto",
+        }}
+      >
+        {/* D-pad */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "52px 52px 52px",
+            gridTemplateRows: "52px 52px 52px",
+            gap: 4,
+          }}
+        >
+          <div />
+          <button
+            type="button"
+            style={btnBase}
+            {...bindHold(
+              () => onArrow("up", "keydown"),
+              () => onArrow("up", "keyup"),
+            )}
+          >
+            ▲
+          </button>
+          <div />
+          <button
+            type="button"
+            style={btnBase}
+            {...bindHold(
+              () => onArrow("left", "keydown"),
+              () => onArrow("left", "keyup"),
+            )}
+          >
+            ◀
+          </button>
+          <div style={{ ...btnBase, border: "1px solid #222", color: "#333", pointerEvents: "none" }}>
+            ·
+          </div>
+          <button
+            type="button"
+            style={btnBase}
+            {...bindHold(
+              () => onArrow("right", "keydown"),
+              () => onArrow("right", "keyup"),
+            )}
+          >
+            ▶
+          </button>
+          <div />
+          <button
+            type="button"
+            style={btnBase}
+            {...bindHold(
+              () => onArrow("down", "keydown"),
+              () => onArrow("down", "keyup"),
+            )}
+          >
+            ▼
+          </button>
+          <div />
+        </div>
+
+        {/* Action buttons: JUMP (Q), POGO (W), FIRE tip, SPACE */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              style={{ ...btnBase, width: 64, backgroundColor: "#1a1a00", borderColor: "#888800" }}
+              {...bindHold(
+                () => onAction("KeyQ", "keydown"),
+                () => onAction("KeyQ", "keyup"),
+              )}
+            >
+              JUMP
+            </button>
+            <button
+              type="button"
+              style={{ ...btnBase, width: 64, backgroundColor: "#001a1a", borderColor: "#008888" }}
+              {...bindHold(
+                () => onAction("KeyW", "keydown"),
+                () => onAction("KeyW", "keyup"),
+              )}
+            >
+              POGO
+            </button>
+          </div>
+          <button
+            type="button"
+            style={{ ...btnBase, width: 136, height: 44, backgroundColor: "#1a001a", borderColor: "#880088" }}
+            {...bindHold(
+              () => onAction("Space", "keydown"),
+              () => onAction("Space", "keyup"),
+            )}
+          >
+            SPACE / SELECT
+          </button>
+          <div style={{ fontSize: 7, color: "#444", letterSpacing: 1 }}>
+            HOLD JUMP+POGO TO FIRE
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -26,10 +26,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Path prefix the app is served under. Same value works for any host
-  # mounting K-OS at /k-os (koolskull.github.io/k-os, 2kool.tv/k-os, ...).
-  # Change this if you want a different URL path.
-  NEXT_PUBLIC_BASE_PATH: /k-os
+  # Path prefix must match the GitHub repo name for project Pages sites.
+  # Repo is K-OS-III → https://koolskull.github.io/K-OS-III/
+  NEXT_PUBLIC_BASE_PATH: /K-OS-III
   # Optional: absolute URL of an external assets host. Leave empty to serve
   # assets from the same Pages deploy at <BASE_PATH>/.
   # Example: https://koolskull.github.io/k-os-assets

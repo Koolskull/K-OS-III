@@ -38,7 +38,7 @@ import {
   VerticalChromeToggle,
   CornerDismissLayer,
   useCornerChromeOptional,
-} from "@/components/ui/CornerChrome";
+} from "@/components/ui/CornerChromeChrome";
 
 export interface KoolDrawEmbeddedMode {
   initialWidth?: number;
@@ -88,7 +88,7 @@ const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
   justifyContent: "center",
   backgroundColor: active ? "#ffffff" : "#000000",
   color: active ? "#000000" : "#888888",
-  border: active ? "1px solid #ffffff" : "1px solid #555555",
+  border: active ? "1px solid #ffffffffffff" : "1px solid #555555",
   fontFamily: "var(--dm-font-primary)",
   fontSize: 8,
   letterSpacing: 1,
@@ -167,10 +167,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
   const togglePlayback = useCallback(() => {
     setPlaying((p) => {
-      if (!p) {
-        // Starting: begin from the currently selected frame
-        setPreviewFrame(activeFrameIndex);
-      }
+      if (!p) setPreviewFrame(activeFrameIndex);
       return !p;
     });
   }, [activeFrameIndex]);
@@ -320,7 +317,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     saveHistory();
     const count = project.layers[0]?.frames.length ?? 1;
     const newLayer: SpriteLayer = {
- id: nextSpriteId(),
+      id: nextSpriteId(),
       name: `LAYER ${project.layers.length + 1}`,
       opacity: 1,
       visible: true,
@@ -365,8 +362,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const fi = displayFrameIndex;
-    const composited = compositeFrame(project.layers, fi, project.width, project.height);
+    const composited = compositeFrame(project.layers, displayFrameIndex, project.width, project.height);
     const frameCanvas = frameToCanvas(composited, 1);
     canvas.width = project.width;
     canvas.height = project.height;
@@ -377,13 +373,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
   const onionOptionsContent = (
     <div
-      style={{
-        padding: 8,
-        backgroundColor: "#000000",
-        border: "1px solid #333",
-        minWidth: 180,
-        fontFamily: "var(--dm-font-primary)",
-      }}
+      style={{ padding: 8, backgroundColor: "#000000", border: "1px solid #333", minWidth: 180, fontFamily: "var(--dm-font-primary)" }}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -428,7 +418,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
               }}
               style={{ flex: 1, height: 4, accentColor: "#3cdc78", cursor: "pointer" }}
             />
-            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(nextOpacities[i] * 100)}</span </div>
+            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(nextOpacities[i] * 100)}</span>
+          </div>
         ))}
       </div>
       <div style={{ display: "flex", gap: 4 }}>
@@ -616,7 +607,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         )}
 
         <div className="flex-1 relative overflow-hidden">
-          <SpriteCanvas
+          <Sprite softCanvas
             layers={project.layers}
             activeLayerIndex={activeLayerIndex}
             activeFrameIndex={activeFrameIndex}
@@ -675,7 +666,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <button type="button" aria-label="New frame" title="New Frame" style={{ ...mobileFrameBtn, left: 44 }} onClick={(e) => { e.stopPropagation(); addFrame(); }}>+</button>
             <button type="button" aria-label="Duplicate frame" title="Duplicate Frame" style={{ ...mobileFrameBtn, left: 84 }} onClick={(e) => { e.stopPropagation(); duplicateFrame(); }}>DUP</button>
 
-            {/* PLAY — left of INFO / ZEN (bottom-right cluster) */}
             <button
               type="button"
               aria-label={playing ? "Pause animation" : "Play animation"}
@@ -697,7 +687,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             </button>
 
             <CornerPanel id="info" corner="bottom-right" label="INFO">
-              <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
+              <div style={{ padding: 4, fontSize: 8, color color: "#888" }}>
                 <div>{project.width}×{project.height}</div>
                 <div>FRM {displayFrameIndex + 1}/{frameCount}</div>
                 <div>PEN {penSize} · {activeTool.toUpperCase()}</div>

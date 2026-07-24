@@ -177,7 +177,7 @@ const CIRCLE_STYLE: React.CSSProperties = {
   fontFamily: "var(--dm-font-primary)",
   fontSize: "8px",
   letterSpacing: "1px",
-  display  display: "flex",
+  display: "flex",
   alignItems: "center",
   justifyContent: "center",
   touchAction: "none",
@@ -322,7 +322,6 @@ function KeenTouchPad({
           <div />
           <button
             type="button"
-eutr type="button"
             className="dm-touch-btn-circle"
             style={styleFor("right")}
             {...bindHold("right", () => onArrow("right", "keydown"), () => onArrow("right", "keyup"))}

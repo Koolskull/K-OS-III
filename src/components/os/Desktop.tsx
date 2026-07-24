@@ -7,6 +7,9 @@
  *
  *   Desktop with icon grid. Double-click to launch apps.
  *   Classic Win98 layout: icons flow top-left, down then right.
+ *
+ *   Saint Michael the Archangel, defend this desktop.
+ *   Holy Guardian Angels, order every window under Heaven.
  */
 
 "use client";
@@ -27,7 +30,8 @@ const ICONS: DesktopIcon[] = [
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
   { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
-  { id: "tilemap", label: "TILEMAP", glyph: "▦" },
+  { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
+  { id: "tilemap", label: "TILEMAP", glyph: "▤" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },

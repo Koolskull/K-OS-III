@@ -100,6 +100,28 @@ const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
   imageRendering: "pixelated",
 });
 
+/** Corner-sized frame action buttons (match CornerChrome AFFORDANCE) */
+const mobileFrameBtn: React.CSSProperties = {
+  position: "absolute",
+  bottom: 4,
+  zIndex: 40,
+  width: 36,
+  height: 28,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#000000",
+  color: "#888888",
+  border: "1px solid #555555",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 8,
+  letterSpacing: 1,
+  cursor: "pointer",
+  userSelect: "none",
+  touchAction: "manipulation",
+  imageRendering: "pixelated",
+};
+
 export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
   return (
     <CornerHost storageKey="kos-kooldraw-chrome" style={{ backgroundColor: "#000" }}>
@@ -755,7 +777,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   pointerEvents: "auto",
                 }}
               >
-                {/* Left: onion on / off */}
                 <button
                   type="button"
                   aria-label={onionEnabled ? "Onion skin on" : "Onion skin off"}
@@ -769,7 +790,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   {onionEnabled ? "ON" : "ONI"}
                 </button>
 
-                {/* Right: onion options */}
                 <button
                   type="button"
                   aria-label="Onion skin options"
@@ -784,7 +804,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 </button>
               </div>
 
-              {/* Options panel sits above the bottom-center buttons */}
               {showOnionOptions && (
                 <div
                   style={{
@@ -814,6 +833,33 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <CornerPanel id="tools" corner="top-left" label="TOOL">{toolsContent}</CornerPanel>
             <CornerPanel id="side" corner="top-right" label="CLR">{sideContent}</CornerPanel>
             <CornerPanel id="frames" corner="bottom-left" label="FRM">{timelineContent}</CornerPanel>
+
+            {/* New frame (+) and Duplicate — right of FRM (bottom-left at left:4) */}
+            <button
+              type="button"
+              aria-label="New frame"
+              title="New Frame"
+              style={{ ...mobileFrameBtn, left: 44 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                addFrame();
+              }}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              aria-label="Duplicate frame"
+              title="Duplicate Frame"
+              style={{ ...mobileFrameBtn, left: 84 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                duplicateFrame();
+              }}
+            >
+              DUP
+            </button>
+
             <CornerPanel id="info" corner="bottom-right" label="INFO">
               <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
                 <div>{project.width}×{project.height}</div>

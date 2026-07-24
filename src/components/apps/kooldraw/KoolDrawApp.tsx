@@ -81,6 +81,25 @@ const toolBtn = (active: boolean): React.CSSProperties => ({
   width: "100%",
 });
 
+/** Shared style for the mobile bottom-center onion affordances */
+const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
+  width: 44,
+  height: 32,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: active ? "#ffffff" : "#000000",
+  color: active ? "#000000" : "#888888",
+  border: active ? "1px solid #ffffff" : "1px solid #555555",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 8,
+  letterSpacing: 1,
+  cursor: "pointer",
+  userSelect: "none",
+  touchAction: "manipulation",
+  imageRendering: "pixelated",
+});
+
 export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
   return (
     <CornerHost storageKey="kos-kooldraw-chrome" style={{ backgroundColor: "#000" }}>
@@ -204,7 +223,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       if (toolEntry) { setActiveTool(toolEntry.id); return; }
       if (e.key === "[") setPenSize((s) => Math.max(1, s - 1));
       if (e.key === "]") setPenSize((s) => Math.min(16, s + 1));
-      // O = toggle onion skin
       if (e.key === "o" || e.key === "O") {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
           setOnionEnabled((v) => !v);
@@ -324,7 +342,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     ctx.drawImage(frameCanvas, 0, 0);
   }, [project, activeFrameIndex, previewFrame, playing, renderTick]);
 
-  // ── Onion options panel (shared between desktop + corner) ──
+  // ── Onion options panel ──
   const onionOptionsContent = (
     <div
       style={{
@@ -334,12 +352,13 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         minWidth: 180,
         fontFamily: "var(--dm-font-primary)",
       }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>
         ONION SKIN OPTIONS
       </div>
 
-      {/* Previous frames (purple) */}
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>
           PREV (PURPLE)
@@ -374,7 +393,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         ))}
       </div>
 
-      {/* Next frames (green) */}
       <div style={{ marginBottom: 8 }}>
         <div style={{ fontSize: 7, color: "#3cdc78", letterSpacing: 1, marginBottom: 4 }}>
           NEXT (GREEN)
@@ -462,27 +480,29 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         </button>
       ))}
 
-      {/* Onion skin toggle + options */}
-      <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
-        <button
-          onClick={() => setOnionEnabled((v) => !v)}
-          style={toolBtn(onionEnabled)}
-          title="Onion Skin (O)"
-        >
-          ONI
-        </button>
-        <button
-          onClick={() => setShowOnionOptions((v) => !v)}
-          style={{
-            ...toolBtn(showOnionOptions),
-            height: 24,
-            fontSize: 6,
-          }}
-          title="Onion Skin Options"
-        >
-          OPT
-        </button>
-      </div>
+      {/* Desktop onion controls remain in the tool strip */}
+      {!collapse && (
+        <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
+          <button
+            onClick={() => setOnionEnabled((v) => !v)}
+            style={toolBtn(onionEnabled)}
+            title="Onion Skin (O)"
+          >
+            ONI
+          </button>
+          <button
+            onClick={() => setShowOnionOptions((v) => !v)}
+            style={{
+              ...toolBtn(showOnionOptions),
+              height: 24,
+              fontSize: 6,
+            }}
+            title="Onion Skin Options"
+          >
+            OPT
+          </button>
+        </div>
+      )}
 
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
@@ -706,18 +726,80 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           />
           <CornerDismissLayer />
 
-          {/* Floating onion options panel */}
-          {showOnionOptions && (
+          {/* Desktop floating options (from tool strip OPT) */}
+          {showOnionOptions && !collapse && (
             <div
               style={{
                 position: "absolute",
                 top: 8,
-                left: collapse ? 8 : 48,
+                left: 48,
                 zIndex: 40,
               }}
             >
               {onionOptionsContent}
             </div>
+          )}
+
+          {/* ── Mobile bottom-center onion controls ── */}
+          {collapse && (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 10,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  gap: 8,
+                  zIndex: 42,
+                  pointerEvents: "auto",
+                }}
+              >
+                {/* Left: onion on / off */}
+                <button
+                  type="button"
+                  aria-label={onionEnabled ? "Onion skin on" : "Onion skin off"}
+                  title="Onion Skin On/Off"
+                  style={mobileOnionBtn(onionEnabled)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOnionEnabled((v) => !v);
+                  }}
+                >
+                  {onionEnabled ? "ON" : "ONI"}
+                </button>
+
+                {/* Right: onion options */}
+                <button
+                  type="button"
+                  aria-label="Onion skin options"
+                  title="Onion Skin Options"
+                  style={mobileOnionBtn(showOnionOptions)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowOnionOptions((v) => !v);
+                  }}
+                >
+                  OPT
+                </button>
+              </div>
+
+              {/* Options panel sits above the bottom-center buttons */}
+              {showOnionOptions && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 50,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 43,
+                    maxWidth: "min(92vw, 240px)",
+                  }}
+                >
+                  {onionOptionsContent}
+                </div>
+              )}
+            </>
           )}
         </div>
 

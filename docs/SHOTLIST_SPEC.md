@@ -12,8 +12,10 @@ Datamoshpit is excellent at music + per-instrument visuals. Professional animati
 
 - A storyboard / shot-list view of the whole piece
 - Collapsible frame-by-frame X-sheets at 24 fps inside each shot
+- **Variable length per shot** (any frame count at 24 fps)
 - Quick thumbnail + description capture, then progressive detail
 - Audio-timed notes
+- Printable monochrome production documents for storyboards, scripts, and animator X-sheets
 - A clean path from placeholder → versioned finals → team sign-off
 
 SHOTLIST is that tool. Offline-first. Local files. No accounts required for core use.
@@ -28,7 +30,7 @@ Exactly parallel to Song → Chain → Phrase:
 Sequence / Storyboard          ← like Song
   └── Shot                     ← like Chain
         ├── Thumbnail + basic description
-        ├── Duration (frames or seconds @ 24 fps)
+        ├── Duration (variable frames @ 24 fps)
         ├── Audio timing / sync notes
         └── X-Sheet            ← like Phrase (expandable)
               └── Frame[] @ 24 fps
@@ -39,14 +41,17 @@ Sequence / Storyboard          ← like Song
 ### Sequence
 Top-level document. Can be created empty or seeded from a Datamoshpit project (selected channels / phrases mapped onto shots or used as audio reference).
 
-### Shot
+### Shot — variable length
 - Quick-created with a thumbnail (generated snapshot or assigned sprite) + short descriptive text.
-- Holds overall duration and high-level audio timing notes.
+- **Each shot has its own duration in frames at 24 fps** (not a fixed grid). A shot may be 12 frames (½ s), 24 frames (1 s), 72 frames (3 s), or any positive integer. Duration is editable after creation.
+- High-level audio timing notes for the whole shot.
 - Expandable to reveal its internal X-Sheet.
 - Carries version / status placeholders for later approval work.
 
 ### X-Sheet (inside Shot)
 Frame-accurate breakdown at **24 frames per second**.
+The X-Sheet length tracks (or is derived from) the shot’s `durationFrames`. Individual rows can still use exposure/hold counts so a 72-frame shot does not require 72 unique drawings.
+
 Each frame can contain:
 - Exposure / hold count
 - Action description
@@ -63,10 +68,11 @@ This is the collapsible “detail” level the user expands only when needed.
 ## 3. Core offline workflow
 
 1. **Create Shot** → generate or assign thumbnail + write basic description. Done in seconds.
-2. **Set length** → open the Shot and define duration on the 24 fps timeline.
+2. **Set length** → open the Shot and set `durationFrames` (any positive integer @ 24 fps).
 3. **Detail the X-Sheet** → expand and fill frame-by-frame notes, especially audio timing.
 4. **Assign / update assets** → link sprites or final renders; use the same template across versions.
-5. **Iterate** until the team is ready to sign off.
+5. **Export for production** → printable mono documents (see §7).
+6. **Iterate** until the team is ready to sign off.
 
 All of the above is 100 % local. No network, no wallets, no accounts.
 
@@ -110,7 +116,35 @@ Exact schema will be finalized in implementation; the hierarchy above is the sou
 
 ---
 
-## 7. Future goal — Wallet-based multi-party approval
+## 7. Printable production exports (monochrome)
+
+**Target raster size:** **3840 × 4969** pixels, **monochromatic** (1-bit or pure black/white grayscale), optimized for black-and-white printers and high-resolution print workflows.
+
+Aspect is portrait (~0.77), suitable for letter/A-series style production pages at high DPI when downsampled or printed at native resolution.
+
+### Export modes
+
+| Mode | Audience | Contents |
+|------|----------|----------|
+| **Storyboard + script** | Directors, writers, producers | Shot thumbnails in order, shot numbers, duration (frames + time @ 24 fps), description, dialogue/script lines, high-level audio notes |
+| **X-Sheet (animator)** | Animators, cleanup, in-betweeners | Classic exposure-sheet layout per shot: frame column, exposure/hold, action, dialogue, camera, audio cues, asset refs; multi-page if the shot is long |
+
+### Requirements
+
+- Fully offline generation (canvas → PNG, and/or PDF when practical).
+- Pure mono: no grayscale gradients required; high-contrast black ink on white for cheap B&W laser/inkjet.
+- Multiple shots can paginate across pages; each page still targets the 3840×4969 canvas (or PDF page mapped to that pixel ratio).
+- Optional: CSV / Markdown text exports for the same data (Phase 2 companion formats).
+
+### Implementation notes (Phase 2)
+
+- Render via offscreen `<canvas>` at 3840×4969, then `toBlob` / download PNG (and PDF via a small pure-JS writer or print CSS if preferred later).
+- Thumbnails dithered or thresholded to mono so the page stays printer-friendly.
+- X-sheet grid lines and labels use hard pixel edges (project aesthetic).
+
+---
+
+## 8. Future goal — Wallet-based multi-party approval
 
 **Documented now so it is never lost. Built after the offline core is solid.**
 
@@ -123,24 +157,27 @@ This maps onto existing K-Wallet and PRODEV plans. It is explicitly **not** requ
 
 ---
 
-## 8. Implementation phases
+## 9. Implementation phases
 
-### Phase 0 — Spec + Scaffold (this document)
+### Phase 0 — Spec + Scaffold
 - `docs/SHOTLIST_SPEC.md` (done)
-- Scaffold `src/components/apps/shotlist/`
-- Register desktop icon and AppId in Desktop.tsx + page.tsx
-- Basic empty window that respects CornerChrome
+- Scaffold `src/components/apps/shotlist/` (done)
+- Register desktop icon and AppId (done)
+- Basic empty window + variable-duration shot fields + CornerChrome (done)
 
 ### Phase 1 — Offline MVP
-- Sequence view of Shots (thumbnail + description + duration)
-- Expand Shot → 24 fps X-Sheet editor
+- Sequence view of Shots (thumbnail + description + **variable duration**)
+- Expand Shot → 24 fps X-Sheet editor (frame rows driven by duration / exposures)
 - Quick thumbnail creation / assignment
 - Basic audio-timing notes
 - Sprite assignment + round-trip to Sprite Editor
 - Full keyboard model + mobile CornerChrome
 
-### Phase 2 — Production polish
-- Export shot list / X-sheet (CSV, Markdown, printable layout)
+### Phase 2 — Production polish + print export
+- **3840×4969 monochrome printable exports**
+  - Storyboard + script layout
+  - Animator X-sheet layout
+- CSV / Markdown companions
 - Stronger Datamoshpit import / audio reference
 - Versioned asset slots against the same template
 
@@ -151,17 +188,19 @@ This maps onto existing K-Wallet and PRODEV plans. It is explicitly **not** requ
 
 ---
 
-## 9. Open questions (decide during Phase 0/1)
+## 10. Open questions (decide during Phase 0/1)
 
-1. Default name on the desktop: **SHOTLIST**, **XSHEET**, **K-SEQ**, or other?
+1. Default name on the desktop: **SHOTLIST** (current), or rename later?
 2. Exact thumbnail generation method (canvas snapshot from Sprite Editor, simple solid + text, or user-supplied image)?
 3. Should the X-Sheet support multiple layers / levels per frame from day one, or start single-layer and expand later?
 4. How tightly should a Sequence share its audio clock with an open Datamoshpit project (shared tick vs independent)?
 5. File extension and whether it lives inside or beside the tracker project format.
+6. Print export: PNG only first, or PNG + PDF in the same Phase 2 pass?
+7. Multi-shot vs single-shot pages — default pagination rule for long sequences?
 
 ---
 
-## 10. References
+## 11. References
 
 - Datamoshpit hierarchy & input: `CLAUDE.datamoshpit.md`, `src/types/tracker.ts`
 - Mobile creative UI: `docs/MOBILE_CREATIVE_UI.md`

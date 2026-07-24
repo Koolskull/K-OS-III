@@ -19,6 +19,9 @@
  *
  *   K-OS III DESKTOP SHELL
  *   Boot sequence → Desktop with icons → Windowed apps
+ *
+ *   Saint Benedict, protect this house of code.
+ *   Holy Angels, keep every window in good order.
  */
 
 "use client";
@@ -36,11 +39,20 @@ import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
 import { ManualApp } from "@/components/apps/manual/ManualApp";
 import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWikiApp";
 import TilemapApp from "@/components/apps/tilemap/TilemapApp";
+import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { assetUrl } from "@/lib/assets";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
-type AppId = "datamoshpit" | "bible" | "games" | "kooldraw" | "manual" | "stardrain-wiki" | "tilemap";
+type AppId =
+  | "datamoshpit"
+  | "bible"
+  | "games"
+  | "kooldraw"
+  | "manual"
+  | "stardrain-wiki"
+  | "tilemap"
+  | "shotlist";
 
 interface OpenWindow {
   id: string;
@@ -58,6 +70,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   manual: { title: "K-OS MANUAL", width: 880, height: 600 },
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
+  shotlist: { title: "SHOTLIST", width: 900, height: 640 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -198,6 +211,9 @@ export default function KoolskullOS() {
           {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
           {win.appId === "tilemap" && (
             <TilemapApp isFocused={win.id === focusedWindowId} />
+          )}
+          {win.appId === "shotlist" && (
+            <ShotlistApp isFocused={win.id === focusedWindowId} />
           )}
         </AppWindow>
       ))}

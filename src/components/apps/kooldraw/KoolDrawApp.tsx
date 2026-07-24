@@ -64,7 +64,6 @@ const TOOLS: { id: ToolId; label: string; key: string }[] = [
 
 const MAX_HISTORY = 100;
 
-/** Default onion opacities — closer frames stronger (TVPaint / Harmony style) */
 const DEFAULT_PREV_OP: [number, number, number] = [0.45, 0.28, 0.14];
 const DEFAULT_NEXT_OP: [number, number, number] = [0.45, 0.28, 0.14];
 
@@ -81,7 +80,6 @@ const toolBtn = (active: boolean): React.CSSProperties => ({
   width: "100%",
 });
 
-/** Shared style for the mobile bottom-center onion affordances */
 const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
   width: 44,
   height: 32,
@@ -100,7 +98,6 @@ const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
   imageRendering: "pixelated",
 });
 
-/** Corner-sized frame action buttons (match CornerChrome AFFORDANCE) */
 const mobileFrameBtn: React.CSSProperties = {
   position: "absolute",
   bottom: 4,
@@ -153,7 +150,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [previewFrame, setPreviewFrame] = useState(0);
   const [renderTick, setRenderTick] = useState(0);
 
-  // ── Onion skinning ──
   const [onionEnabled, setOnionEnabled] = useState(false);
   const [showOnionOptions, setShowOnionOptions] = useState(false);
   const [prevOpacities, setPrevOpacities] = useState<[number, number, number]>([...DEFAULT_PREV_OP]);
@@ -168,6 +164,16 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
   const forceRender = useCallback(() => setRenderTick((t) => t + 1), []);
+
+  const togglePlayback = useCallback(() => {
+    setPlaying((p) => {
+      if (!p) {
+        // Starting: begin from the currently selected frame
+        setPreviewFrame(activeFrameIndex);
+      }
+      return !p;
+    });
+  }, [activeFrameIndex]);
 
   const saveHistory = useCallback(() => {
     const entry: HistoryEntry = {
@@ -246,20 +252,24 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       if (e.key === "[") setPenSize((s) => Math.max(1, s - 1));
       if (e.key === "]") setPenSize((s) => Math.min(16, s + 1));
       if (e.key === "o" || e.key === "O") {
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) setOnionEnabled((v) => !v);
+      }
+      if (e.key === " ") {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-          setOnionEnabled((v) => !v);
+          e.preventDefault();
+          togglePlayback();
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFocused, undo, redo]);
+  }, [isFocused, undo, redo, togglePlayback]);
 
   useEffect(() => {
     if (!playing) return;
-    const frameCount = project.layers[0]?.frames.length ?? 1;
+    const count = project.layers[0]?.frames.length ?? 1;
     const interval = setInterval(() => {
-      setPreviewFrame((f) => (f + 1) % frameCount);
+      setPreviewFrame((f) => (f + 1) % count);
     }, 1000 / Math.max(1, project.fps));
     return () => clearInterval(interval);
   }, [playing, project.fps, project.layers]);
@@ -293,8 +303,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   }, [activeFrameIndex, saveHistory]);
 
   const deleteFrame = useCallback(() => {
-    const frameCount = project.layers[0]?.frames.length ?? 0;
-    if (frameCount <= 1) return;
+    const count = project.layers[0]?.frames.length ?? 0;
+    if (count <= 1) return;
     saveHistory();
     setProject((prev) => ({
       ...prev,
@@ -308,13 +318,13 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
   const addLayer = useCallback(() => {
     saveHistory();
-    const frameCount = project.layers[0]?.frames.length ?? 1;
+    const count = project.layers[0]?.frames.length ?? 1;
     const newLayer: SpriteLayer = {
-      id: nextSpriteId(),
+ id: nextSpriteId(),
       name: `LAYER ${project.layers.length + 1}`,
       opacity: 1,
       visible: true,
-      frames: Array.from({ length: frameCount }, () => createFrame(nextSpriteId(), project.width, project.height)),
+      frames: Array.from({ length: count }, () => createFrame(nextSpriteId(), project.width, project.height)),
     };
     setProject((prev) => ({ ...prev, layers: [...prev.layers, newLayer] }));
     setActiveLayerIndex(project.layers.length);
@@ -329,8 +339,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   }, [forceRender]);
 
   const exportSpriteSheet = useCallback(() => {
-    const frameCount = project.layers[0]?.frames.length ?? 1;
-    const canvas = renderSpriteSheet(project, frameCount, 1);
+    const count = project.layers[0]?.frames.length ?? 1;
+    const canvas = renderSpriteSheet(project, count, 1);
     downloadCanvasAsPng(canvas, `${project.name}_sheet.png`);
   }, [project]);
 
@@ -347,6 +357,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   }, []);
 
   const frameCount = project.layers[0]?.frames.length ?? 1;
+  const displayFrameIndex = playing ? previewFrame : activeFrameIndex;
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -354,7 +365,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const fi = playing ? previewFrame : activeFrameIndex;
+    const fi = displayFrameIndex;
     const composited = compositeFrame(project.layers, fi, project.width, project.height);
     const frameCanvas = frameToCanvas(composited, 1);
     canvas.width = project.width;
@@ -362,9 +373,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(frameCanvas, 0, 0);
-  }, [project, activeFrameIndex, previewFrame, playing, renderTick]);
+  }, [project, displayFrameIndex, renderTick]);
 
-  // ── Onion options panel ──
   const onionOptionsContent = (
     <div
       style={{
@@ -377,21 +387,14 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>
-        ONION SKIN OPTIONS
-      </div>
-
+      <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>ONION SKIN OPTIONS</div>
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>
-          PREV (PURPLE)
-        </div>
+        <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>PREV (PURPLE)</div>
         {[0, 1, 2].map((i) => (
           <div key={`prev-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <span style={{ fontSize: 7, color: "#666", width: 28 }}>-{i + 1}</span>
             <input
-              type="range"
-              min={0}
-              max={100}
+              type="range" min={0} max={100}
               value={Math.round(prevOpacities[i] * 100)}
               onChange={(e) => {
                 const v = Number(e.target.value) / 100;
@@ -401,31 +404,19 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   return next;
                 });
               }}
-              style={{
-                flex: 1,
-                height: 4,
-                accentColor: "#b850ff",
-                cursor: "pointer",
-              }}
+              style={{ flex: 1, height: 4, accentColor: "#b850ff", cursor: "pointer" }}
             />
-            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>
-              {Math.round(prevOpacities[i] * 100)}
-            </span>
+            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(prevOpacities[i] * 100)}</span>
           </div>
         ))}
       </div>
-
       <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 7, color: "#3cdc78", letterSpacing: 1, marginBottom: 4 }}>
-          NEXT (GREEN)
-        </div>
+        <div style={{ fontSize: 7, color: "#3cdc78", letterSpacing: 1, marginBottom: 4 }}>NEXT (GREEN)</div>
         {[0, 1, 2].map((i) => (
           <div key={`next-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <span style={{ fontSize: 7, color: "#666", width: 28 }}>+{i + 1}</span>
             <input
-              type="range"
-              min={0}
-              max={100}
+              type="range" min={0} max={100}
               value={Math.round(nextOpacities[i] * 100)}
               onChange={(e) => {
                 const v = Number(e.target.value) / 100;
@@ -435,56 +426,20 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   return next;
                 });
               }}
-              style={{
-                flex: 1,
-                height: 4,
-                accentColor: "#3cdc78",
-                cursor: "pointer",
-              }}
+              style={{ flex: 1, height: 4, accentColor: "#3cdc78", cursor: "pointer" }}
             />
-            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>
-              {Math.round(nextOpacities[i] * 100)}
-            </span>
-          </div>
+            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(nextOpacities[i] * 100)}</span </div>
         ))}
       </div>
-
       <div style={{ display: "flex", gap: 4 }}>
         <button
-          onClick={() => {
-            setPrevOpacities([...DEFAULT_PREV_OP]);
-            setNextOpacities([...DEFAULT_NEXT_OP]);
-          }}
-          style={{
-            flex: 1,
-            height: 18,
-            border: "1px solid #333",
-            background: "#000",
-            color: "#888",
-            fontFamily: "var(--dm-font-primary)",
-            fontSize: 6,
-            letterSpacing: 1,
-            cursor: "pointer",
-          }}
-        >
-          RESET
-        </button>
+          onClick={() => { setPrevOpacities([...DEFAULT_PREV_OP]); setNextOpacities([...DEFAULT_NEXT_OP]); }}
+          style={{ flex: 1, height: 18, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}
+        >RESET</button>
         <button
           onClick={() => setShowOnionOptions(false)}
-          style={{
-            flex: 1,
-            height: 18,
-            border: "1px solid #555",
-            background: "#000",
-            color: "#aaa",
-            fontFamily: "var(--dm-font-primary)",
-            fontSize: 6,
-            letterSpacing: 1,
-            cursor: "pointer",
-          }}
-        >
-          CLOSE
-        </button>
+          style={{ flex: 1, height: 18, border: "1px solid #555", background: "#000", color: "#aaa", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}
+        >CLOSE</button>
       </div>
     </div>
   );
@@ -492,40 +447,16 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const toolsContent = (
     <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
       {TOOLS.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => setActiveTool(t.id)}
-          style={toolBtn(activeTool === t.id)}
-          title={`${t.label} (${t.key})`}
-        >
+        <button key={t.id} onClick={() => setActiveTool(t.id)} style={toolBtn(activeTool === t.id)} title={`${t.label} (${t.key})`}>
           {t.label}
         </button>
       ))}
-
-      {/* Desktop onion controls remain in the tool strip */}
       {!collapse && (
         <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
-          <button
-            onClick={() => setOnionEnabled((v) => !v)}
-            style={toolBtn(onionEnabled)}
-            title="Onion Skin (O)"
-          >
-            ONI
-          </button>
-          <button
-            onClick={() => setShowOnionOptions((v) => !v)}
-            style={{
-              ...toolBtn(showOnionOptions),
-              height: 24,
-              fontSize: 6,
-            }}
-            title="Onion Skin Options"
-          >
-            OPT
-          </button>
+          <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
+          <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
         </div>
       )}
-
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
         <button onClick={redo} style={{ ...toolBtn(false), height: 24 }}>REDO</button>
@@ -539,42 +470,21 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         <div className="flex items-center justify-between mb-1">
           <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>PREVIEW</span>
           <button
-            onClick={() => setPlaying((p) => !p)}
-            style={{
-              border: "1px solid #555",
-              background: "#000",
-              color: playing ? "#fff" : "#555",
-              fontFamily: "var(--dm-font-primary)",
-              fontSize: 7,
-              padding: "1px 4px",
-              cursor: "pointer",
-            }}
+            onClick={togglePlayback}
+            style={{ border: "1px solid #555", background: "#000", color: playing ? "#fff" : "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, padding: "1px 4px", cursor: "pointer" }}
           >
             {playing ? "STOP" : "PLAY"}
           </button>
         </div>
         <div style={{ display: "flex", justifyContent: "center", background: "#0a0a0a", padding: 4 }}>
-          <canvas
-            ref={previewCanvasRef}
-            style={{
-              width: Math.min(96, project.width * 3),
-              height: Math.min(96, project.height * 3),
-              imageRendering: "pixelated",
-            }}
-          />
+          <canvas ref={previewCanvasRef} style={{ width: Math.min(96, project.width * 3), height: Math.min(96, project.height * 3), imageRendering: "pixelated" }} />
         </div>
         <div className="flex items-center justify-between mt-1">
           <span style={{ fontSize: 7, color: "#555" }}>FPS</span>
           <div className="flex gap-1">
-            <button
-              onClick={() => setProject((p) => ({ ...p, fps: Math.max(1, p.fps - 1) }))}
-              style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}
-            >-</button>
+            <button onClick={() => setProject((p) => ({ ...p, fps: Math.max(1, p.fps - 1) }))} style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}>-</button>
             <span style={{ fontSize: 7, color: "#888", minWidth: 16, textAlign: "center" }}>{project.fps}</span>
-            <button
-              onClick={() => setProject((p) => ({ ...p, fps: Math.min(60, p.fps + 1) }))}
-              style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}
-            >+</button>
+            <button onClick={() => setProject((p) => ({ ...p, fps: Math.min(60, p.fps + 1) }))} style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}>+</button>
           </div>
         </div>
       </div>
@@ -600,10 +510,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       <div className="flex-1 overflow-y-auto" style={{ padding: 4 }}>
         <div className="flex items-center justify-between mb-1">
           <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>LAYERS</span>
-          <button
-            onClick={addLayer}
-            style={{ border: "1px solid #555", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, padding: "1px 4px", cursor: "pointer" }}
-          >+</button>
+          <button onClick={addLayer} style={{ border: "1px solid #555", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, padding: "1px 4px", cursor: "pointer" }}>+</button>
         </div>
         {project.layers.map((layer, i) => (
           <div
@@ -647,12 +554,12 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             key={i}
             frame={composited}
             index={i}
-            isActive={i === activeFrameIndex}
-            onClick={() => setActiveFrameIndex(i)}
+            isActive={i === (playing ? previewFrame : activeFrameIndex)}
+            onClick={() => { setPlaying(false); setActiveFrameIndex(i); }}
             spriteWidth={project.width}
             spriteHeight={project.height}
-            isOnionPrev={onionEnabled && i < activeFrameIndex && i >= activeFrameIndex - 3}
-            isOnionNext={onionEnabled && i > activeFrameIndex && i <= activeFrameIndex + 3}
+            isOnionPrev={!playing && onionEnabled && i < activeFrameIndex && i >= activeFrameIndex - 3}
+            isOnionNext={!playing && onionEnabled && i > activeFrameIndex && i <= activeFrameIndex + 3}
           />
         );
       })}
@@ -669,22 +576,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   return (
     <div
       className="w-full h-full flex flex-col overflow-hidden"
-      style={{
-        backgroundColor: "#000000",
-        fontFamily: "var(--dm-font-primary)",
-        fontSize: 9,
-        imageRendering: "pixelated",
-        color: "#ffffff",
-      }}
+      style={{ backgroundColor: "#000000", fontFamily: "var(--dm-font-primary)", fontSize: 9, imageRendering: "pixelated", color: "#ffffff" }}
     >
       {embeddedMode ? (
-        <div
-          className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0"
-          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}
-        >
-          <span style={{ color: "#ffff00", letterSpacing: 2 }}>
-            {embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}
-          </span>
+        <div className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0" style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}>
+          <span style={{ color: "#ffff00", letterSpacing: 2 }}>{embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}</span>
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -693,32 +589,21 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 embeddedMode.onUse(canvas.toDataURL("image/png"));
               }}
               style={{ background: "#ffff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}
-            >
-              USE THIS SPRITE
-            </button>
-            <button
-              onClick={() => embeddedMode.onCancel()}
-              style={{ background: "#000", color: "#fff", border: "1px solid #fff", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}
-            >
-              CANCEL
-            </button>
+            >USE THIS SPRITE</button>
+            <button onClick={() => embeddedMode.onCancel()} style={{ background: "#000", color: "#fff", border: "1px solid #fff", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>CANCEL</button>
           </div>
         </div>
       ) : null}
 
       {!collapse && (
-        <div
-          className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0"
-          style={{ borderColor: "#1a1a1a", minHeight: 20 }}
-        >
+        <div className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 20 }}>
           <span style={{ letterSpacing: 2 }}>SPRITE EDITOR</span>
           <div className="flex gap-2 items-center">
             <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
-            <span style={{ color: "#555" }}>FRM:{activeFrameIndex + 1}/{frameCount}</span>
+            <span style={{ color: "#555" }}>FRM:{displayFrameIndex + 1}/{frameCount}</span>
             <span style={{ color: "#555" }}>PEN:{penSize}</span>
-            {onionEnabled && (
-              <span style={{ color: "#b850ff", letterSpacing: 1 }}>ONION</span>
-            )}
+            {onionEnabled && !playing && <span style={{ color: "#b850ff", letterSpacing: 1 }}>ONION</span>}
+            {playing && <span style={{ color: "#fff", letterSpacing: 1 }}>PLAY</span>}
           </div>
         </div>
       )}
@@ -735,6 +620,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             layers={project.layers}
             activeLayerIndex={activeLayerIndex}
             activeFrameIndex={activeFrameIndex}
+            displayFrameIndex={displayFrameIndex}
+            playing={playing}
             width={project.width}
             height={project.height}
             tool={activeTool}
@@ -748,73 +635,24 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           />
           <CornerDismissLayer />
 
-          {/* Desktop floating options (from tool strip OPT) */}
           {showOnionOptions && !collapse && (
-            <div
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 48,
-                zIndex: 40,
-              }}
-            >
+            <div style={{ position: "absolute", top: 8, left: 48, zIndex: 40 }}>
               {onionOptionsContent}
             </div>
           )}
 
-          {/* ── Mobile bottom-center onion controls ── */}
           {collapse && (
             <>
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 10,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  display: "flex",
-                  gap: 8,
-                  zIndex: 42,
-                  pointerEvents: "auto",
-                }}
-              >
-                <button
-                  type="button"
-                  aria-label={onionEnabled ? "Onion skin on" : "Onion skin off"}
-                  title="Onion Skin On/Off"
-                  style={mobileOnionBtn(onionEnabled)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOnionEnabled((v) => !v);
-                  }}
-                >
+              <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, zIndex: 42, pointerEvents: "auto" }}>
+                <button type="button" aria-label={onionEnabled ? "Onion skin on" : "Onion skin off"} title="Onion Skin On/Off" style={mobileOnionBtn(onionEnabled)} onClick={(e) => { e.stopPropagation(); setOnionEnabled((v) => !v); }}>
                   {onionEnabled ? "ON" : "ONI"}
                 </button>
-
-                <button
-                  type="button"
-                  aria-label="Onion skin options"
-                  title="Onion Skin Options"
-                  style={mobileOnionBtn(showOnionOptions)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowOnionOptions((v) => !v);
-                  }}
-                >
+                <button type="button" aria-label="Onion skin options" title="Onion Skin Options" style={mobileOnionBtn(showOnionOptions)} onClick={(e) => { e.stopPropagation(); setShowOnionOptions((v) => !v); }}>
                   OPT
                 </button>
               </div>
-
               {showOnionOptions && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 50,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    zIndex: 43,
-                    maxWidth: "min(92vw, 240px)",
-                  }}
-                >
+                <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>
                   {onionOptionsContent}
                 </div>
               )}
@@ -834,41 +672,37 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <CornerPanel id="side" corner="top-right" label="CLR">{sideContent}</CornerPanel>
             <CornerPanel id="frames" corner="bottom-left" label="FRM">{timelineContent}</CornerPanel>
 
-            {/* New frame (+) and Duplicate — right of FRM (bottom-left at left:4) */}
+            <button type="button" aria-label="New frame" title="New Frame" style={{ ...mobileFrameBtn, left: 44 }} onClick={(e) => { e.stopPropagation(); addFrame(); }}>+</button>
+            <button type="button" aria-label="Duplicate frame" title="Duplicate Frame" style={{ ...mobileFrameBtn, left: 84 }} onClick={(e) => { e.stopPropagation(); duplicateFrame(); }}>DUP</button>
+
+            {/* PLAY — left of INFO / ZEN (bottom-right cluster) */}
             <button
               type="button"
-              aria-label="New frame"
-              title="New Frame"
-              style={{ ...mobileFrameBtn, left: 44 }}
+              aria-label={playing ? "Pause animation" : "Play animation"}
+              title={playing ? "Pause" : "Play"}
+              style={{
+                ...mobileFrameBtn,
+                right: 84,
+                left: "auto",
+                backgroundColor: playing ? "#ffffff" : "#000000",
+                color: playing ? "#000000" : "#888888",
+                borderColor: playing ? "#ffffff" : "#555555",
+              }}
               onClick={(e) => {
                 e.stopPropagation();
-                addFrame();
+                togglePlayback();
               }}
             >
-              +
-            </button>
-            <button
-              type="button"
-              aria-label="Duplicate frame"
-              title="Duplicate Frame"
-              style={{ ...mobileFrameBtn, left: 84 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                duplicateFrame();
-              }}
-            >
-              DUP
+              {playing ? "||" : ">"}
             </button>
 
             <CornerPanel id="info" corner="bottom-right" label="INFO">
               <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
                 <div>{project.width}×{project.height}</div>
-                <div>FRM {activeFrameIndex + 1}/{frameCount}</div>
+                <div>FRM {displayFrameIndex + 1}/{frameCount}</div>
                 <div>PEN {penSize} · {activeTool.toUpperCase()}</div>
-                <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>
-                  ONION {onionEnabled ? "ON" : "OFF"}
-                </div>
-                <div style={{ marginTop: 6 }}>H = toggle UI · O = onion</div>
+                <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>ONION {onionEnabled ? "ON" : "OFF"}</div>
+                <div style={{ marginTop: 6 }}>H = UI · O = onion · SPACE = play</div>
               </div>
             </CornerPanel>
           </>
@@ -878,21 +712,15 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       </div>
 
       {!collapse && (
-        <div
-          className="flex items-center border-t flex-shrink-0 overflow-x-auto"
-          style={{ borderColor: "#1a1a1a", minHeight: 48 }}
-        >
+        <div className="flex items-center border-t flex-shrink-0 overflow-x-auto" style={{ borderColor: "#1a1a1a", minHeight: 48 }}>
           {timelineContent}
         </div>
       )}
 
       {!collapse && (
-        <div
-          className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0"
-          style={{ borderColor: "#1a1a1a", minHeight: 18 }}
-        >
+        <div className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 18 }}>
           <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-            B:PEN E:ERASER G:FILL I:PICK L:LINE R:RECT [/]:SIZE O:ONION CTRL+Z:UNDO · H:ZEN
+            B:PEN E:ERA G:FILL I:PICK L:LINE R:RECT [/]:SIZE O:ONION SPACE:PLAY CTRL+Z:UNDO · H:ZEN
           </span>
           <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>
@@ -951,19 +779,8 @@ function FrameThumbnail({
         padding: 2,
       }}
     >
-      <canvas
-        ref={canvasRef}
-        style={{ width: 32, height: 32, imageRendering: "pixelated", display: "block" }}
-      />
-      <div
-        style={{
-          fontFamily: "var(--dm-font-primary)",
-          fontSize: 6,
-          color: isActive ? "#ffffff" : isOnionPrev ? "#b850ff" : isOnionNext ? "#3cdc78" : "#555555",
-          textAlign: "center",
-          marginTop: 1,
-        }}
-      >
+      <canvas ref={canvasRef} style={{ width: 32, height: 32, imageRendering: "pixelated", display: "block" }} />
+      <div style={{ fontFamily: "var(--dm-font-primary)", fontSize: 6, color: isActive ? "#ffffff" : isOnionPrev ? "#b850ff" : isOnionNext ? "#3cdc78" : "#555555", textAlign: "center", marginTop: 1 }}>
         {index + 1}
       </div>
     </div>

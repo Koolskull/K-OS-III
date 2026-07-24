@@ -200,13 +200,27 @@ A payment-request attachment type that renders as a card inside the chat UI, inv
 
 ---
 
+## Part 1.12 — Mobile Creative UI (new)
+
+### 38. Implement Corner-Collapsible Panels + Vertical Chrome Toggle for Sprite Editor
+**Labels:** `kooldraw`, `ux`, `mobile`, `design`
+**Size:** medium
+Follow the specification in [`MOBILE_CREATIVE_UI.md`](./MOBILE_CREATIVE_UI.md). Convert the left tool strip, right sidebar (palette/layers/preview), and bottom timeline into `CornerPanel`s that collapse into the four corners. Add independent vertical hide/restore (“zen mode”) so the canvas can occupy the full window on a phone. Extract shared components (`CornerHost`, `CornerPanel`, `VerticalChromeToggle`) into `src/components/ui/` (or `os/`) for reuse. Keep hard-edged, pixelated aesthetic; no rounded corners.
+
+### 39. Apply same Corner-Collapsible + Vertical Hide pattern to Tilemap Painter
+**Labels:** `tilemap`, `ux`, `mobile`, `design`
+**Size:** medium
+Same pattern as #38, applied to the top control bar and left spritesheet panel of the Tilemap app. Reuse the shared components built in #38. Document any Tilemap-specific tweaks back into `MOBILE_CREATIVE_UI.md`.
+
+---
+
 ## Tagging cheat sheet
 
 When opening these or filing related issues, prefer this label vocabulary so filters work:
 
-- **Area:** `os-shell`, `datamoshpit`, `kooldraw`, `wallet`, `commerce`, `chat`, `education`, `reference`
+- **Area:** `os-shell`, `datamoshpit`, `kooldraw`, `wallet`, `commerce`, `chat`, `education`, `reference`, `tilemap`
 - **Type:** `bug`, `enhancement`, `design`, `docs`, `chore`, `infra`
 - **Difficulty:** `good-first-issue`, `help-wanted`, `sensitive`
-- **Cross-cutting:** `epistemic-stance`, `economic-stance`, `editorial`, `screenshots`, `ux`, `funding`
+- **Cross-cutting:** `epistemic-stance`, `economic-stance`, `editorial`, `screenshots`, `ux`, `funding`, `mobile`
 
 Sensitive (`wallet`, `commerce`, editorial-content) areas require a second reviewer per `CONTRIBUTING.md`.

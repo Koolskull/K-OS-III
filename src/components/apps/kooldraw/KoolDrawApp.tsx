@@ -9,7 +9,7 @@
  *   Piskel-inspired, K-OS III aesthetic.
  *
  *   Tools: Pen, Eraser, Fill, Picker, Line, Rect
- *   Features: Layers, Frames, Animation Preview, Undo/Redo
+ *   Features: Layers, Frames, Animation Preview, Undo/Redo, Onion Skin
  *   Export: PNG sequence (zip), Sprite sheet, GIF
  *   Mobile: Corner-Collapsible Panels (docs/MOBILE_CREATIVE_UI.md)
  */
@@ -31,7 +31,7 @@ import {
   downloadCanvasAsPng,
   downloadFramesAsZip,
 } from "@/lib/SpriteUtils";
-import { SpriteCanvas } from "./SpriteCanvas";
+import { SpriteCanvas, type OnionSkinSettings } from "./SpriteCanvas";
 import {
   CornerHost,
   CornerPanel,
@@ -63,6 +63,10 @@ const TOOLS: { id: ToolId; label: string; key: string }[] = [
 ];
 
 const MAX_HISTORY = 100;
+
+/** Default onion opacities — closer frames stronger (TVPaint / Harmony style) */
+const DEFAULT_PREV_OP: [number, number, number] = [0.45, 0.28, 0.14];
+const DEFAULT_NEXT_OP: [number, number, number] = [0.45, 0.28, 0.14];
 
 const toolBtn = (active: boolean): React.CSSProperties => ({
   height: 32,
@@ -107,6 +111,18 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [playing, setPlaying] = useState(false);
   const [previewFrame, setPreviewFrame] = useState(0);
   const [renderTick, setRenderTick] = useState(0);
+
+  // ── Onion skinning ──
+  const [onionEnabled, setOnionEnabled] = useState(false);
+  const [showOnionOptions, setShowOnionOptions] = useState(false);
+  const [prevOpacities, setPrevOpacities] = useState<[number, number, number]>([...DEFAULT_PREV_OP]);
+  const [nextOpacities, setNextOpacities] = useState<[number, number, number]>([...DEFAULT_NEXT_OP]);
+
+  const onionSkin: OnionSkinSettings = {
+    enabled: onionEnabled,
+    prevOpacities,
+    nextOpacities,
+  };
 
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
@@ -188,6 +204,12 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       if (toolEntry) { setActiveTool(toolEntry.id); return; }
       if (e.key === "[") setPenSize((s) => Math.max(1, s - 1));
       if (e.key === "]") setPenSize((s) => Math.min(16, s + 1));
+      // O = toggle onion skin
+      if (e.key === "o" || e.key === "O") {
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          setOnionEnabled((v) => !v);
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -302,6 +324,131 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     ctx.drawImage(frameCanvas, 0, 0);
   }, [project, activeFrameIndex, previewFrame, playing, renderTick]);
 
+  // ── Onion options panel (shared between desktop + corner) ──
+  const onionOptionsContent = (
+    <div
+      style={{
+        padding: 8,
+        backgroundColor: "#000000",
+        border: "1px solid #333",
+        minWidth: 180,
+        fontFamily: "var(--dm-font-primary)",
+      }}
+    >
+      <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>
+        ONION SKIN OPTIONS
+      </div>
+
+      {/* Previous frames (purple) */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>
+          PREV (PURPLE)
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={`prev-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 7, color: "#666", width: 28 }}>-{i + 1}</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(prevOpacities[i] * 100)}
+              onChange={(e) => {
+                const v = Number(e.target.value) / 100;
+                setPrevOpacities((prev) => {
+                  const next = [...prev] as [number, number, number];
+                  next[i] = v;
+                  return next;
+                });
+              }}
+              style={{
+                flex: 1,
+                height: 4,
+                accentColor: "#b850ff",
+                cursor: "pointer",
+              }}
+            />
+            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>
+              {Math.round(prevOpacities[i] * 100)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Next frames (green) */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 7, color: "#3cdc78", letterSpacing: 1, marginBottom: 4 }}>
+          NEXT (GREEN)
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={`next-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 7, color: "#666", width: 28 }}>+{i + 1}</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(nextOpacities[i] * 100)}
+              onChange={(e) => {
+                const v = Number(e.target.value) / 100;
+                setNextOpacities((prev) => {
+                  const next = [...prev] as [number, number, number];
+                  next[i] = v;
+                  return next;
+                });
+              }}
+              style={{
+                flex: 1,
+                height: 4,
+                accentColor: "#3cdc78",
+                cursor: "pointer",
+              }}
+            />
+            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>
+              {Math.round(nextOpacities[i] * 100)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 4 }}>
+        <button
+          onClick={() => {
+            setPrevOpacities([...DEFAULT_PREV_OP]);
+            setNextOpacities([...DEFAULT_NEXT_OP]);
+          }}
+          style={{
+            flex: 1,
+            height: 18,
+            border: "1px solid #333",
+            background: "#000",
+            color: "#888",
+            fontFamily: "var(--dm-font-primary)",
+            fontSize: 6,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+        >
+          RESET
+        </button>
+        <button
+          onClick={() => setShowOnionOptions(false)}
+          style={{
+            flex: 1,
+            height: 18,
+            border: "1px solid #555",
+            background: "#000",
+            color: "#aaa",
+            fontFamily: "var(--dm-font-primary)",
+            fontSize: 6,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+        >
+          CLOSE
+        </button>
+      </div>
+    </div>
+  );
+
   const toolsContent = (
     <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
       {TOOLS.map((t) => (
@@ -314,6 +461,29 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           {t.label}
         </button>
       ))}
+
+      {/* Onion skin toggle + options */}
+      <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
+        <button
+          onClick={() => setOnionEnabled((v) => !v)}
+          style={toolBtn(onionEnabled)}
+          title="Onion Skin (O)"
+        >
+          ONI
+        </button>
+        <button
+          onClick={() => setShowOnionOptions((v) => !v)}
+          style={{
+            ...toolBtn(showOnionOptions),
+            height: 24,
+            fontSize: 6,
+          }}
+          title="Onion Skin Options"
+        >
+          OPT
+        </button>
+      </div>
+
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
         <button onClick={redo} style={{ ...toolBtn(false), height: 24 }}>REDO</button>
@@ -439,6 +609,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             onClick={() => setActiveFrameIndex(i)}
             spriteWidth={project.width}
             spriteHeight={project.height}
+            isOnionPrev={onionEnabled && i < activeFrameIndex && i >= activeFrameIndex - 3}
+            isOnionNext={onionEnabled && i > activeFrameIndex && i <= activeFrameIndex + 3}
           />
         );
       })}
@@ -492,7 +664,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         </div>
       ) : null}
 
-      {/* Top bar — hidden when collapsed */}
       {!collapse && (
         <div
           className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0"
@@ -503,12 +674,14 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
             <span style={{ color: "#555" }}>FRM:{activeFrameIndex + 1}/{frameCount}</span>
             <span style={{ color: "#555" }}>PEN:{penSize}</span>
+            {onionEnabled && (
+              <span style={{ color: "#b850ff", letterSpacing: 1 }}>ONION</span>
+            )}
           </div>
         </div>
       )}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Desktop tool strip */}
         {!collapse && (
           <div className="flex flex-col border-r flex-shrink-0" style={{ borderColor: "#1a1a1a", width: 40 }}>
             {toolsContent}
@@ -529,8 +702,23 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             onZoomChange={setZoom}
             onPixelsChanged={handlePixelsChanged}
             onColorPicked={handleColorPicked}
+            onionSkin={onionSkin}
           />
           <CornerDismissLayer />
+
+          {/* Floating onion options panel */}
+          {showOnionOptions && (
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                left: collapse ? 8 : 48,
+                zIndex: 40,
+              }}
+            >
+              {onionOptionsContent}
+            </div>
+          )}
         </div>
 
         {!collapse && (
@@ -539,7 +727,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           </div>
         )}
 
-        {/* Corner panels when collapsed */}
         {collapse && (
           <>
             <CornerPanel id="tools" corner="top-left" label="TOOL">{toolsContent}</CornerPanel>
@@ -550,7 +737,10 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 <div>{project.width}×{project.height}</div>
                 <div>FRM {activeFrameIndex + 1}/{frameCount}</div>
                 <div>PEN {penSize} · {activeTool.toUpperCase()}</div>
-                <div style={{ marginTop: 6 }}>H = toggle UI</div>
+                <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>
+                  ONION {onionEnabled ? "ON" : "OFF"}
+                </div>
+                <div style={{ marginTop: 6 }}>H = toggle UI · O = onion</div>
               </div>
             </CornerPanel>
           </>
@@ -574,7 +764,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           style={{ borderColor: "#1a1a1a", minHeight: 18 }}
         >
           <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-            B:PEN E:ERASER G:FILL I:PICK L:LINE R:RECT [/]:SIZE CTRL+Z:UNDO · H:ZEN
+            B:PEN E:ERASER G:FILL I:PICK L:LINE R:RECT [/]:SIZE O:ONION CTRL+Z:UNDO · H:ZEN
           </span>
           <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>
@@ -590,6 +780,8 @@ function FrameThumbnail({
   onClick,
   spriteWidth,
   spriteHeight,
+  isOnionPrev,
+  isOnionNext,
 }: {
   frame: import("@/types/sprite").SpriteFrame;
   index: number;
@@ -597,6 +789,8 @@ function FrameThumbnail({
   onClick: () => void;
   spriteWidth: number;
   spriteHeight: number;
+  isOnionPrev?: boolean;
+  isOnionNext?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -613,6 +807,10 @@ function FrameThumbnail({
     ctx.drawImage(src, 0, 0);
   }, [frame, spriteWidth, spriteHeight]);
 
+  let borderColor = isActive ? "#ffffff" : "#333333";
+  if (!isActive && isOnionPrev) borderColor = "#b850ff";
+  if (!isActive && isOnionNext) borderColor = "#3cdc78";
+
   return (
     <div
       onClick={onClick}
@@ -620,7 +818,7 @@ function FrameThumbnail({
         flexShrink: 0,
         marginRight: 3,
         cursor: "pointer",
-        border: isActive ? "2px solid #ffffff" : "1px solid #333333",
+        border: isActive ? "2px solid #ffffff" : `1px solid ${borderColor}`,
         backgroundColor: "#0a0a0a",
         padding: 2,
       }}
@@ -633,7 +831,7 @@ function FrameThumbnail({
         style={{
           fontFamily: "var(--dm-font-primary)",
           fontSize: 6,
-          color: isActive ? "#ffffff" : "#555555",
+          color: isActive ? "#ffffff" : isOnionPrev ? "#b850ff" : isOnionNext ? "#3cdc78" : "#555555",
           textAlign: "center",
           marginTop: 1,
         }}

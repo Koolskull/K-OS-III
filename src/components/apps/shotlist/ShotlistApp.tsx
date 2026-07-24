@@ -13,8 +13,8 @@
  *        │    / X-Sheet Engine          │
  *        │                              │
  *        │    "Non nobis, Domine,       │
- *        │     non nobis, sed nomini    │
- *        │     tuo da gloriam."         │
+ *     non nobis, sed nomini    │
+ *     tuo da gloriam."         │
  *        │                              │
  *        └──────────────────────────────┘
  *
@@ -58,41 +58,41 @@ import {
 
 /** Single frame inside an X-Sheet (24 fps) */
 interface XFrame {
-  id: number;
+  id: number,
   /** Exposure / hold count in frames */
-  exposure: number;
-  action: string;
-  dialogue: string;
-  camera: string;
-  audioCue: string;
-  notes: string;
+  exposure: number,
+  action: string,
+  dialogue: string,
+  camera: string,
+  audioCue: string,
+  notes: string,
   /** Optional sprite / asset reference id or path */
-  assetRef: string | null;
+  assetRef: string | null,
 }
 
 /** A Shot — like a Chain in Datamoshpit */
 interface Shot {
-  id: number;
-  title: string;
-  description: string;
+  id: number,
+  title: string,
+  description: string,
   /** Duration in frames at 24 fps */
-  durationFrames: number;
+  durationFrames: number,
   /** High-level audio timing notes for the whole shot */
-  audioNotes: string;
+  audioNotes: string,
   /** Data-URL or path for quick thumbnail */
-  thumbnail: string | null;
+  thumbnail: string | null,
   /** Expandable 24 fps breakdown */
-  xsheet: XFrame[];
+  xsheet: XFrame[],
   /** Placeholder for future wallet / approval status */
-  status: "draft" | "review" | "approved";
+  status: "draft" | "review" | "approved",
 }
 
 /** Top-level Sequence / Storyboard — like a Song */
 interface Sequence {
-  id: number;
-  name: string;
-  fps: number; // fixed 24 for production X-sheets
-  shots: Shot[];
+  id: number,
+  name: string,
+  fps: number, // fixed 24 for production X-sheets
+  shots: Shot[],
 }
 
 /* ------------------------------------------------------------------ */
@@ -144,7 +144,7 @@ function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
 /* ------------------------------------------------------------------ */
 
 interface ShotlistAppProps {
-  isFocused?: boolean;
+  isFocused?: boolean,
 }
 
 export default function ShotlistApp({ isFocused = true }: ShotlistAppProps) {
@@ -312,35 +312,47 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     letterSpacing: 1,
   });
 
-  /* ---- Header bar ---- */
+  /* ---- Always-visible header (never covered by CornerPanels) ---- */
 
-  const headerBar = (
-    <div style={headerStyle}>
+  const alwaysVisibleHeader = (
+    <div style={{
+      ...headerStyle,
+      // tighter padding on mobile so it doesn't eat too much vertical space
+      padding: collapse ? "5px 10px" : "6px 12px",
+    }}>
       <span style={{ color: "#ffff00" }}>☦ SHOTLIST</span>
       <span style={{ color: "#888", fontSize: 9, letterSpacing: 1 }}>
         {sequence.name} · {sequence.shots.length} SHOTS · {sequence.fps} FPS
       </span>
-      <div style={{ display: "flex", gap: 6 }}>
-        <button type="button" style={btn()} onClick={addShot} title="New Shot (N)">
-          + SHOT
-        </button>
-        <button
-          type="button"
-          style={btn()}
-          onClick={deleteSelectedShot}
-          disabled={selectedShotId == null}
-          title="Delete selected (Del)"
-        >
-          DEL
-        </button>
-      </div>
+      {/* Only show action buttons in header when we have room (desktop) */}
+      {!collapse && (
+        <div style={{ display: "flex", gap: 6 }}>
+          <button type="button" style={btn()} onClick={addShot} title="New Shot (N)">
+            + SHOT
+          </button>
+          <button
+            type="button"
+            style={btn()}
+            onClick={deleteSelectedShot}
+            disabled={selectedShotId == null}
+            title="Delete selected (Del)"
+          >
+            DEL
+          </button>
+        </div>
+      )}
     </div>
   );
 
   /* ---- Shot list (Sequence view) ---- */
 
   const shotList = (
-    <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
+    <div style={{
+      flex: 1,
+      overflowY: "auto",
+      // extra top padding on mobile so first shot isn't hidden under corner chrome
+      padding: collapse ? "52px 10px 8px 10px" : "8px 10px",
+    }}>
       {sequence.shots.length === 0 ? (
         <div
           style={{
@@ -414,7 +426,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         objectFit: "cover",
                         imageRendering: "pixelated",
                       }}
-                    />
+                    >
                   ) : (
                     "THUMB"
                   )}
@@ -437,7 +449,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         fontSize: 11,
                       }}
                     >
-                      {String(index + 1).padStart(2, "0")} · {shot.title}
+                      {String(index + 1).padStart(2, "00")} · {shot.title}
                     </span>
                     <span style={{ color: "#666", fontSize: 9 }}>
                       {shot.durationFrames}f · {(shot.durationFrames / 24).toFixed(2)}s
@@ -529,7 +541,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         onChange={(e) =>
                           updateShotField(shot.id, { description: e.target.value })
                         }
-                        rows={2}
+                        rows={2,
                         style={{
                           display: "block",
                           width: "100%",
@@ -576,7 +588,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         onChange={(e) =>
                           updateShotField(shot.id, { audioNotes: e.target.value })
                         }
-                        rows={2}
+                        rows={2,
                         placeholder="e.g. hit on beat 3 of bar 12…"
                         style={{
                           display: "block",
@@ -664,7 +676,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
 
   return (
     <div style={rootStyle}>
-      {!collapse && headerBar}
+      {/* Always-visible header — never covered by CornerPanels on mobile */}
+      {alwaysVisibleHeader}
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
         {shotList}

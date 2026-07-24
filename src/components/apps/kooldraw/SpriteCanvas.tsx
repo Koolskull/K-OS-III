@@ -9,6 +9,7 @@
  *   Handles mouse/touch input and routes to active tool.
  *   Uses Pointer Events so finger-drag paints continuously on mobile.
  *   Supports onion skinning (previous = purple, next = green).
+ *   Supports playback displayFrameIndex for main-canvas animation preview.
  */
 
 "use client";
@@ -41,6 +42,10 @@ interface SpriteCanvasProps {
   layers: SpriteLayer[];
   activeLayerIndex: number;
   activeFrameIndex: number;
+  /** Frame shown on canvas (overrides activeFrameIndex for display, e.g. during playback) */
+  displayFrameIndex?: number;
+  /** When true, block drawing and hide onion skin (playback mode) */
+  playing?: boolean;
   width: number;
   height: number;
   tool: ToolId;
@@ -57,9 +62,7 @@ const CHECKER_LIGHT = "#2a2a2a";
 const CHECKER_DARK = "#1a1a1a";
 const GRID_COLOR = "#333333";
 
-/** Purple tint for previous frames (TVPaint / Harmony style) */
 const ONION_PREV = { r: 180, g: 80, b: 255 };
-/** Green tint for next frames */
 const ONION_NEXT = { r: 60, g: 220, b: 120 };
 
 function drawOnionFrame(
@@ -86,7 +89,6 @@ function drawOnionFrame(
       const rgba = packedColorToRGBA(c);
       if (rgba.a === 0) continue;
 
-      // Mix original luminance toward the onion tint while preserving shape
       const lum = (rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114) / 255;
       const r = Math.round(tint.r * (0.35 + lum * 0.65));
       const g = Math.round(tint.g * (0.35 + lum * 0.65));
@@ -103,6 +105,8 @@ export function SpriteCanvas({
   layers,
   activeLayerIndex,
   activeFrameIndex,
+  displayFrameIndex,
+  playing = false,
   width,
   height,
   tool,
@@ -123,6 +127,7 @@ export function SpriteCanvas({
   const overlayRef = useRef<[number, number, PackedColor][]>([]);
   const activePointerIdRef = useRef<number | null>(null);
 
+  const viewFrameIndex = displayFrameIndex ?? activeFrameIndex;
   const activeLayer = layers[activeLayerIndex];
   const activeFrame = activeLayer?.frames[activeFrameIndex];
 
@@ -142,7 +147,6 @@ export function SpriteCanvas({
     [zoom, offset],
   );
 
-  // ── RENDER ──
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -153,7 +157,6 @@ export function SpriteCanvas({
     const ch = canvas.height;
     ctx.clearRect(0, 0, cw, ch);
 
-    // Checkerboard background for transparency
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const isLight = (x + y) % 2 === 0;
@@ -162,27 +165,22 @@ export function SpriteCanvas({
       }
     }
 
-    // ── Onion skin: previous frames (purple) then next frames (green) ──
-    // Drawn under the current frame so the live drawing stays sharp.
-    if (onionSkin?.enabled) {
-      // Previous: farthest first so nearer frames sit on top
+    // Onion only when not playing and enabled
+    if (onionSkin?.enabled && !playing) {
       for (let d = 3; d >= 1; d--) {
-        const fi = activeFrameIndex - d;
+        const fi = viewFrameIndex - d;
         const op = onionSkin.prevOpacities[d - 1] ?? 0;
         drawOnionFrame(ctx, layers, fi, width, height, offset, zoom, op, ONION_PREV);
       }
-      // Next: farthest first
       for (let d = 3; d >= 1; d--) {
-        const fi = activeFrameIndex + d;
+        const fi = viewFrameIndex + d;
         const op = onionSkin.nextOpacities[d - 1] ?? 0;
         drawOnionFrame(ctx, layers, fi, width, height, offset, zoom, op, ONION_NEXT);
       }
     }
 
-    // Composite all layers (current frame)
-    const composited = compositeFrame(layers, activeFrameIndex, width, height);
+    const composited = compositeFrame(layers, viewFrameIndex, width, height);
 
-    // Draw composited pixels
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const c = composited.pixels[y * width + x];
@@ -193,16 +191,16 @@ export function SpriteCanvas({
       }
     }
 
-    // Draw overlay (shape preview)
-    for (const [ox, oy, oc] of overlayRef.current) {
-      if (ox < 0 || ox >= width || oy < 0 || oy >= height) continue;
-      const rgba = packedColorToRGBA(oc);
-      ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
-      ctx.fillRect(offset.x + ox * zoom, offset.y + oy * zoom, zoom, zoom);
+    if (!playing) {
+      for (const [ox, oy, oc] of overlayRef.current) {
+        if (ox < 0 || ox >= width || oy < 0 || oy >= height) continue;
+        const rgba = packedColorToRGBA(oc);
+        ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
+        ctx.fillRect(offset.x + ox * zoom, offset.y + oy * zoom, zoom, zoom);
+      }
     }
 
-    // Pixel grid (only when zoomed in enough)
-    if (zoom >= 6) {
+    if (zoom >= 6 && !playing) {
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -219,17 +217,15 @@ export function SpriteCanvas({
       ctx.stroke();
     }
 
-    // Canvas border
     ctx.strokeStyle = "#555555";
     ctx.lineWidth = 1;
     ctx.strokeRect(offset.x - 0.5, offset.y - 0.5, width * zoom + 1, height * zoom + 1);
-  }, [layers, activeFrameIndex, width, height, zoom, offset, onionSkin]);
+  }, [layers, viewFrameIndex, width, height, zoom, offset, onionSkin, playing]);
 
   useEffect(() => {
     render();
   }, [render]);
 
-  // Resize canvas to container
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -248,9 +244,9 @@ export function SpriteCanvas({
     return () => observer.disconnect();
   }, [width, height, zoom, render]);
 
-  // ── TOOL APPLICATION ──
   const applyTool = useCallback(
     (px: number, py: number, isStart: boolean) => {
+      if (playing) return;
       if (!activeFrame) return;
       if (px < 0 || px >= width || py < 0 || py >= height) return;
 
@@ -321,7 +317,7 @@ export function SpriteCanvas({
         }
       }
     },
-    [activeFrame, tool, color, penSize, width, height, onPixelsChanged, onColorPicked, render],
+    [activeFrame, tool, color, penSize, width, height, onPixelsChanged, onColorPicked, render, playing],
   );
 
   const commitShape = useCallback(
@@ -358,6 +354,7 @@ export function SpriteCanvas({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (playing) return;
       if (e.button !== 0 && e.pointerType === "mouse") return;
       if (drawingRef.current) return;
 
@@ -377,7 +374,7 @@ export function SpriteCanvas({
       const [px, py] = screenToPixel(e.clientX, e.clientY);
       applyTool(px, py, true);
     },
-    [screenToPixel, applyTool],
+    [screenToPixel, applyTool, playing],
   );
 
   const handlePointerMove = useCallback(
@@ -436,7 +433,7 @@ export function SpriteCanvas({
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden"
-      style={{ backgroundColor: "#0a0a0a", cursor: "crosshair" }}
+      style={{ backgroundColor: "#0a0a0a", cursor: playing ? "default" : "crosshair" }}
     >
       <canvas
         ref={canvasRef}
@@ -466,7 +463,7 @@ export function SpriteCanvas({
         }}
       >
         {zoom}X
-        {onionSkin?.enabled ? " · ONION" : ""}
+        {playing ? " · PLAY" : onionSkin?.enabled ? " · ONION" : ""}
       </div>
     </div>
   );

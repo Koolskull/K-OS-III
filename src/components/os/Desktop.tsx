@@ -27,6 +27,7 @@ const ICONS: DesktopIcon[] = [
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
   { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
+  { id: "tilemap", label: "TILEMAP", glyph: "▦" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },

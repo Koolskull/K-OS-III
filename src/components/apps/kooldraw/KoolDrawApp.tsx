@@ -11,6 +11,7 @@
  *   Tools: Pen, Eraser, Fill, Picker, Line, Rect
  *   Features: Layers, Frames, Animation Preview, Undo/Redo
  *   Export: PNG sequence (zip), Sprite sheet, GIF
+ *   Mobile: Corner-Collapsible Panels (docs/MOBILE_CREATIVE_UI.md)
  */
 
 "use client";
@@ -29,25 +30,21 @@ import {
   renderSpriteSheet,
   downloadCanvasAsPng,
   downloadFramesAsZip,
-  TRANSPARENT,
 } from "@/lib/SpriteUtils";
 import { SpriteCanvas } from "./SpriteCanvas";
+import {
+  CornerHost,
+  CornerPanel,
+  VerticalChromeToggle,
+  CornerDismissLayer,
+  useCornerChromeOptional,
+} from "@/components/ui/CornerChrome";
 
-/**
- * When KoolDraw is launched as an embedded asset editor (e.g. from Datamoshpit's
- * F4 instrument page → DRAW), the host passes this object. KoolDraw renders a
- * compact top action bar with USE / CANCEL, exports the active frame composited
- * to a PNG data URL, and hands it back through onUse.
- */
 export interface KoolDrawEmbeddedMode {
-  /** Initial canvas size (defaults to 32x32) */
   initialWidth?: number;
   initialHeight?: number;
-  /** Called with a PNG data URL of the active composited frame */
   onUse: (dataUrl: string) => void;
-  /** Called when the user dismisses without using the result */
   onCancel: () => void;
-  /** Optional title shown in the embedded action bar */
   title?: string;
 }
 
@@ -67,7 +64,33 @@ const TOOLS: { id: ToolId; label: string; key: string }[] = [
 
 const MAX_HISTORY = 100;
 
+const toolBtn = (active: boolean): React.CSSProperties => ({
+  height: 32,
+  border: "none",
+  borderBottom: "1px solid #1a1a1a",
+  backgroundColor: active ? "#1a1a1a" : "#000000",
+  color: active ? "#ffffff" : "#555555",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 7,
+  letterSpacing: 1,
+  cursor: "pointer",
+  width: "100%",
+});
+
 export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
+  return (
+    <CornerHost storageKey="kos-kooldraw-chrome" style={{ backgroundColor: "#000" }}>
+      <KoolDrawInner isFocused={isFocused} embeddedMode={embeddedMode} />
+    </CornerHost>
+  );
+}
+
+function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
+  const chrome = useCornerChromeOptional();
+  const isNarrow = chrome?.isNarrow ?? false;
+  const uiHidden = chrome?.uiHidden ?? false;
+  const collapse = isNarrow || uiHidden;
+
   const [project, setProject] = useState<SpriteProject>(() =>
     createBlankSprite(
       "SPRITE",
@@ -85,13 +108,10 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [previewFrame, setPreviewFrame] = useState(0);
   const [renderTick, setRenderTick] = useState(0);
 
-  // History
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
-
   const forceRender = useCallback(() => setRenderTick((t) => t + 1), []);
 
-  // ── HISTORY ──
   const saveHistory = useCallback(() => {
     const entry: HistoryEntry = {
       layerSnapshots: project.layers.flatMap((layer) =>
@@ -104,7 +124,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
       activeFrameIndex,
       activeLayerIndex,
     };
-    // Truncate forward history
     historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
     historyRef.current.push(entry);
     if (historyRef.current.length > MAX_HISTORY) historyRef.current.shift();
@@ -158,7 +177,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     forceRender();
   }, [saveHistory, forceRender]);
 
-  // ── KEYBOARD SHORTCUTS ──
   useEffect(() => {
     if (!isFocused) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -166,10 +184,8 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
         if (e.key === "z") { e.preventDefault(); undo(); return; }
         if (e.key === "y") { e.preventDefault(); redo(); return; }
       }
-      // Tool shortcuts
       const toolEntry = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());
       if (toolEntry) { setActiveTool(toolEntry.id); return; }
-      // Pen size
       if (e.key === "[") setPenSize((s) => Math.max(1, s - 1));
       if (e.key === "]") setPenSize((s) => Math.min(16, s + 1));
     };
@@ -177,7 +193,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFocused, undo, redo]);
 
-  // ── ANIMATION PLAYBACK ──
   useEffect(() => {
     if (!playing) return;
     const frameCount = project.layers[0]?.frames.length ?? 1;
@@ -187,7 +202,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     return () => clearInterval(interval);
   }, [playing, project.fps, project.layers]);
 
-  // ── FRAME MANAGEMENT ──
   const addFrame = useCallback(() => {
     saveHistory();
     setProject((prev) => ({
@@ -230,7 +244,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     setActiveFrameIndex((i) => Math.max(0, i - 1));
   }, [activeFrameIndex, project.layers, saveHistory]);
 
-  // ── LAYER MANAGEMENT ──
   const addLayer = useCallback(() => {
     saveHistory();
     const frameCount = project.layers[0]?.frames.length ?? 1;
@@ -248,12 +261,11 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const toggleLayerVisibility = useCallback((idx: number) => {
     setProject((prev) => ({
       ...prev,
-      layers: prev.layers.map((l, i) => i === idx ? { ...l, visible: !l.visible } : l),
+      layers: prev.layers.map((l, i) => (i === idx ? { ...l, visible: !l.visible } : l)),
     }));
     forceRender();
   }, [forceRender]);
 
-  // ── EXPORT ──
   const exportSpriteSheet = useCallback(() => {
     const frameCount = project.layers[0]?.frames.length ?? 1;
     const canvas = renderSpriteSheet(project, frameCount, 1);
@@ -264,7 +276,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     downloadFramesAsZip(project, 1);
   }, [project]);
 
-  // ── PALETTE ──
   const handlePaletteClick = useCallback((hex: string) => {
     setPrimaryColor(hexToPackedColor(hex));
   }, []);
@@ -275,7 +286,6 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
   const frameCount = project.layers[0]?.frames.length ?? 1;
 
-  // ── ANIMATION PREVIEW (tiny canvas) ──
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = previewCanvasRef.current;
@@ -292,65 +302,189 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
     ctx.drawImage(frameCanvas, 0, 0);
   }, [project, activeFrameIndex, previewFrame, playing, renderTick]);
 
+  const toolsContent = (
+    <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
+      {TOOLS.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setActiveTool(t.id)}
+          style={toolBtn(activeTool === t.id)}
+          title={`${t.label} (${t.key})`}
+        >
+          {t.label}
+        </button>
+      ))}
+      <div style={{ marginTop: "auto" }}>
+        <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
+        <button onClick={redo} style={{ ...toolBtn(false), height: 24 }}>REDO</button>
+      </div>
+    </div>
+  );
+
+  const sideContent = (
+    <div className="flex flex-col" style={{ width: collapse ? "100%" : 120 }}>
+      <div className="border-b" style={{ borderColor: "#1a1a1a", padding: 4 }}>
+        <div className="flex items-center justify-between mb-1">
+          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>PREVIEW</span>
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            style={{
+              border: "1px solid #555",
+              background: "#000",
+              color: playing ? "#fff" : "#555",
+              fontFamily: "var(--dm-font-primary)",
+              fontSize: 7,
+              padding: "1px 4px",
+              cursor: "pointer",
+            }}
+          >
+            {playing ? "STOP" : "PLAY"}
+          </button>
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", background: "#0a0a0a", padding: 4 }}>
+          <canvas
+            ref={previewCanvasRef}
+            style={{
+              width: Math.min(96, project.width * 3),
+              height: Math.min(96, project.height * 3),
+              imageRendering: "pixelated",
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span style={{ fontSize: 7, color: "#555" }}>FPS</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setProject((p) => ({ ...p, fps: Math.max(1, p.fps - 1) }))}
+              style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}
+            >-</button>
+            <span style={{ fontSize: 7, color: "#888", minWidth: 16, textAlign: "center" }}>{project.fps}</span>
+            <button
+              onClick={() => setProject((p) => ({ ...p, fps: Math.min(60, p.fps + 1) }))}
+              style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}
+            >+</button>
+          </div>
+        </div>
+      </div>
+      <div className="border-b" style={{ borderColor: "#1a1a1a", padding: 4 }}>
+        <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>COLOR</span>
+        <div className="mt-1 mb-1" style={{ width: "100%", height: 16, backgroundColor: packedColorToHex(primaryColor), border: "1px solid #555" }} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 1 }}>
+          {project.palette.map((hex, i) => (
+            <div
+              key={i}
+              onClick={() => handlePaletteClick(hex)}
+              style={{
+                width: "100%",
+                aspectRatio: "1",
+                backgroundColor: hex,
+                border: packedColorToHex(primaryColor) === hex ? "1px solid #fff" : "1px solid #333",
+                cursor: "pointer",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 4 }}>
+        <div className="flex items-center justify-between mb-1">
+          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>LAYERS</span>
+          <button
+            onClick={addLayer}
+            style={{ border: "1px solid #555", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, padding: "1px 4px", cursor: "pointer" }}
+          >+</button>
+        </div>
+        {project.layers.map((layer, i) => (
+          <div
+            key={layer.id}
+            onClick={() => setActiveLayerIndex(i)}
+            style={{
+              padding: "2px 4px",
+              backgroundColor: i === activeLayerIndex ? "#1a1a1a" : "transparent",
+              borderLeft: i === activeLayerIndex ? "2px solid #fff" : "2px solid transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
+              marginBottom: 1,
+            }}
+          >
+            <span style={{ fontSize: 7, color: i === activeLayerIndex ? "#fff" : "#555" }}>{layer.name}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(i); }}
+              style={{ border: "none", background: "transparent", color: layer.visible ? "#888" : "#333", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}
+            >
+              {layer.visible ? "V" : "-"}
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
+        <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>EXPORT</span>
+        <button onClick={exportFrames} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>PNG ZIP</button>
+        <button onClick={exportSpriteSheet} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>SHEET</button>
+      </div>
+    </div>
+  );
+
+  const timelineContent = (
+    <div className="flex items-center overflow-x-auto" style={{ minHeight: 48, padding: 4 }}>
+      {Array.from({ length: frameCount }, (_, i) => {
+        const composited = compositeFrame(project.layers, i, project.width, project.height);
+        return (
+          <FrameThumbnail
+            key={i}
+            frame={composited}
+            index={i}
+            isActive={i === activeFrameIndex}
+            onClick={() => setActiveFrameIndex(i)}
+            spriteWidth={project.width}
+            spriteHeight={project.height}
+          />
+        );
+      })}
+      <div className="flex gap-1 ml-2">
+        <button onClick={addFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 14, cursor: "pointer" }}>+</button>
+        <button onClick={duplicateFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>DUP</button>
+        {frameCount > 1 && (
+          <button onClick={deleteFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>DEL</button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div
       className="w-full h-full flex flex-col overflow-hidden"
       style={{
         backgroundColor: "#000000",
         fontFamily: "var(--dm-font-primary)",
-        fontSize: "9px",
+        fontSize: 9,
         imageRendering: "pixelated",
         color: "#ffffff",
       }}
     >
-      {/* Embedded host action bar (e.g. Datamoshpit instrument visual editor) */}
       {embeddedMode ? (
         <div
           className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0"
-          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: "22px" }}
+          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}
         >
-          <span style={{ color: "#ffff00", letterSpacing: "2px" }}>
+          <span style={{ color: "#ffff00", letterSpacing: 2 }}>
             {embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => {
-                // Composite the active frame and hand back as PNG data URL
-                const composited = compositeFrame(
-                  project.layers,
-                  activeFrameIndex,
-                  project.width,
-                  project.height,
-                );
+                const composited = compositeFrame(project.layers, activeFrameIndex, project.width, project.height);
                 const canvas = frameToCanvas(composited, 1);
-                const dataUrl = canvas.toDataURL("image/png");
-                embeddedMode.onUse(dataUrl);
+                embeddedMode.onUse(canvas.toDataURL("image/png"));
               }}
-              style={{
-                background: "#ffff00",
-                color: "#000",
-                border: "1px solid #000",
-                fontFamily: "monospace",
-                fontSize: 10,
-                padding: "1px 6px",
-                cursor: "pointer",
-                imageRendering: "pixelated",
-              }}
+              style={{ background: "#ffff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}
             >
               USE THIS SPRITE
             </button>
             <button
               onClick={() => embeddedMode.onCancel()}
-              style={{
-                background: "#000",
-                color: "#fff",
-                border: "1px solid #fff",
-                fontFamily: "monospace",
-                fontSize: 10,
-                padding: "1px 6px",
-                cursor: "pointer",
-                imageRendering: "pixelated",
-              }}
+              style={{ background: "#000", color: "#fff", border: "1px solid #fff", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}
             >
               CANCEL
             </button>
@@ -358,76 +492,29 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
         </div>
       ) : null}
 
-      {/* Top bar */}
-      <div
-        className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0"
-        style={{ borderColor: "#1a1a1a", minHeight: "20px" }}
-      >
-        <span style={{ letterSpacing: "2px" }}>SPRITE EDITOR</span>
-        <div className="flex gap-2 items-center">
-          <span style={{ color: "#888888" }}>{project.width}x{project.height}</span>
-          <span style={{ color: "#555555" }}>FRM:{activeFrameIndex + 1}/{frameCount}</span>
-          <span style={{ color: "#555555" }}>PEN:{penSize}</span>
-        </div>
-      </div>
-
-      {/* Main area: toolbar | canvas | sidebar */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Tool palette */}
+      {/* Top bar — hidden when collapsed */}
+      {!collapse && (
         <div
-          className="flex flex-col border-r flex-shrink-0"
-          style={{ borderColor: "#1a1a1a", width: "40px" }}
+          className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0"
+          style={{ borderColor: "#1a1a1a", minHeight: 20 }}
         >
-          {TOOLS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTool(t.id)}
-              style={{
-                height: "32px",
-                border: "none",
-                borderBottom: "1px solid #1a1a1a",
-                backgroundColor: activeTool === t.id ? "#1a1a1a" : "#000000",
-                color: activeTool === t.id ? "#ffffff" : "#555555",
-                fontFamily: "var(--dm-font-primary)",
-                fontSize: "7px",
-                letterSpacing: "1px",
-                cursor: "pointer",
-              }}
-              title={`${t.label} (${t.key})`}
-            >
-              {t.label}
-            </button>
-          ))}
-          {/* Undo/Redo */}
-          <div style={{ marginTop: "auto" }}>
-            <button
-              onClick={undo}
-              style={{
-                width: "100%", height: "24px", border: "none",
-                borderTop: "1px solid #1a1a1a",
-                backgroundColor: "#000000", color: "#555555",
-                fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-                cursor: "pointer",
-              }}
-            >
-              UNDO
-            </button>
-            <button
-              onClick={redo}
-              style={{
-                width: "100%", height: "24px", border: "none",
-                borderTop: "1px solid #1a1a1a",
-                backgroundColor: "#000000", color: "#555555",
-                fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-                cursor: "pointer",
-              }}
-            >
-              REDO
-            </button>
+          <span style={{ letterSpacing: 2 }}>SPRITE EDITOR</span>
+          <div className="flex gap-2 items-center">
+            <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
+            <span style={{ color: "#555" }}>FRM:{activeFrameIndex + 1}/{frameCount}</span>
+            <span style={{ color: "#555" }}>PEN:{penSize}</span>
           </div>
         </div>
+      )}
 
-        {/* Canvas */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Desktop tool strip */}
+        {!collapse && (
+          <div className="flex flex-col border-r flex-shrink-0" style={{ borderColor: "#1a1a1a", width: 40 }}>
+            {toolsContent}
+          </div>
+        )}
+
         <div className="flex-1 relative overflow-hidden">
           <SpriteCanvas
             layers={project.layers}
@@ -443,252 +530,58 @@ export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
             onPixelsChanged={handlePixelsChanged}
             onColorPicked={handleColorPicked}
           />
+          <CornerDismissLayer />
         </div>
 
-        {/* Right sidebar: preview + palette + layers */}
+        {!collapse && (
+          <div className="flex flex-col border-l flex-shrink-0" style={{ borderColor: "#1a1a1a", width: 120 }}>
+            {sideContent}
+          </div>
+        )}
+
+        {/* Corner panels when collapsed */}
+        {collapse && (
+          <>
+            <CornerPanel id="tools" corner="top-left" label="TOOL">{toolsContent}</CornerPanel>
+            <CornerPanel id="side" corner="top-right" label="CLR">{sideContent}</CornerPanel>
+            <CornerPanel id="frames" corner="bottom-left" label="FRM">{timelineContent}</CornerPanel>
+            <CornerPanel id="info" corner="bottom-right" label="INFO">
+              <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
+                <div>{project.width}×{project.height}</div>
+                <div>FRM {activeFrameIndex + 1}/{frameCount}</div>
+                <div>PEN {penSize} · {activeTool.toUpperCase()}</div>
+                <div style={{ marginTop: 6 }}>H = toggle UI</div>
+              </div>
+            </CornerPanel>
+          </>
+        )}
+
+        <VerticalChromeToggle corner="bottom-right" />
+      </div>
+
+      {!collapse && (
         <div
-          className="flex flex-col border-l flex-shrink-0"
-          style={{ borderColor: "#1a1a1a", width: "120px" }}
+          className="flex items-center border-t flex-shrink-0 overflow-x-auto"
+          style={{ borderColor: "#1a1a1a", minHeight: 48 }}
         >
-          {/* Preview */}
-          <div className="border-b" style={{ borderColor: "#1a1a1a", padding: "4px" }}>
-            <div className="flex items-center justify-between mb-1">
-              <span style={{ fontSize: "7px", color: "#888888", letterSpacing: "1px" }}>PREVIEW</span>
-              <button
-                onClick={() => setPlaying((p) => !p)}
-                style={{
-                  border: "1px solid #555555",
-                  backgroundColor: "#000000",
-                  color: playing ? "#ffffff" : "#555555",
-                  fontFamily: "var(--dm-font-primary)",
-                  fontSize: "7px",
-                  padding: "1px 4px",
-                  cursor: "pointer",
-                }}
-              >
-                {playing ? "STOP" : "PLAY"}
-              </button>
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", backgroundColor: "#0a0a0a", padding: "4px" }}>
-              <canvas
-                ref={previewCanvasRef}
-                style={{
-                  width: `${Math.min(96, project.width * 3)}px`,
-                  height: `${Math.min(96, project.height * 3)}px`,
-                  imageRendering: "pixelated",
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <span style={{ fontSize: "7px", color: "#555555" }}>FPS</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setProject((p) => ({ ...p, fps: Math.max(1, p.fps - 1) }))}
-                  style={{ border: "1px solid #333", backgroundColor: "#000", color: "#888", fontSize: "7px", cursor: "pointer", padding: "0 3px", fontFamily: "var(--dm-font-primary)" }}
-                >
-                  -
-                </button>
-                <span style={{ fontSize: "7px", color: "#888888", minWidth: "16px", textAlign: "center" }}>{project.fps}</span>
-                <button
-                  onClick={() => setProject((p) => ({ ...p, fps: Math.min(60, p.fps + 1) }))}
-                  style={{ border: "1px solid #333", backgroundColor: "#000", color: "#888", fontSize: "7px", cursor: "pointer", padding: "0 3px", fontFamily: "var(--dm-font-primary)" }}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Color palette */}
-          <div className="border-b" style={{ borderColor: "#1a1a1a", padding: "4px" }}>
-            <span style={{ fontSize: "7px", color: "#888888", letterSpacing: "1px" }}>COLOR</span>
-            {/* Current color */}
-            <div
-              className="mt-1 mb-1"
-              style={{
-                width: "100%",
-                height: "16px",
-                backgroundColor: packedColorToHex(primaryColor),
-                border: "1px solid #555555",
-              }}
-            />
-            {/* Palette grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "1px" }}>
-              {project.palette.map((hex, i) => (
-                <div
-                  key={i}
-                  onClick={() => handlePaletteClick(hex)}
-                  style={{
-                    width: "100%",
-                    aspectRatio: "1",
-                    backgroundColor: hex,
-                    border: packedColorToHex(primaryColor) === hex ? "1px solid #ffffff" : "1px solid #333333",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Layers */}
-          <div className="flex-1 overflow-y-auto" style={{ padding: "4px" }}>
-            <div className="flex items-center justify-between mb-1">
-              <span style={{ fontSize: "7px", color: "#888888", letterSpacing: "1px" }}>LAYERS</span>
-              <button
-                onClick={addLayer}
-                style={{
-                  border: "1px solid #555555",
-                  backgroundColor: "#000000",
-                  color: "#888888",
-                  fontFamily: "var(--dm-font-primary)",
-                  fontSize: "7px",
-                  padding: "1px 4px",
-                  cursor: "pointer",
-                }}
-              >
-                +
-              </button>
-            </div>
-            {project.layers.map((layer, i) => (
-              <div
-                key={layer.id}
-                onClick={() => setActiveLayerIndex(i)}
-                style={{
-                  padding: "2px 4px",
-                  backgroundColor: i === activeLayerIndex ? "#1a1a1a" : "transparent",
-                  borderLeft: i === activeLayerIndex ? "2px solid #ffffff" : "2px solid transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  cursor: "pointer",
-                  marginBottom: "1px",
-                }}
-              >
-                <span style={{ fontSize: "7px", color: i === activeLayerIndex ? "#ffffff" : "#555555" }}>
-                  {layer.name}
-                </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(i); }}
-                  style={{
-                    border: "none",
-                    backgroundColor: "transparent",
-                    color: layer.visible ? "#888888" : "#333333",
-                    fontFamily: "var(--dm-font-primary)",
-                    fontSize: "7px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {layer.visible ? "V" : "-"}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Export buttons */}
-          <div className="border-t" style={{ borderColor: "#1a1a1a", padding: "4px" }}>
-            <span style={{ fontSize: "7px", color: "#888888", letterSpacing: "1px", display: "block", marginBottom: "2px" }}>EXPORT</span>
-            <button
-              onClick={exportFrames}
-              style={{
-                width: "100%", height: "20px", border: "1px solid #333333",
-                backgroundColor: "#000000", color: "#888888",
-                fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-                cursor: "pointer", marginBottom: "2px",
-              }}
-            >
-              PNG ZIP
-            </button>
-            <button
-              onClick={exportSpriteSheet}
-              style={{
-                width: "100%", height: "20px", border: "1px solid #333333",
-                backgroundColor: "#000000", color: "#888888",
-                fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-                cursor: "pointer",
-              }}
-            >
-              SHEET
-            </button>
-          </div>
+          {timelineContent}
         </div>
-      </div>
+      )}
 
-      {/* Frame timeline (bottom) */}
-      <div
-        className="flex items-center border-t flex-shrink-0 overflow-x-auto"
-        style={{ borderColor: "#1a1a1a", minHeight: "48px", padding: "4px" }}
-      >
-        {Array.from({ length: frameCount }, (_, i) => {
-          const composited = compositeFrame(project.layers, i, project.width, project.height);
-          return (
-            <FrameThumbnail
-              key={i}
-              frame={composited}
-              index={i}
-              isActive={i === activeFrameIndex}
-              onClick={() => setActiveFrameIndex(i)}
-              spriteWidth={project.width}
-              spriteHeight={project.height}
-            />
-          );
-        })}
-        <div className="flex gap-1 ml-2">
-          <button
-            onClick={addFrame}
-            style={{
-              width: "36px", height: "36px",
-              border: "1px solid #333333",
-              backgroundColor: "#000000", color: "#555555",
-              fontFamily: "var(--dm-font-primary)", fontSize: "14px",
-              cursor: "pointer",
-            }}
-          >
-            +
-          </button>
-          <button
-            onClick={duplicateFrame}
-            style={{
-              width: "36px", height: "36px",
-              border: "1px solid #333333",
-              backgroundColor: "#000000", color: "#555555",
-              fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-              cursor: "pointer",
-            }}
-          >
-            DUP
-          </button>
-          {frameCount > 1 && (
-            <button
-              onClick={deleteFrame}
-              style={{
-                width: "36px", height: "36px",
-                border: "1px solid #333333",
-                backgroundColor: "#000000", color: "#555555",
-                fontFamily: "var(--dm-font-primary)", fontSize: "7px",
-                cursor: "pointer",
-              }}
-            >
-              DEL
-            </button>
-          )}
+      {!collapse && (
+        <div
+          className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0"
+          style={{ borderColor: "#1a1a1a", minHeight: 18 }}
+        >
+          <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
+            B:PEN E:ERASER G:FILL I:PICK L:LINE R:RECT [/]:SIZE CTRL+Z:UNDO · H:ZEN
+          </span>
+          <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>
-      </div>
-
-      {/* Bottom status bar */}
-      <div
-        className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0"
-        style={{ borderColor: "#1a1a1a", minHeight: "18px" }}
-      >
-        <span style={{ fontSize: "7px", color: "#555555", letterSpacing: "1px" }}>
-          B:PEN E:ERASER G:FILL I:PICK L:LINE R:RECT [/]:SIZE CTRL+Z:UNDO
-        </span>
-        <span style={{ fontSize: "7px", color: "#555555" }}>☦</span>
-      </div>
+      )}
     </div>
   );
 }
-
-// ── FRAME THUMBNAIL ──
 
 function FrameThumbnail({
   frame,
@@ -725,29 +618,24 @@ function FrameThumbnail({
       onClick={onClick}
       style={{
         flexShrink: 0,
-        marginRight: "3px",
+        marginRight: 3,
         cursor: "pointer",
         border: isActive ? "2px solid #ffffff" : "1px solid #333333",
         backgroundColor: "#0a0a0a",
-        padding: "2px",
+        padding: 2,
       }}
     >
       <canvas
         ref={canvasRef}
-        style={{
-          width: "32px",
-          height: "32px",
-          imageRendering: "pixelated",
-          display: "block",
-        }}
+        style={{ width: 32, height: 32, imageRendering: "pixelated", display: "block" }}
       />
       <div
         style={{
           fontFamily: "var(--dm-font-primary)",
-          fontSize: "6px",
+          fontSize: 6,
           color: isActive ? "#ffffff" : "#555555",
           textAlign: "center",
-          marginTop: "1px",
+          marginTop: 1,
         }}
       >
         {index + 1}

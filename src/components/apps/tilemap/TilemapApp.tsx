@@ -14,9 +14,17 @@
  * - Export SGDK-compatible .h (TILE_ATTR_FULL)
  *
  * Keyboard: A/S/Tab plane · B paint · E erase · I pick · 1-4 palette · [ ] zoom
+ * Mobile: Corner-Collapsible Panels (docs/MOBILE_CREATIVE_UI.md) · H = zen
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  CornerHost,
+  CornerPanel,
+  VerticalChromeToggle,
+  CornerDismissLayer,
+  useCornerChromeOptional,
+} from "@/components/ui/CornerChrome";
 
 function downloadCanvasAsPng(canvas: HTMLCanvasElement, filename: string) {
   canvas.toBlob((blob) => {
@@ -60,6 +68,19 @@ interface Props {
 }
 
 export default function TilemapApp({ isFocused = true }: Props) {
+  return (
+    <CornerHost storageKey="kos-tilemap-chrome" style={{ background: "#0f0f1a" }}>
+      <TilemapInner isFocused={isFocused} />
+    </CornerHost>
+  );
+}
+
+function TilemapInner({ isFocused = true }: Props) {
+  const chrome = useCornerChromeOptional();
+  const isNarrow = chrome?.isNarrow ?? false;
+  const uiHidden = chrome?.uiHidden ?? false;
+  const collapse = isNarrow || uiHidden;
+
   const [tileW, setTileW] = useState(8);
   const [tileH, setTileH] = useState(8);
   const [mapW, setMapW] = useState(40);
@@ -80,7 +101,7 @@ export default function TilemapApp({ isFocused = true }: Props) {
 
   const mapRef = useRef<TilemapState>({
     tileW: 8, tileH: 8, mapW: 40, mapH: 28,
-    planes: [new Uint16Array(40*28).fill(EMPTY), new Uint16Array(40*28).fill(EMPTY)],
+    planes: [new Uint16Array(40 * 28).fill(EMPTY), new Uint16Array(40 * 28).fill(EMPTY)],
   });
 
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -132,13 +153,13 @@ export default function TilemapApp({ isFocused = true }: Props) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 1;
-    for (let x = 0; x <= sheetCols; x++) { ctx.beginPath(); ctx.moveTo(x*tileW*z+0.5,0); ctx.lineTo(x*tileW*z+0.5,canvas.height); ctx.stroke(); }
-    for (let y = 0; y <= sheetRows; y++) { ctx.beginPath(); ctx.moveTo(0,y*tileH*z+0.5); ctx.lineTo(canvas.width,y*tileH*z+0.5); ctx.stroke(); }
-    if (selectedTile >= 0 && selectedTile < sheetCols*sheetRows) {
+    for (let x = 0; x <= sheetCols; x++) { ctx.beginPath(); ctx.moveTo(x * tileW * z + 0.5, 0); ctx.lineTo(x * tileW * z + 0.5, canvas.height); ctx.stroke(); }
+    for (let y = 0; y <= sheetRows; y++) { ctx.beginPath(); ctx.moveTo(0, y * tileH * z + 0.5); ctx.lineTo(canvas.width, y * tileH * z + 0.5); ctx.stroke(); }
+    if (selectedTile >= 0 && selectedTile < sheetCols * sheetRows) {
       const sx = (selectedTile % sheetCols) * tileW * z;
       const sy = Math.floor(selectedTile / sheetCols) * tileH * z;
       ctx.strokeStyle = "#00ff88"; ctx.lineWidth = 2;
-      ctx.strokeRect(sx+1, sy+1, tileW*z-2, tileH*z-2);
+      ctx.strokeRect(sx + 1, sy + 1, tileW * z - 2, tileH * z - 2);
     }
   }, [sheetImg, sheetZoom, tileW, tileH, sheetCols, sheetRows, selectedTile]);
 
@@ -168,15 +189,15 @@ export default function TilemapApp({ isFocused = true }: Props) {
             const tile = unpackTile(v);
             const sx = (tile % sheetCols) * m.tileW;
             const sy = Math.floor(tile / sheetCols) * m.tileH;
-            ctx.drawImage(img, sx, sy, m.tileW, m.tileH, tx*m.tileW*z, ty*m.tileH*z, m.tileW*z, m.tileH*z);
+            ctx.drawImage(img, sx, sy, m.tileW, m.tileH, tx * m.tileW * z, ty * m.tileH * z, m.tileW * z, m.tileH * z);
           }
         }
       }
     }
     if (z >= 2) {
       ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
-      for (let x = 0; x <= m.mapW; x++) { ctx.beginPath(); ctx.moveTo(x*m.tileW*z+0.5,0); ctx.lineTo(x*m.tileW*z+0.5,pxH); ctx.stroke(); }
-      for (let y = 0; y <= m.mapH; y++) { ctx.beginPath(); ctx.moveTo(0,y*m.tileH*z+0.5); ctx.lineTo(pxW,y*m.tileH*z+0.5); ctx.stroke(); }
+      for (let x = 0; x <= m.mapW; x++) { ctx.beginPath(); ctx.moveTo(x * m.tileW * z + 0.5, 0); ctx.lineTo(x * m.tileW * z + 0.5, pxH); ctx.stroke(); }
+      for (let y = 0; y <= m.mapH; y++) { ctx.beginPath(); ctx.moveTo(0, y * m.tileH * z + 0.5); ctx.lineTo(pxW, y * m.tileH * z + 0.5); ctx.stroke(); }
     }
   }, [sheetImg, mapZoom, sheetCols, showPlaneA, showPlaneB]);
 
@@ -241,7 +262,7 @@ export default function TilemapApp({ isFocused = true }: Props) {
           const v = planeData[ty * m.mapW + tx];
           if (v === EMPTY) continue;
           const tile = unpackTile(v);
-          ctx.drawImage(img, (tile % sheetCols)*m.tileW, Math.floor(tile/sheetCols)*m.tileH, m.tileW, m.tileH, tx*m.tileW, ty*m.tileH, m.tileW, m.tileH);
+          ctx.drawImage(img, (tile % sheetCols) * m.tileW, Math.floor(tile / sheetCols) * m.tileH, m.tileW, m.tileH, tx * m.tileW, ty * m.tileH, m.tileW, m.tileH);
         }
       }
     }
@@ -264,8 +285,8 @@ export default function TilemapApp({ isFocused = true }: Props) {
       for (let y = 0; y < h; y++) {
         out += "  ";
         for (let x = 0; x < w; x++) {
-          out += `0x${toSGDKWord(plane[y*w+x]).toString(16).padStart(4,"0")}`;
-          if (y*w+x < w*h-1) out += ", ";
+          out += `0x${toSGDKWord(plane[y * w + x]).toString(16).padStart(4, "0")}`;
+          if (y * w + x < w * h - 1) out += ", ";
         }
         out += "\n";
       }
@@ -284,8 +305,8 @@ export default function TilemapApp({ isFocused = true }: Props) {
     setStatus(`Exported SGDK header ${name}.h (${w}×${h})`);
   };
 
-  const clearActivePlane = () => { mapRef.current.planes[activePlane].fill(EMPTY); drawMap(); setStatus(`Plane ${activePlane===0?"A":"B"} cleared.`); };
-  const clearAll = () => { mapRef.current.planes.forEach(p => p.fill(EMPTY)); drawMap(); setStatus("Both planes cleared."); };
+  const clearActivePlane = () => { mapRef.current.planes[activePlane].fill(EMPTY); drawMap(); setStatus(`Plane ${activePlane === 0 ? "A" : "B"} cleared.`); };
+  const clearAll = () => { mapRef.current.planes.forEach((p) => p.fill(EMPTY)); drawMap(); setStatus("Both planes cleared."); };
 
   const applySizes = () => {
     const tw = Math.max(1, Math.min(64, tileW));
@@ -305,72 +326,126 @@ export default function TilemapApp({ isFocused = true }: Props) {
         case "b": case "p": setTool("paint"); break;
         case "e": setTool("erase"); break;
         case "i": setTool("pick"); break;
-        case "[": setMapZoom(z => Math.max(1, z-1)); break;
-        case "]": setMapZoom(z => Math.min(16, z+1)); break;
-        case "1": case "2": case "3": case "4": setSelectedPalette(parseInt(e.key)-1); break;
+        case "[": setMapZoom((z) => Math.max(1, z - 1)); break;
+        case "]": setMapZoom((z) => Math.min(16, z + 1)); break;
+        case "1": case "2": case "3": case "4": setSelectedPalette(parseInt(e.key) - 1); break;
         case "a": setActivePlane(0); break;
         case "s": setActivePlane(1); break;
-        case "tab": e.preventDefault(); setActivePlane(p => (p+1)%NUM_PLANES); break;
+        case "tab": e.preventDefault(); setActivePlane((p) => (p + 1) % NUM_PLANES); break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isFocused]);
 
-  const panelStyle: React.CSSProperties = { background: "#0f0f1a", color: "#c8c8d0", fontFamily: "monospace", fontSize: 12, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", userSelect: "none" };
-  const barStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", gap: 6, padding: "6px 8px", background: "#16162a", borderBottom: "1px solid #2a2a40", alignItems: "center" };
-  const btn = (active: boolean): React.CSSProperties => ({ padding: "3px 8px", background: active ? "#00ff88" : "#2a2a40", color: active ? "#000" : "#ccc", border: "1px solid #3a3a55", cursor: "pointer", fontFamily: "monospace", fontSize: 11 });
+  const btn = (active: boolean): React.CSSProperties => ({
+    padding: "3px 8px",
+    background: active ? "#00ff88" : "#2a2a40",
+    color: active ? "#000" : "#ccc",
+    border: "1px solid #3a3a55",
+    cursor: "pointer",
+    fontFamily: "monospace",
+    fontSize: 11,
+  });
   const label: React.CSSProperties = { marginRight: 4, opacity: 0.7 };
 
+  const controlsBar = (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "6px 8px", background: "#16162a", alignItems: "center" }}>
+      <label style={btn(false)}>Load Sheet<input type="file" accept="image/png,image/gif,image/webp" onChange={onLoadSheet} style={{ display: "none" }} /></label>
+      <span style={label}>Tile</span>
+      <input type="number" value={tileW} min={1} max={64} onChange={(e) => setTileW(+e.target.value)} style={{ width: 40, background: "#222", color: "#eee", border: "1px solid #444" }} />×
+      <input type="number" value={tileH} min={1} max={64} onChange={(e) => setTileH(+e.target.value)} style={{ width: 40, background: "#222", color: "#eee", border: "1px solid #444" }} />
+      <span style={label}>Map</span>
+      <input type="number" value={mapW} min={1} max={256} onChange={(e) => setMapW(+e.target.value)} style={{ width: 48, background: "#222", color: "#eee", border: "1px solid #444" }} />×
+      <input type="number" value={mapH} min={1} max={256} onChange={(e) => setMapH(+e.target.value)} style={{ width: 48, background: "#222", color: "#eee", border: "1px solid #444" }} />
+      <button style={btn(false)} onClick={applySizes}>Apply</button>
+      <button style={btn(activePlane === 0)} onClick={() => setActivePlane(0)}>Plane A</button>
+      <button style={btn(activePlane === 1)} onClick={() => setActivePlane(1)}>Plane B</button>
+      <label style={{ ...label, display: "flex", alignItems: "center", gap: 2 }}><input type="checkbox" checked={showPlaneA} onChange={(e) => setShowPlaneA(e.target.checked)} />show A</label>
+      <label style={{ ...label, display: "flex", alignItems: "center", gap: 2 }}><input type="checkbox" checked={showPlaneB} onChange={(e) => setShowPlaneB(e.target.checked)} />show B</label>
+      <button style={btn(tool === "paint")} onClick={() => setTool("paint")}>Paint</button>
+      <button style={btn(tool === "erase")} onClick={() => setTool("erase")}>Erase</button>
+      <button style={btn(tool === "pick")} onClick={() => setTool("pick")}>Pick</button>
+      <span style={label}>Pal</span>
+      {[0, 1, 2, 3].map((p) => (
+        <button key={p} style={btn(selectedPalette === p)} onClick={() => setSelectedPalette(p)}>{p}</button>
+      ))}
+      <button style={btn(false)} onClick={() => setMapZoom((z) => Math.max(1, z - 1))}>−</button>
+      <span>{mapZoom}×</span>
+      <button style={btn(false)} onClick={() => setMapZoom((z) => Math.min(16, z + 1))}>+</button>
+      <input value={mapName} onChange={(e) => setMapName(e.target.value)} placeholder="name" style={{ width: 80, background: "#222", color: "#eee", border: "1px solid #444" }} />
+      <button style={btn(false)} onClick={exportPng}>Save PNG</button>
+      <button style={btn(false)} onClick={exportSGDK}>SGDK .h</button>
+      <button style={btn(false)} onClick={clearActivePlane}>Clear Plane</button>
+      <button style={btn(false)} onClick={clearAll}>Clear All</button>
+    </div>
+  );
+
+  const sheetPanel = (
+    <div style={{ display: "flex", flexDirection: "column", background: "#0c0c18", minHeight: 120 }}>
+      <div style={{ padding: "4px 8px", background: "#16162a", fontSize: 11, display: "flex", justifyContent: "space-between" }}>
+        <span>Spritesheet</span>
+        <span>
+          <button style={{ ...btn(false), padding: "1px 6px" }} onClick={() => setSheetZoom((z) => Math.max(1, z - 1))}>−</button>
+          {" "}{sheetZoom}×{" "}
+          <button style={{ ...btn(false), padding: "1px 6px" }} onClick={() => setSheetZoom((z) => Math.min(8, z + 1))}>+</button>
+        </span>
+      </div>
+      <div style={{ flex: 1, overflow: "auto", padding: 4 }}>
+        {sheetImg ? (
+          <canvas ref={sheetCanvasRef} onClick={onSheetClick} style={{ cursor: "crosshair", display: "block" }} />
+        ) : (
+          <div style={{ padding: 16, opacity: 0.5, textAlign: "center" }}>Load a spritesheet<br />(PNG recommended)</div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={panelStyle}>
-      <div style={barStyle}>
-        <label style={btn(false)}>Load Sheet<input type="file" accept="image/png,image/gif,image/webp" onChange={onLoadSheet} style={{ display: "none" }} /></label>
-        <span style={label}>Tile</span>
-        <input type="number" value={tileW} min={1} max={64} onChange={e => setTileW(+e.target.value)} style={{ width: 40, background: "#222", color: "#eee", border: "1px solid #444" }} />×
-        <input type="number" value={tileH} min={1} max={64} onChange={e => setTileH(+e.target.value)} style={{ width: 40, background: "#222", color: "#eee", border: "1px solid #444" }} />
-        <span style={label}>Map</span>
-        <input type="number" value={mapW} min={1} max={256} onChange={e => setMapW(+e.target.value)} style={{ width: 48, background: "#222", color: "#eee", border: "1px solid #444" }} />×
-        <input type="number" value={mapH} min={1} max={256} onChange={e => setMapH(+e.target.value)} style={{ width: 48, background: "#222", color: "#eee", border: "1px solid #444" }} />
-        <button style={btn(false)} onClick={applySizes}>Apply</button>
-        <span style={{ width: 8 }} />
-        <button style={btn(activePlane===0)} onClick={() => setActivePlane(0)} title="Plane A (A)">Plane A</button>
-        <button style={btn(activePlane===1)} onClick={() => setActivePlane(1)} title="Plane B (S)">Plane B</button>
-        <label style={{ ...label, display: "flex", alignItems: "center", gap: 2 }}><input type="checkbox" checked={showPlaneA} onChange={e => setShowPlaneA(e.target.checked)} />show A</label>
-        <label style={{ ...label, display: "flex", alignItems: "center", gap: 2 }}><input type="checkbox" checked={showPlaneB} onChange={e => setShowPlaneB(e.target.checked)} />show B</label>
-        <span style={{ width: 8 }} />
-        <button style={btn(tool==="paint")} onClick={() => setTool("paint")}>Paint (B)</button>
-        <button style={btn(tool==="erase")} onClick={() => setTool("erase")}>Erase (E)</button>
-        <button style={btn(tool==="pick")} onClick={() => setTool("pick")}>Pick (I)</button>
-        <span style={label}>Pal</span>
-        {[0,1,2,3].map(p => <button key={p} style={btn(selectedPalette===p)} onClick={() => setSelectedPalette(p)} title={`Palette ${p}`}>{p}</button>)}
-        <span style={{ width: 8 }} />
-        <button style={btn(false)} onClick={() => setMapZoom(z => Math.max(1,z-1))}>−</button>
-        <span>{mapZoom}×</span>
-        <button style={btn(false)} onClick={() => setMapZoom(z => Math.min(16,z+1))}>+</button>
-        <span style={{ flex: 1 }} />
-        <input value={mapName} onChange={e => setMapName(e.target.value)} placeholder="name" style={{ width: 80, background: "#222", color: "#eee", border: "1px solid #444" }} />
-        <button style={btn(false)} onClick={exportPng}>Save PNG</button>
-        <button style={btn(false)} onClick={exportSGDK} title="Export SGDK .h">SGDK .h</button>
-        <button style={btn(false)} onClick={clearActivePlane}>Clear Plane</button>
-        <button style={btn(false)} onClick={clearAll}>Clear All</button>
-      </div>
-      <div style={{ padding: "2px 8px", background: "#0a0a12", fontSize: 11, color: "#6a6a80", borderBottom: "1px solid #1a1a2e" }}>
-        {status} · editing <strong style={{ color: activePlane===0 ? "#88aaff" : "#ffaa88" }}>Plane {activePlane===0?"A":"B"}</strong> · tile #{selectedTile} · pal {selectedPalette}
-      </div>
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <div style={{ width: 280, borderRight: "1px solid #2a2a40", display: "flex", flexDirection: "column", background: "#0c0c18" }}>
-          <div style={{ padding: "4px 8px", background: "#16162a", fontSize: 11, display: "flex", justifyContent: "space-between" }}>
-            <span>Spritesheet</span>
-            <span><button style={{...btn(false), padding:"1px 6px"}} onClick={() => setSheetZoom(z=>Math.max(1,z-1))}>−</button> {sheetZoom}× <button style={{...btn(false), padding:"1px 6px"}} onClick={() => setSheetZoom(z=>Math.min(8,z+1))}>+</button></span>
+    <div style={{ background: "#0f0f1a", color: "#c8c8d0", fontFamily: "monospace", fontSize: 12, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", userSelect: "none" }}>
+      {!collapse && (
+        <>
+          {controlsBar}
+          <div style={{ padding: "2px 8px", background: "#0a0a12", fontSize: 11, color: "#6a6a80", borderBottom: "1px solid #1a1a2e" }}>
+            {status} · editing <strong style={{ color: activePlane === 0 ? "#88aaff" : "#ffaa88" }}>Plane {activePlane === 0 ? "A" : "B"}</strong> · tile #{selectedTile} · pal {selectedPalette}
           </div>
-          <div style={{ flex: 1, overflow: "auto", padding: 4 }}>
-            {sheetImg ? <canvas ref={sheetCanvasRef} onClick={onSheetClick} style={{ cursor: "crosshair", display: "block" }} /> : <div style={{ padding: 16, opacity: 0.5, textAlign: "center" }}>Load a spritesheet<br/>(PNG recommended)</div>}
+        </>
+      )}
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+        {!collapse && (
+          <div style={{ width: 280, borderRight: "1px solid #2a2a40", display: "flex", flexDirection: "column" }}>
+            {sheetPanel}
           </div>
+        )}
+
+        <div style={{ flex: 1, overflow: "auto", background: "#080810", position: "relative" }}>
+          <canvas
+            ref={mapCanvasRef}
+            onPointerDown={onMapPointerDown}
+            onPointerMove={onMapPointerMove}
+            onPointerUp={onMapPointerUp}
+            onPointerLeave={onMapPointerUp}
+            style={{ cursor: tool === "erase" ? "cell" : "crosshair", display: "block", margin: 8, imageRendering: "pixelated" }}
+          />
+          <CornerDismissLayer />
         </div>
-        <div style={{ flex: 1, overflow: "auto", background: "#080810" }}>
-          <canvas ref={mapCanvasRef} onPointerDown={onMapPointerDown} onPointerMove={onMapPointerMove} onPointerUp={onMapPointerUp} onPointerLeave={onMapPointerUp} style={{ cursor: tool==="erase"?"cell":"crosshair", display: "block", margin: 8, imageRendering: "pixelated" }} />
-        </div>
+
+        {collapse && (
+          <>
+            <CornerPanel id="controls" corner="top-left" label="CTRL">{controlsBar}</CornerPanel>
+            <CornerPanel id="sheet" corner="top-right" label="SHEET">{sheetPanel}</CornerPanel>
+            <CornerPanel id="status" corner="bottom-left" label="STAT">
+              <div style={{ padding: 6, fontSize: 10, color: "#888" }}>
+                <div>{status}</div>
+                <div style={{ marginTop: 4 }}>Plane {activePlane === 0 ? "A" : "B"} · tile #{selectedTile} · pal {selectedPalette}</div>
+                <div style={{ marginTop: 4 }}>H = toggle UI</div>
+              </div>
+            </CornerPanel>
+          </>
+        )}
+
+        <VerticalChromeToggle corner="bottom-right" />
       </div>
     </div>
   );

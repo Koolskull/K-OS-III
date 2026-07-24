@@ -106,6 +106,21 @@ const mobileFrameBtn: React.CSSProperties = {
   imageRendering: "pixelated",
 };
 
+const headerBtn = (active: boolean): React.CSSProperties => ({
+  border: active ? "1px solid #ffffff" : "1px solid #555555",
+  background: active ? "#ffffff" : "#000000",
+  color: active ? "#000000" : "#888888",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 8,
+  letterSpacing: 1,
+  padding: "2px 8px",
+  cursor: "pointer",
+  height: 20,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
 export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
   return (
     <CornerHost storageKey="kos-kooldraw-chrome" style={{ backgroundColor: "#000" }}>
@@ -132,7 +147,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [playing, setPlaying] = useState(false);
   const [previewFrame, setPreviewFrame] = useState(0);
   const [renderTick, setRenderTick] = useState(0);
-  const [onionEnabled, setOnionEnabled] = useState(false);
+  // Onion skin ON by default (mobile + desktop)
+  const [onionEnabled, setOnionEnabled] = useState(true);
   const [showOnionOptions, setShowOnionOptions] = useState(false);
   const [prevOpacities, setPrevOpacities] = useState<[number, number, number]>([...DEFAULT_PREV_OP]);
   const [nextOpacities, setNextOpacities] = useState<[number, number, number]>([...DEFAULT_NEXT_OP]);
@@ -354,17 +370,17 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     </div>
   );
 
+  // Onion controls always present in tools (desktop strip + mobile TOOL panel)
   const toolsContent = (
     <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
       {TOOLS.map((t) => (
         <button key={t.id} onClick={() => setActiveTool(t.id)} style={toolBtn(activeTool === t.id)} title={`${t.label} (${t.key})`}>{t.label}</button>
       ))}
-      {!collapse && (
-        <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
-          <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
-          <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
-        </div>
-      )}
+      <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
+        <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
+        <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
+        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (Space)">{playing ? "||" : ">"}</button>
+      </div>
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
         <button onClick={redo} style={{ ...toolBtn(false), height: 24 }}>REDO</button>
@@ -422,6 +438,27 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
   const timelineContent = (
     <div className="flex items-center overflow-x-auto" style={{ minHeight: 48, padding: 4 }}>
+      {/* Desktop timeline play control */}
+      <button
+        type="button"
+        onClick={togglePlayback}
+        title={playing ? "Pause" : "Play"}
+        style={{
+          flexShrink: 0,
+          width: 36,
+          height: 36,
+          marginRight: 6,
+          border: playing ? "1px solid #fff" : "1px solid #555",
+          background: playing ? "#fff" : "#000",
+          color: playing ? "#000" : "#888",
+          fontFamily: "var(--dm-font-primary)",
+          fontSize: 12,
+          cursor: "pointer",
+        }}
+      >
+        {playing ? "||" : ">"}
+      </button>
+
       {Array.from({ length: frameCount }, (_, i) => (
         <FrameThumbnail
           key={i}
@@ -456,14 +493,23 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       ) : null}
 
       {!collapse && (
-        <div className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 20 }}>
+        <div className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 22 }}>
           <span style={{ letterSpacing: 2 }}>SPRITE EDITOR</span>
           <div className="flex gap-2 items-center">
             <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
             <span style={{ color: "#555" }}>FRM:{displayFrameIndex + 1}/{frameCount}</span>
             <span style={{ color: "#555" }}>PEN:{penSize}</span>
-            {onionEnabled && !playing && <span style={{ color: "#b850ff", letterSpacing: 1 }}>ONION</span>}
-            {playing && <span style={{ color: "#fff", letterSpacing: 1 }}>PLAY</span>}
+
+            {/* Desktop header: onion + play always visible */}
+            <button type="button" style={headerBtn(onionEnabled)} onClick={() => setOnionEnabled((v) => !v)} title="Onion Skin (O)">
+              {onionEnabled ? "ONION" : "ONI"}
+            </button>
+            <button type="button" style={headerBtn(showOnionOptions)} onClick={() => setShowOnionOptions((v) => !v)} title="Onion Options">
+              OPT
+            </button>
+            <button type="button" style={headerBtn(playing)} onClick={togglePlayback} title="Play / Pause (Space)">
+              {playing ? "||" : ">"}
+            </button>
           </div>
         </div>
       )}

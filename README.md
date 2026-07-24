@@ -131,7 +131,7 @@ Each app opens in its own draggable, resizable window on the desktop. You can ru
 
 ## Datamoshpit
 
-Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Slimentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.
+Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Silmentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.
 
 If you've used a tracker before — LSDJ, LGPT, Renoise, Furnace — Datamoshpit will feel familiar fast. If you haven't, the **full beginner's guide** walks you from "what is a tracker" to "you just wrote music":
 
@@ -149,6 +149,8 @@ For deeper technical references, see the docs index further down this README.
 
 A Piskel-inspired sprite editor for creating pixel art and animations. Tools include pen, eraser, fill, line, and rectangle. Manage layers and animation frames. Export as PNG sequences or sprite sheets for use in Datamoshpit visual layers.
 
+On phones the editor uses the **Corner-Collapsible Panels** pattern (toolbars and side panels collapse into the four screen corners + a full-canvas “zen” mode). See [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md).
+
 ### TILEMAP — Dual-Plane Level Painter (New)
 
 A bare-bones but capable tilemap editor aimed at Sega Genesis / Mega Drive style levels:
@@ -162,6 +164,8 @@ A bare-bones but capable tilemap editor aimed at Sega Genesis / Mega Drive style
 - **Export SGDK `.h`** — generates `TILE_ATTR_FULL`-compatible `u16` arrays ready to drop into an SGDK project
 
 Keyboard: `A` / `S` / `Tab` switch plane · `B` paint · `E` erase · `I` pick · `1-4` palette · `[` `]` zoom
+
+Same mobile corner-collapse + vertical hide pattern as the Sprite Editor (documented in [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md)).
 
 ### HOLY BIBLE — King James Version
 
@@ -183,6 +187,7 @@ K-OS III ships with open-source games compiled to WebAssembly / browser emulator
 - **Tilemap Painter** — new desktop app for dual-plane tilemap editing + SGDK header export. Designed for people making Genesis-style homebrew levels.
 - **Mega Drive emulator** — added to the Games app. Uses the lightest practical core (PicoDrive) so it stays responsive even on modest hardware / handheld browsers.
 - Both features keep the existing K-OS window system (draggable, resizable, maximizable, taskbar integration).
+- **Mobile Creative UI pattern** documented for Sprite Editor + Tilemap (and future creative tools): menus collapse into the four corners of the screen and can be fully hidden for maximum canvas space on cell phones.
 
 ---
 
@@ -199,6 +204,8 @@ Datamoshpit works with whatever you have:
 | **Handheld devices** (Miyoo Mini, Anbernic, Steam Deck) | Runs in the browser on Linux handhelds. Pixel-perfect at small resolutions. |
 
 See [docs/CONTROLLER_SUPPORT.md](docs/CONTROLLER_SUPPORT.md) for full device-specific details and button mappings.
+
+Creative apps (Sprite Editor, Tilemap) use the additional **[Mobile Creative UI](docs/MOBILE_CREATIVE_UI.md)** pattern on phones so the canvas stays large.
 
 ---
 
@@ -273,6 +280,7 @@ For deeper technical specifications, see the docs folder:
 | [`docs/COMMANDS.md`](./docs/COMMANDS.md) | Full effect command reference |
 | [`docs/NAVIGATION_AND_INPUT.md`](./docs/NAVIGATION_AND_INPUT.md) | Complete input system specification |
 | [`docs/CONTROLLER_SUPPORT.md`](./docs/CONTROLLER_SUPPORT.md) | MIDI, gamepad, handheld, and touch support |
+| [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md) | **Corner-collapsible menus + vertical hide for Sprite Editor, Tilemap & future creative tools** |
 | [`docs/SOUND_ENGINES.md`](./docs/SOUND_ENGINES.md) | All sound engines and their parameters |
 | [`docs/GROOVE_AND_TIMING.md`](./docs/GROOVE_AND_TIMING.md) | Groove system and timing math |
 | [`docs/SLIMENTOLOGIKA_GUIDE.md`](./docs/SLIMENTOLOGIKA_GUIDE.md) | Full guide to the base-16 glyph system |

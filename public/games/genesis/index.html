@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K-OS Mega Drive</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: ui-monospace, Menlo, monospace; color: #c8c8d0; }
+    #boot { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 10; background: #0a0a12; }
+    #boot h1 { font-size: 18px; letter-spacing: 2px; color: #00ff88; }
+    #boot p { font-size: 12px; opacity: 0.7; max-width: 320px; text-align: center; }
+    #boot label { display: inline-block; padding: 10px 20px; background: #2a2a40; border: 1px solid #3a3a55; cursor: pointer; font-size: 13px; }
+    #boot label:hover { background: #00ff88; color: #000; }
+    #boot input { display: none; }
+    #game { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="boot">
+    <h1>MEGA DRIVE / GENESIS</h1>
+    <p>Lightweight PicoDrive core via EmulatorJS.<br/>Load a ROM (.md .bin .gen .smd) to start.</p>
+    <label>LOAD ROM<input type="file" id="rom" accept=".md,.bin,.gen,.smd,.zip" /></label>
+    <p style="font-size:11px;opacity:0.5">ESC or menu → exit back to K-OS Games</p>
+  </div>
+  <div id="game"></div>
+  <script>
+    const boot = document.getElementById("boot");
+    const romInput = document.getElementById("rom");
+    romInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      boot.innerHTML = "<h1>LOADING…</h1><p>" + file.name + "</p>";
+      const buffer = await file.arrayBuffer();
+      const blob = new Blob([buffer]);
+      const romUrl = URL.createObjectURL(blob);
+      window.EJS_player = "#game";
+      window.EJS_core = "picodrive";
+      window.EJS_gameUrl = romUrl;
+      window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+      window.EJS_startOnLoaded = true;
+      window.EJS_volume = 0.7;
+      const script = document.createElement("script");
+      script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+      script.onload = () => { setTimeout(() => { boot.style.display = "none"; }, 800); };
+      script.onerror = () => { boot.innerHTML = "<h1>FAILED</h1><p>Could not load EmulatorJS CDN.</p>"; };
+      document.body.appendChild(script);
+    });
+    document.body.addEventListener("dragover", (e) => e.preventDefault());
+    document.body.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer?.files?.[0];
+      if (file) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        romInput.files = dt.files;
+        romInput.dispatchEvent(new Event("change"));
+      }
+    });
+  </script>
+</body>
+</html>

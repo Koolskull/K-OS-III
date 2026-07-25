@@ -26,3 +26,5 @@ export {
   type ViewportState,
   type UseCanvasViewportOptions,
 } from "./useCanvasViewport";
+
+export { clientToCanvasBitmap } from "./pointerMap";

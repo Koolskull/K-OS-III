@@ -7,7 +7,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useCanvasViewport } from "@/lib/creative";
+import { clientToCanvasBitmap, useCanvasViewport } from "@/lib/creative";
 import {
   BAYER8,
   SHOT_H,
@@ -146,14 +146,17 @@ export function ShotCanvas({
     viewport,
     transformStyle,
     resetViewport,
+    setZoom,
+    zoomBy,
+    onWheelZoom,
     onPointerDown: vpDown,
     onPointerMove: vpMove,
     onPointerUp: vpUp,
     spaceDownRef,
   } = useCanvasViewport({
     onUndo: undo,
-    minZoom: 0.2,
-    maxZoom: 6,
+    minZoom: 0.15,
+    maxZoom: 12,
   });
 
   useEffect(() => {
@@ -191,44 +194,37 @@ export function ShotCanvas({
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
-    return () => ro.disconnect();
-  }, [ready, plateW, plateH]);
+    // Non-passive wheel so preventDefault stops page scroll while zooming
+    const onWheelNative = (ev: WheelEvent) => {
+      ev.preventDefault();
+      onWheelZoom(ev);
+    };
+    el.addEventListener("wheel", onWheelNative, { passive: false });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("wheel", onWheelNative);
+    };
+  }, [ready, plateW, plateH, onWheelZoom]);
 
+  /** Map mouse/touch → plate pixels (border-aware, transform-safe). */
   const clientToPlate = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } | null => {
       const canvas = viewRef.current;
       if (!canvas) return null;
       const { w, h } = sizeRef.current;
-      // Untransformed layout box (CSS size before viewport transform)
-      const cssW = Math.floor(w * baseScale);
-      const cssH = Math.floor(h * baseScale);
-      const rect = canvas.getBoundingClientRect();
-      // Center of transformed element
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      // Inverse viewport: pan is already in rect center; undo zoom+rotation from gesture
-      const rad = (-viewport.rotation * Math.PI) / 180;
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
-      const z = (viewport.zoom || 1) * baseScale;
-      // getBoundingClientRect size already includes CSS scale+rotate;
-      // map using display size / plate size after inverse rotation/scale of delta from center
-      dx /= viewport.zoom || 1;
-      dy /= viewport.zoom || 1;
-      const rx = dx * cos - dy * sin;
-      const ry = dx * sin + dy * cos;
-      // Convert from CSS px (baseScale) to plate px
-      const x = w / 2 + rx / baseScale;
-      const y = h / 2 + ry / baseScale;
+      const { x, y } = clientToCanvasBitmap(
+        canvas,
+        clientX,
+        clientY,
+        viewport.rotation,
+      );
       if (x < -2 || y < -2 || x > w + 2 || y > h + 2) return null;
       return {
         x: Math.max(0, Math.min(w - 0.01, x)),
         y: Math.max(0, Math.min(h - 0.01, y)),
       };
     },
-    [baseScale, viewport.rotation, viewport.zoom],
+    [viewport.rotation],
   );
 
   const strokeTo = useCallback(
@@ -410,9 +406,19 @@ export function ShotCanvas({
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, handleSave, onCancel, resetViewport]);
 
-  const cssW = Math.floor(plateW * baseScale);
-  const cssH = Math.floor(plateH * baseScale);
+  // Zoom via layout size (base fit × camera zoom) — reliable for mouse hit-testing
+  const displayScale = baseScale * (viewport.zoom || 1);
+  const cssW = Math.max(1, Math.floor(plateW * displayScale));
+  const cssH = Math.max(1, Math.floor(plateH * displayScale));
   const grab = spaceDownRef.current;
+  const zoomPct = Math.round((viewport.zoom || 1) * 100);
+
+  const zoomIn = useCallback(() => zoomBy(1.2), [zoomBy]);
+  const zoomOut = useCallback(() => zoomBy(1 / 1.2), [zoomBy]);
+  const zoomFit = useCallback(() => {
+    resetViewport();
+    setStatus("Zoom fit");
+  }, [resetViewport]);
 
   const rootStyle: React.CSSProperties = embedded
     ? {
@@ -460,13 +466,12 @@ export function ShotCanvas({
           ☦ {title}
         </span>
         <span style={{ color: "#666", fontSize: 9, letterSpacing: 1 }}>
-          {plateW}×{plateH} · MONO · z{viewport.zoom.toFixed(2)} · r
-          {Math.round(viewport.rotation)}°
+          {plateW}×{plateH} · MONO · {zoomPct}%
+          {Math.abs(viewport.rotation) >= 0.5
+            ? ` · r${Math.round(viewport.rotation)}°`
+            : ""}
         </span>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <button type="button" style={miniBtn()} onClick={resetViewport} title="Reset view (0)">
-            VIEW
-          </button>
           {onOpenInSpriteEditor && (
             <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
               → SPRITE
@@ -518,6 +523,42 @@ export function ShotCanvas({
         <button type="button" style={miniBtn()} onClick={fillInk}>
           FILL
         </button>
+
+        {/* Desktop zoom controls */}
+        <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
+        <button
+          type="button"
+          style={miniBtn()}
+          onClick={zoomOut}
+          title="Zoom out (scroll down)"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          style={{ ...miniBtn(), minWidth: 48 }}
+          onClick={zoomFit}
+          title="Fit / reset zoom (0)"
+        >
+          {zoomPct}%
+        </button>
+        <button
+          type="button"
+          style={miniBtn()}
+          onClick={zoomIn}
+          title="Zoom in (scroll up)"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          style={miniBtn()}
+          onClick={() => setZoom(1)}
+          title="100% camera zoom"
+        >
+          1:1
+        </button>
+
         {tool === "dither" && (
           <>
             <button type="button" style={miniBtn()} onClick={() => setDitherOx((v) => (v + 1) % 8)}>
@@ -533,6 +574,7 @@ export function ShotCanvas({
 
       <div
         ref={wrapRef}
+        onWheel={onWheelZoom}
         style={{
           flex: 1,
           minHeight: 0,
@@ -554,14 +596,26 @@ export function ShotCanvas({
             onPointerMove={onPointerMove}
             onPointerUp={endStroke}
             onPointerCancel={endStroke}
+            onWheel={onWheelZoom}
             style={{
               width: cssW,
               height: cssH,
               imageRendering: "pixelated",
-              border: "1px solid #444",
+              // outline does not affect hit-testing / getBoundingClientRect
+              outline: "1px solid #444",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              display: "block",
               touchAction: "none",
               background: bg === "white" ? "#fff" : "#000",
-              transform: transformStyle,
+              // Only apply transform when non-identity (avoids subpixel drift at rest)
+              transform:
+                Math.abs(viewport.panX) > 0.01 ||
+                Math.abs(viewport.panY) > 0.01 ||
+                Math.abs(viewport.rotation) > 0.01
+                  ? transformStyle
+                  : undefined,
               transformOrigin: "center center",
             }}
           />
@@ -586,7 +640,7 @@ export function ShotCanvas({
       >
         <span>{status}</span>
         <span>
-          SPACE+DRAG pan · SHIFT/CTRL+DRAG rotate · PINCH zoom/rot · 2-FINGER TAP undo · 0 reset
+          SCROLL zoom · +/− buttons · SPACE+DRAG pan · SHIFT+DRAG rotate · 0 fit
         </span>
       </div>
     </div>

@@ -139,6 +139,40 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     [minZoom, maxZoom],
   );
 
+  /** Multiply current zoom (e.g. wheel / buttons). factor > 1 zooms in. */
+  const zoomBy = useCallback(
+    (factor: number) => {
+      setViewport((v) => ({
+        ...v,
+        zoom: Math.min(maxZoom, Math.max(minZoom, v.zoom * factor)),
+      }));
+    },
+    [minZoom, maxZoom],
+  );
+
+  /**
+   * Mouse-wheel / trackpad zoom. Always zooms the camera (desktop-friendly).
+   * Call from onWheel on the canvas stage; prevents page scroll.
+   */
+  const onWheelZoom = useCallback(
+    (e: { deltaY: number; preventDefault: () => void }) => {
+      if (!enabled) return;
+      e.preventDefault();
+      // Smooth trackpads send small deltas; mouse wheels send larger steps.
+      const dy = e.deltaY;
+      const factor =
+        Math.abs(dy) < 40
+          ? dy > 0
+            ? 0.96
+            : 1.04
+          : dy > 0
+            ? 0.85
+            : 1.18;
+      zoomBy(factor);
+    },
+    [enabled, zoomBy],
+  );
+
   /**
    * Map client coordinates through inverse viewport transform into
    * local plate/canvas space (origin top-left of the untransformed element).
@@ -205,8 +239,12 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     [],
   );
 
-  /** CSS transform string for the canvas element */
-  const transformStyle = `translate(${viewport.panX}px, ${viewport.panY}px) rotate(${viewport.rotation}deg) scale(${viewport.zoom})`;
+  /**
+   * CSS transform for pan + rotation only.
+   * Apply zoom by scaling the element's CSS width/height (not transform:scale)
+   * so hit-testing via getBoundingClientRect stays reliable on desktop.
+   */
+  const transformStyle = `translate(${viewport.panX}px, ${viewport.panY}px) rotate(${viewport.rotation}deg)`;
 
   /**
    * Call at pointerdown. Returns true if the viewport consumed the event
@@ -357,6 +395,8 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     viewport,
     setViewport,
     setZoom,
+    zoomBy,
+    onWheelZoom,
     resetViewport,
     transformStyle,
     clientToLocal,
@@ -365,5 +405,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     onPointerUp,
     isSpacePan,
     spaceDownRef,
+    minZoom,
+    maxZoom,
   };
 }

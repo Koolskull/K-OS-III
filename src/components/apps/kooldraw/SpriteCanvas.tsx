@@ -18,7 +18,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import type { SpriteLayer, ToolId, PackedColor } from "@/types/sprite";
-import { useCanvasViewport } from "@/lib/creative";
+import { clientToCanvasBitmap, useCanvasViewport } from "@/lib/creative";
 import {
   getPixel,
   setPixel,
@@ -151,13 +151,18 @@ export function SpriteCanvas({
     onPointerMove: vpMove,
     onPointerUp: vpUp,
     spaceDownRef,
-    setZoom: setCamZoom,
+    zoomBy: camZoomBy,
+    onWheelZoom: camWheelZoom,
+    resetViewport,
   } = useCanvasViewport({
     onUndo,
     minZoom: 0.35,
     maxZoom: 4,
     enabled: !playing,
   });
+
+  /** Pixel zoom × camera zoom (pinch / scroll multiplies camera) */
+  const drawZoom = Math.max(1, zoom * (viewport.zoom || 1));
   /** Sub-pixel stroke continuity for freehand tools */
   const lastPixelRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
@@ -178,35 +183,23 @@ export function SpriteCanvas({
   const activeLayer = layers[activeLayerIndex];
   const activeFrame = activeLayer?.frames[activeFrameIndex];
 
-  /** Sub-pixel coords for smooth freehand stamping (inverse camera + pixel zoom). */
+  /** Sub-pixel coords: bitmap space → sprite pixels via offset / drawZoom. */
   const screenToFloatPixel = useCallback(
     (clientX: number, clientY: number): [number, number] => {
       const canvas = canvasRef.current;
       if (!canvas) return [-1, -1];
-      const rect = canvas.getBoundingClientRect();
-      // Center of transformed canvas
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      const rad = (-viewport.rotation * Math.PI) / 180;
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
-      dx /= viewport.zoom || 1;
-      dy /= viewport.zoom || 1;
-      const rx = dx * cos - dy * sin;
-      const ry = dx * sin + dy * cos;
-      // Map from CSS px (post-layout, un-camera) into canvas backing store
-      // rect size includes CSS transform; use canvas CSS size ≈ offsetWidth
-      const dispW = canvas.offsetWidth || rect.width / (viewport.zoom || 1);
-      const dispH = canvas.offsetHeight || rect.height / (viewport.zoom || 1);
-      const sx = (dispW / 2 + rx) * (canvas.width / dispW);
-      const sy = (dispH / 2 + ry) * (canvas.height / dispH);
-      const px = (sx - offset.x) / zoom;
-      const py = (sy - offset.y) / zoom;
+      const { x: sx, y: sy } = clientToCanvasBitmap(
+        canvas,
+        clientX,
+        clientY,
+        viewport.rotation,
+      );
+      if (sx < 0 || sy < 0) return [-1, -1];
+      const px = (sx - offset.x) / drawZoom;
+      const py = (sy - offset.y) / drawZoom;
       return [px, py];
     },
-    [zoom, offset, viewport.rotation, viewport.zoom],
+    [offset, viewport.rotation, drawZoom],
   );
 
   /** Integer pixel coords (shapes / fill / picker). */
@@ -228,11 +221,12 @@ export function SpriteCanvas({
     const ch = canvas.height;
     ctx.clearRect(0, 0, cw, ch);
 
+    const z = drawZoom;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const isLight = (x + y) % 2 === 0;
         ctx.fillStyle = isLight ? CHECKER_LIGHT : CHECKER_DARK;
-        ctx.fillRect(offset.x + x * zoom, offset.y + y * zoom, zoom, zoom);
+        ctx.fillRect(offset.x + x * z, offset.y + y * z, z, z);
       }
     }
 
@@ -241,12 +235,12 @@ export function SpriteCanvas({
       for (let d = 3; d >= 1; d--) {
         const fi = viewFrameIndex - d;
         const op = onionSkin.prevOpacities[d - 1] ?? 0;
-        drawOnionFrame(ctx, layers, fi, width, height, offset, zoom, op, ONION_PREV);
+        drawOnionFrame(ctx, layers, fi, width, height, offset, z, op, ONION_PREV);
       }
       for (let d = 3; d >= 1; d--) {
         const fi = viewFrameIndex + d;
         const op = onionSkin.nextOpacities[d - 1] ?? 0;
-        drawOnionFrame(ctx, layers, fi, width, height, offset, zoom, op, ONION_NEXT);
+        drawOnionFrame(ctx, layers, fi, width, height, offset, z, op, ONION_NEXT);
       }
     }
 
@@ -258,7 +252,7 @@ export function SpriteCanvas({
         if (c === 0) continue;
         const rgba = packedColorToRGBA(c);
         ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
-        ctx.fillRect(offset.x + x * zoom, offset.y + y * zoom, zoom, zoom);
+        ctx.fillRect(offset.x + x * z, offset.y + y * z, z, z);
       }
     }
 
@@ -267,31 +261,31 @@ export function SpriteCanvas({
         if (ox < 0 || ox >= width || oy < 0 || oy >= height) continue;
         const rgba = packedColorToRGBA(oc);
         ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
-        ctx.fillRect(offset.x + ox * zoom, offset.y + oy * zoom, zoom, zoom);
+        ctx.fillRect(offset.x + ox * z, offset.y + oy * z, z, z);
       }
     }
 
-    if (zoom >= 6 && !playing) {
+    if (z >= 6 && !playing) {
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let x = 0; x <= width; x++) {
-        const px = offset.x + x * zoom + 0.5;
+        const px = offset.x + x * z + 0.5;
         ctx.moveTo(px, offset.y);
-        ctx.lineTo(px, offset.y + height * zoom);
+        ctx.lineTo(px, offset.y + height * z);
       }
       for (let y = 0; y <= height; y++) {
-        const py = offset.y + y * zoom + 0.5;
+        const py = offset.y + y * z + 0.5;
         ctx.moveTo(offset.x, py);
-        ctx.lineTo(offset.x + width * zoom, py);
+        ctx.lineTo(offset.x + width * z, py);
       }
       ctx.stroke();
     }
 
     ctx.strokeStyle = "#555555";
     ctx.lineWidth = 1;
-    ctx.strokeRect(offset.x - 0.5, offset.y - 0.5, width * zoom + 1, height * zoom + 1);
-  }, [layers, viewFrameIndex, width, height, zoom, offset, onionSkin, playing]);
+    ctx.strokeRect(offset.x - 0.5, offset.y - 0.5, width * z + 1, height * z + 1);
+  }, [layers, viewFrameIndex, width, height, drawZoom, offset, onionSkin, playing]);
 
   useEffect(() => {
     render();
@@ -306,14 +300,14 @@ export function SpriteCanvas({
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       setOffset({
-        x: Math.floor((canvas.width - width * zoom) / 2),
-        y: Math.floor((canvas.height - height * zoom) / 2),
+        x: Math.floor((canvas.width - width * drawZoom) / 2),
+        y: Math.floor((canvas.height - height * drawZoom) / 2),
       });
       render();
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, [width, height, zoom, render]);
+  }, [width, height, drawZoom, render]);
 
   const applyFreehandStamp = useCallback(
     (fx: number, fy: number, pressure: number) => {
@@ -550,20 +544,47 @@ export function SpriteCanvas({
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
-      if (e.ctrlKey || e.metaKey) {
-        // Camera zoom
-        const factor = e.deltaY > 0 ? 0.9 : 1.1;
-        setCamZoom(viewport.zoom * factor);
-        return;
+      // Desktop mouse / trackpad: scroll = zoom in/out (pixel zoom)
+      const dy = e.deltaY;
+      if (Math.abs(dy) < 40) {
+        // trackpad — also nudge camera for fine control
+        camWheelZoom(e);
       }
-      const delta = e.deltaY > 0 ? -1 : 1;
-      const newZoom = Math.max(1, Math.min(64, zoom + delta * Math.max(1, Math.floor(zoom / 4))));
+      const step = Math.max(1, Math.floor(zoom / 4));
+      const delta = dy > 0 ? -step : step;
+      const newZoom = Math.max(1, Math.min(64, zoom + delta));
       onZoomChange(newZoom);
     },
-    [zoom, onZoomChange, setCamZoom, viewport.zoom],
+    [zoom, onZoomChange, camWheelZoom],
   );
 
-  // Pinch camera zoom also nudges pixel zoom slightly when cam hits limits — optional skip
+  const zoomInBtn = useCallback(() => {
+    onZoomChange(Math.min(64, zoom + Math.max(1, Math.floor(zoom / 4))));
+  }, [zoom, onZoomChange]);
+
+  const zoomOutBtn = useCallback(() => {
+    onZoomChange(Math.max(1, zoom - Math.max(1, Math.floor(zoom / 4))));
+  }, [zoom, onZoomChange]);
+
+  const zoomResetBtn = useCallback(() => {
+    onZoomChange(12);
+    resetViewport();
+  }, [onZoomChange, resetViewport]);
+
+  const zBtn: React.CSSProperties = {
+    width: 28,
+    height: 24,
+    border: "1px solid #555",
+    background: "#000",
+    color: "#ccc",
+    fontFamily: "var(--dm-font-primary), monospace",
+    fontSize: 12,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    touchAction: "manipulation",
+  };
 
   return (
     <div
@@ -587,10 +608,47 @@ export function SpriteCanvas({
           width: "100%",
           height: "100%",
           display: "block",
-          transform: transformStyle,
+          border: "none",
+          padding: 0,
+          margin: 0,
+          // Only transform when panning/rotating — keeps desktop cursor exact at rest
+          transform:
+            Math.abs(viewport.panX) > 0.01 ||
+            Math.abs(viewport.panY) > 0.01 ||
+            Math.abs(viewport.rotation) > 0.01
+              ? transformStyle
+              : undefined,
           transformOrigin: "center center",
         }}
       />
+      {/* Desktop zoom cluster */}
+      {!playing && (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            display: "flex",
+            gap: 4,
+            zIndex: 20,
+          }}
+        >
+          <button type="button" style={zBtn} onClick={zoomOutBtn} title="Zoom out (scroll)">
+            −
+          </button>
+          <button
+            type="button"
+            style={{ ...zBtn, width: 40, fontSize: 9 }}
+            onClick={zoomResetBtn}
+            title="Reset zoom"
+          >
+            {zoom}×
+          </button>
+          <button type="button" style={zBtn} onClick={zoomInBtn} title="Zoom in (scroll)">
+            +
+          </button>
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -603,7 +661,7 @@ export function SpriteCanvas({
           pointerEvents: "none",
         }}
       >
-        {zoom}X · cam{viewport.zoom.toFixed(2)} · r{Math.round(viewport.rotation)}°
+        {zoom}X · SCROLL ZOOM
         {playing ? " · PLAY" : onionSkin?.enabled ? " · ONION" : ""}
       </div>
     </div>

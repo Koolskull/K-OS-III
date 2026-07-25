@@ -809,7 +809,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <div>U — upgrade HD/4K (after thumb)</div>
       <div>↑↓ Enter Del · H zen</div>
       <div style={{ marginTop: 8, color: "#555" }}>
-        Draw: SPACE pan · SHIFT/CTRL rotate · pinch · 2-finger undo
+        Draw: SPACE pan · SHIFT/ALT rotate · scroll zoom · pinch · 2-finger undo
       </div>
     </div>
   );

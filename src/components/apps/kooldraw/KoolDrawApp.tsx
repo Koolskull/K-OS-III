@@ -791,7 +791,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       {!collapse && (
         <div className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 18 }}>
           <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-            B/K/D freehand · SPACE+DRAG pan · SHIFT/CTRL+DRAG rot · PINCH · 2-FINGER TAP undo · P play · H:ZEN
+            B/K/D freehand · SPACE+DRAG pan · SHIFT/ALT+DRAG rot · SCROLL zoom · PINCH · 2-FINGER TAP undo · P play · H:ZEN
           </span>
           <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>

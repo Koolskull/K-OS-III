@@ -1,13 +1,20 @@
 /*
- * Accurate client (mouse/touch) → canvas pixel mapping.
- * Accounts for CSS size vs backing store, borders, and optional CSS rotation.
+ * Accurate client (mouse/touch) → canvas bitmap pixel mapping.
+ *
+ * CSS transform model we support on the canvas element:
+ *   transform: translate(panX, panY) rotate(rotationDeg)
+ *   transform-origin: center center
+ *   zoom is applied via CSS width/height (NOT transform: scale)
+ *
+ * When rotated, getBoundingClientRect() is an AABB — we must inverse-rotate
+ * around the visual center using the unrotated layout size (clientWidth/Height).
  */
 
 /**
  * Map a client-space pointer into the canvas bitmap coordinate system
  * (0..canvas.width, 0..canvas.height), origin top-left of the bitmap.
  *
- * Call this before converting to "logical" sprite/plate pixels (offset/zoom).
+ * @param rotationDeg CSS rotate() angle in degrees (positive = CSS clockwise on screen)
  */
 export function clientToCanvasBitmap(
   canvas: HTMLCanvasElement,
@@ -22,51 +29,61 @@ export function clientToCanvasBitmap(
   const rect = canvas.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return { x: -1, y: -1 };
 
+  // Unrotated content box (bitmap paints here). Zoom is baked into these sizes.
+  const contentW = canvas.clientWidth;
+  const contentH = canvas.clientHeight;
+  if (contentW < 1 || contentH < 1) return { x: -1, y: -1 };
+
   const cs = getComputedStyle(canvas);
   const borderLeft = parseFloat(cs.borderLeftWidth) || 0;
   const borderTop = parseFloat(cs.borderTopWidth) || 0;
-  const borderRight = parseFloat(cs.borderRightWidth) || 0;
-  const borderBottom = parseFloat(cs.borderBottomWidth) || 0;
   const padLeft = parseFloat(cs.paddingLeft) || 0;
   const padTop = parseFloat(cs.paddingTop) || 0;
-  const padRight = parseFloat(cs.paddingRight) || 0;
-  const padBottom = parseFloat(cs.paddingBottom) || 0;
-
-  // Content box size in CSS pixels (where the bitmap is painted)
-  const contentW =
-    rect.width - borderLeft - borderRight - padLeft - padRight;
-  const contentH =
-    rect.height - borderTop - borderBottom - padTop - padBottom;
-  if (contentW < 1 || contentH < 1) return { x: -1, y: -1 };
 
   const rot = rotationDeg;
 
+  // ── Unrotated (and pure translate) path ────────────────────────────
+  // getBoundingClientRect already includes translate; content is inset by border/pad.
   if (Math.abs(rot) < 0.01) {
-    // Axis-aligned (includes CSS translate pan — rect is already moved)
-    const x = ((clientX - rect.left - borderLeft - padLeft) / contentW) * bw;
-    const y = ((clientY - rect.top - borderTop - padTop) / contentH) * bh;
+    const x =
+      ((clientX - rect.left - borderLeft - padLeft) / contentW) * bw;
+    const y =
+      ((clientY - rect.top - borderTop - padTop) / contentH) * bh;
     return { x, y };
   }
 
-  // Rotated around transform-origin center (default: center of border box).
-  // Invert rotation about the visual center of the element.
+  // ── Rotated path ───────────────────────────────────────────────────
+  // Visual center of the transformed element = transform-origin (center).
+  // AABB center from getBoundingClientRect coincides with that origin for
+  // translate + rotate around center.
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
-  let dx = clientX - cx;
-  let dy = clientY - cy;
-  const rad = (-rot * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const rx = dx * cos - dy * sin;
-  const ry = dx * sin + dy * cos;
 
-  // Unrotated content box is offsetWidth/Height minus border/padding
-  // offsetWidth includes border+padding; use content dimensions we already have
-  // when rotation is applied, contentW/contentH from getBoundingClientRect are for
-  // the AABB — use offsetWidth/clientWidth for true unrotated layout size.
-  const layoutW = canvas.clientWidth || contentW;
-  const layoutH = canvas.clientHeight || contentH;
-  const x = (0.5 + rx / layoutW) * bw;
-  const y = (0.5 + ry / layoutH) * bh;
+  // Screen-space vector from center → pointer
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+
+  // Inverse of CSS rotate(θ). In screen coords (Y down), CSS uses
+  //   [[cosθ, -sinθ], [sinθ, cosθ]]
+  // Inverse is rotate(-θ):
+  //   [[cosθ, sinθ], [-sinθ, cosθ]]
+  const θ = (rot * Math.PI) / 180;
+  const c = Math.cos(θ);
+  const s = Math.sin(θ);
+  const rx = dx * c + dy * s;
+  const ry = -dx * s + dy * c;
+
+  // (rx, ry) is now in unrotated CSS px relative to the border-box center.
+  // Content box is centered within the border box (equal borders assumed;
+  // we use clientWidth which is the content size).
+  // Map from content-local coords:
+  //   content origin (0,0) is at center - (contentW/2, contentH/2) in border-box space
+  //   but if there are borders, center of border box ≠ center of content by
+  //   (borderRight-borderLeft)/2 etc. For border:none (our case) they match.
+  const localX = rx + contentW / 2;
+  const localY = ry + contentH / 2;
+
+  const x = (localX / contentW) * bw;
+  const y = (localY / contentH) * bh;
   return { x, y };
 }

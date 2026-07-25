@@ -4,7 +4,10 @@
  * - Pinch → zoom + rotate
  * - Space + drag → pan
  * - Shift + drag → rotate
- * - Ctrl/Meta + drag → rotate
+ * - Alt + drag → rotate
+ *
+ * NOTE (macOS): Do NOT use Ctrl+click for rotate — macOS maps Ctrl+click to
+ * a secondary/right-click. Use Shift or Alt only.
  */
 
 "use client";
@@ -275,8 +278,14 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         return true;
       }
 
+      // Ignore secondary / right-click (incl. macOS Ctrl+click → button 2)
+      if (e.button === 2 || e.ctrlKey || e.metaKey) {
+        return false;
+      }
+
       const wantPan = spaceDownRef.current || e.button === 1;
-      const wantRotate = e.shiftKey || e.ctrlKey || e.metaKey;
+      // Shift or Alt only — never Ctrl (macOS Ctrl+click = right-click)
+      const wantRotate = e.shiftKey || e.altKey;
 
       if (wantPan) {
         g.mode = "pan";
@@ -285,7 +294,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         e.preventDefault();
         return true;
       }
-      if (wantRotate && e.pointerType === "mouse") {
+      if (wantRotate && (e.pointerType === "mouse" || e.pointerType === "pen")) {
         g.mode = "rotate";
         g.lastX = e.clientX;
         g.lastY = e.clientY;

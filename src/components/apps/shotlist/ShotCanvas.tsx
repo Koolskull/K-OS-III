@@ -640,7 +640,7 @@ export function ShotCanvas({
       >
         <span>{status}</span>
         <span>
-          SCROLL zoom · +/− buttons · SPACE+DRAG pan · SHIFT+DRAG rotate · 0 fit
+          SCROLL zoom · +/− · SPACE+DRAG pan · SHIFT/ALT+DRAG rotate · 0 fit
         </span>
       </div>
     </div>

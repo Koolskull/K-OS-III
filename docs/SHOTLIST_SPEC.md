@@ -181,6 +181,7 @@ Every shot starts on a monochrome thumbnail plate — **portrait 480×853** or *
   - **4K** 3840×2160  
   Letterboxed nearest-neighbor mono upscale from the thumbnail. UI: **HD/4K** / **U**.
 - Keys: `1/H` harsh · `2/B` pen · `3/D` dither · `X` ink · phase keys · `⌘Z` · `Enter` save · `Esc`
+- Viewport (desktop): **scroll** zoom · **Space+drag** pan · **Shift/Alt+drag** rotate (never Ctrl — macOS right-click). See [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md) § Canvas viewport controls.
 
 ### Phase 0.6 — Cross-app workflow (landed)
 Sprite Editor round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md):

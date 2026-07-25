@@ -29,6 +29,8 @@ Datamoshpit can keep its local embedded KoolDraw overlay for instrument visuals;
 | `src/lib/creative/types.ts` | Session / result / freehand tool ids |
 | `src/lib/creative/toolRegistry.ts` | Shared **PEN / HRS / DTH / ERA** definitions (keys + labels) |
 | `src/lib/creative/CreativeWorkflow.tsx` | React context: `handoffTo` / `complete` / `cancel` |
+| `src/lib/creative/useCanvasViewport.ts` | Shared pan / zoom / rotate gestures |
+| `src/lib/creative/pointerMap.ts` | Client → canvas pixel mapping (incl. rotation) |
 | `src/lib/drawStamps.ts` | Shared stamp algorithms (pressure, harsh, dither) |
 | `src/lib/SpriteUtils.ts` | `loadProjectFromDataUrl`, `dataUrlToMonoDataUrl` |
 
@@ -78,6 +80,33 @@ useEffect(() => {
 4. On RETURN, mono threshold is applied and the shot thumbnail updates  
 
 Inline mono DRAW (E) still works for quick sketching without leaving SHOTLIST.
+
+---
+
+## Canvas viewport controls (SHOTLIST plate + KoolDraw)
+
+Shared by `useCanvasViewport` + `pointerMap`. Used in the storyboard plate editor and the sprite editor.
+
+| Control | Action |
+|---------|--------|
+| **Scroll wheel / trackpad** | Zoom in / out |
+| **+/− buttons** | Step zoom |
+| **Space + drag** | Pan |
+| **Shift + drag** | Rotate canvas |
+| **Alt + drag** | Rotate canvas (same as Shift) |
+| **Two-finger pinch** | Zoom + rotate |
+| **Two-finger tap** | Undo |
+| **0** (shot plate) | Fit / reset view |
+
+### macOS note — no Ctrl for rotate
+
+**Do not use Ctrl+click for rotate.** On macOS, Ctrl+click is the system secondary-click (right-click) and fights the drawing tools. Rotate is **Shift** or **Alt** only. Ctrl/Meta+click is ignored for viewport gestures.
+
+### Implementation notes
+
+- Zoom is applied by changing CSS **width/height**, not `transform: scale`, so hit-testing stays stable.
+- Pan + rotate use `transform: translate(...) rotate(...)` with `transform-origin: center`.
+- When rotated, pointer mapping inverse-rotates around the visual center using `clientWidth`/`clientHeight` (see `pointerMap.ts`). A wrong inverse previously offset the pen after rotation.
 
 ---
 

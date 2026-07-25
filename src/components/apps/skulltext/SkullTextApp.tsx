@@ -5,18 +5,39 @@
  *            ║  SKULLTEXT       ║
  *            ╚═══════════════════╝
  *
- *   Local-first notes + code editor (textarea host).
- *   Soft wrap on by default. Tab = 2 spaces.
+ *   Local-first notes + code editor (CodeMirror 6 + K-OS theme).
+ *   Soft wrap on by default. Tab indent. Syntax highlight by extension.
  *   Files live in localStorage cache; export to disk anytime.
- *
- *   CodeMirror 6 integration is deferred until a clean install path is verified.
  *
  *   Saint Jerome, patron of translators and scribes — keep these lines true.
  */
 
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+
+const SkullEditor = dynamic(
+  () => import("./SkullEditor").then((m) => m.SkullEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#555",
+          letterSpacing: 2,
+          fontSize: 11,
+        }}
+      >
+        LOADING EDITOR…
+      </div>
+    ),
+  },
+);
 
 interface SkullFile {
   id: string;
@@ -143,7 +164,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
   const [showBrowser, setShowBrowser] = useState(true);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const list = loadFiles();
@@ -152,7 +172,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         id: uid(),
         name: defaultName(".md"),
         content:
-          "# SKULLTEXT\n\nLocal-first notes and code.\n\n- Soft wrap is on by default\n- Tab inserts 2 spaces\n- Save to cache · Export to disk\n",
+          "# SKULLTEXT\n\nLocal-first notes and code.\n\n- Soft wrap on by default\n- Syntax highlight by file extension (`.ts`, `.md`, `.json`, …)\n- Tab indent · Save to cache · Export to disk\n",
         updatedAt: Date.now(),
       };
       setFiles([starter]);
@@ -229,7 +249,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
       localStorage.setItem(LAST_OPEN_KEY, f.id);
       setDirty(false);
       setStatus(`New ${f.name}`);
-      requestAnimationFrame(() => taRef.current?.focus());
     },
     [files, persist],
   );
@@ -356,21 +375,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isFocused, saveActive, newFile, exportFile]);
-
-  const onKeyDownTa = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const ta = e.currentTarget;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const val = ta.value;
-      const next = val.slice(0, start) + "  " + val.slice(end);
-      updateContent(next);
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      });
-    }
-  };
 
   const sorted = useMemo(
     () => [...files].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -558,32 +562,12 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
           {active ? (
-            <textarea
-              ref={taRef}
+            <SkullEditor
+              key={active.id}
               value={active.content}
-              onChange={(e) => updateContent(e.target.value)}
-              onKeyDown={onKeyDownTa}
-              spellCheck={extOf(active.name) === ".txt" || extOf(active.name) === ".md"}
-              style={{
-                flex: 1,
-                width: "100%",
-                height: "100%",
-                resize: "none",
-                border: "none",
-                outline: "none",
-                background: "#000000",
-                color: "#e8e8e8",
-                fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
-                fontSize: 13,
-                lineHeight: 1.5,
-                padding: "12px 14px",
-                whiteSpace: wrap ? "pre-wrap" : "pre",
-                overflowWrap: wrap ? "break-word" : "normal",
-                wordBreak: wrap ? "break-word" : "normal",
-                overflow: "auto",
-                tabSize: 2,
-                caretColor: "#ffff00",
-              }}
+              filename={active.name}
+              wrap={wrap}
+              onChange={updateContent}
             />
           ) : (
             <div
@@ -622,7 +606,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
             <span>
               {active
                 ? `${active.content.length} chars · ${active.content.split("\n").length} lines · wrap ${wrap ? "on" : "off"}`
-                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · Tab indent"}
+                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · highlight by ext"}
             </span>
           </div>
         </div>

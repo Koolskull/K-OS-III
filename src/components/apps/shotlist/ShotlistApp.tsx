@@ -6,7 +6,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   CornerHost,
   CornerPanel,
@@ -169,9 +169,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
   const [pickOrientation, setPickOrientation] = useState<PlateOrientation>("portrait");
   const [pickBg, setPickBg] = useState<ShotBg>("black");
-  /** Draggable Shot info footer height (px) while drawing */
-  const [shotInfoHeight, setShotInfoHeight] = useState(148);
-  const infoDragRef = useRef<{ startY: number; startH: number } | null>(null);
+  /** Shot info dialog while drawing (lower-right toggle) */
+  const [shotInfoOpen, setShotInfoOpen] = useState(false);
 
   /* Creative bus return */
   useEffect(() => {
@@ -483,39 +482,17 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     sequence.shots,
   ]);
 
-  const onInfoDragStart = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-      infoDragRef.current = { startY: e.clientY, startH: shotInfoHeight };
-    },
-    [shotInfoHeight],
-  );
-
-  const onInfoDragMove = useCallback((e: React.PointerEvent) => {
-    const d = infoDragRef.current;
-    if (!d) return;
-    // Drag handle at top of footer: drag up → taller footer
-    const dy = d.startY - e.clientY;
-    const next = Math.min(Math.max(40, d.startH + dy), Math.floor(window.innerHeight * 0.55));
-    setShotInfoHeight(next);
-  }, []);
-
-  const onInfoDragEnd = useCallback(() => {
-    infoDragRef.current = null;
-  }, []);
-
-  /* ---- Shot info footer body (grey title, fields) ---- */
+  /* ---- Shot info panel fields ---- */
   const shotInfoBody = (shot: Shot) => (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        padding: "0 10px 10px",
+        padding: 10,
+        overflowY: "auto",
         flex: 1,
         minHeight: 0,
-        overflowY: "auto",
         background: "#0a0a0a",
       }}
     >
@@ -578,7 +555,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           style={btn()}
           onClick={() => openInSpriteEditor(shot.id, shot.thumbnail)}
         >
-          → SPRITE
+          SPRITE
         </button>
         <button type="button" style={btn(true)} onClick={finishDrawSession}>
           DONE
@@ -1018,7 +995,12 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       </div>
     ) : null;
 
-  /* Draw full-bleed + draggable Shot info footer */
+  /**
+   * Draw workspace: canvas + optional Shot info dock.
+   * Horizontal (wide) → panel on the RIGHT.
+   * Vertical (narrow) → panel on the BOTTOM.
+   * INFO toggles hide/show.
+   */
   const drawWorkspace =
     editor.mode === "draw" && editingShot ? (
       <div
@@ -1028,11 +1010,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           zIndex: 50,
           background: "#000",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: isNarrow ? "column" : "row",
           minHeight: 0,
         }}
       >
-        <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative" }}>
           <ShotCanvas
             key={`${editingShot.id}-${editingShot.plateW}x${editingShot.plateH}`}
             embedded
@@ -1042,72 +1024,90 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             height={editingShot.plateH}
             title={editingShot.title}
             onSave={savePlate}
-            onCancel={cancelEditor}
             onOpenInSpriteEditor={(live) => openInSpriteEditor(editingShot.id, live)}
           />
+          {/* Toggle — stays on the canvas edge so it works when panel is hidden */}
+          <button
+            type="button"
+            onClick={() => setShotInfoOpen((v) => !v)}
+            title={
+              shotInfoOpen
+                ? "Hide Shot info"
+                : isNarrow
+                  ? "Show Shot info (bottom)"
+                  : "Show Shot info (right)"
+            }
+            style={{
+              position: "absolute",
+              bottom: 6,
+              right: 44,
+              zIndex: 60,
+              height: 28,
+              padding: "0 8px",
+              border: shotInfoOpen ? "1px solid #fff" : "1px solid #555",
+              background: shotInfoOpen ? "#fff" : "#000",
+              color: shotInfoOpen ? "#000" : "#888",
+              fontFamily: "inherit",
+              fontSize: 8,
+              letterSpacing: 1,
+              cursor: "pointer",
+            }}
+          >
+            INFO
+          </button>
         </div>
 
-        {/* Shot info footer — drag handle to resize (up = more info, more drawing room when small) */}
-        <div
-          style={{
-            flexShrink: 0,
-            height: shotInfoHeight,
-            display: "flex",
-            flexDirection: "column",
-            borderTop: "1px solid #333",
-            background: "#0a0a0a",
-            minHeight: 40,
-          }}
-        >
+        {shotInfoOpen && (
           <div
-            onPointerDown={onInfoDragStart}
-            onPointerMove={onInfoDragMove}
-            onPointerUp={onInfoDragEnd}
-            onPointerCancel={onInfoDragEnd}
             style={{
               flexShrink: 0,
-              height: 28,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              cursor: "ns-resize",
-              touchAction: "none",
-              userSelect: "none",
-              borderBottom: shotInfoHeight > 48 ? "1px solid #222" : "none",
-              background: "#0c0c0c",
+              flexDirection: "column",
+              background: "#0a0a0a",
+              minWidth: 0,
+              minHeight: 0,
+              ...(isNarrow
+                ? {
+                    // Vertical window → bottom dock
+                    width: "100%",
+                    height: "min(38vh, 280px)",
+                    borderTop: "1px solid #333",
+                  }
+                : {
+                    // Horizontal window → right dock
+                    width: 300,
+                    maxWidth: "40vw",
+                    height: "100%",
+                    borderLeft: "1px solid #333",
+                  }),
             }}
-            title="Drag up/down to resize Shot info"
           >
-            <span
+            <div
               style={{
-                width: 36,
-                height: 3,
-                background: "#444",
-                display: "block",
-              }}
-            />
-            <span
-              style={{
-                color: "#666",
-                fontSize: 9,
-                letterSpacing: 2,
-                fontFamily: "inherit",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "6px 10px",
+                borderBottom: "1px solid #333",
+                background: "#0c0c0c",
               }}
             >
-              Shot info
-            </span>
-            <span
-              style={{
-                width: 36,
-                height: 3,
-                background: "#444",
-                display: "block",
-              }}
-            />
+              <span style={{ color: "#666", fontSize: 9, letterSpacing: 2 }}>
+                Shot info
+              </span>
+              <button
+                type="button"
+                style={btn()}
+                onClick={() => setShotInfoOpen(false)}
+                title="Hide Shot info"
+              >
+                HIDE
+              </button>
+            </div>
+            {shotInfoBody(editingShot)}
           </div>
-          {shotInfoHeight > 52 && shotInfoBody(editingShot)}
-        </div>
+        )}
       </div>
     ) : null;
 

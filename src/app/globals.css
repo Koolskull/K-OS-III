@@ -552,15 +552,15 @@ button, input, select, textarea, div, span, a {
   :root {
     --dm-slime-size: 14px;
     --dm-scale: 1;
-    --dm-ui-font: 9px;
-    --dm-ui-font-sm: 7px;
-    --dm-ui-font-xs: 6px;
+    --dm-ui-font: 10px;
+    --dm-ui-font-sm: 8px;
+    --dm-ui-font-xs: 7px;
     --dm-ui-pad: 3px;
     --dm-ui-gap: 3px;
-    --dm-ui-btn-h: 20px;
-    --dm-ui-chrome-h: 22px;
-    --dm-ui-rail: 100px;
-    --dm-taskbar-h: 28px;
+    --dm-ui-btn-h: 22px;
+    --dm-ui-chrome-h: 24px;
+    --dm-ui-rail: 104px;
+    --dm-taskbar-h: 30px;
   }
 
   body {
@@ -576,15 +576,15 @@ button, input, select, textarea, div, span, a {
   :root {
     --dm-slime-size: 14px;
     --dm-scale: 1;
-    --dm-ui-font: 9px;
-    --dm-ui-font-sm: 7px;
-    --dm-ui-font-xs: 6px;
+    --dm-ui-font: 10px;
+    --dm-ui-font-sm: 8px;
+    --dm-ui-font-xs: 7px;
     --dm-ui-pad: 3px;
     --dm-ui-gap: 3px;
-    --dm-ui-btn-h: 20px;
-    --dm-ui-chrome-h: 22px;
-    --dm-ui-rail: 100px;
-    --dm-taskbar-h: 28px;
+    --dm-ui-btn-h: 22px;
+    --dm-ui-chrome-h: 24px;
+    --dm-ui-rail: 104px;
+    --dm-taskbar-h: 30px;
   }
 
   body {
@@ -595,20 +595,20 @@ button, input, select, textarea, div, span, a {
   }
 }
 
-/* -- ULTRAWIDE / 1440p+ : denser chrome -- */
+/* -- ULTRAWIDE / 1440p+ : readable chrome (not micro) -- */
 @media (min-width: 2560px) and (max-width: 3839px) {
   :root {
-    --dm-slime-size: 12px;
+    --dm-slime-size: 14px;
     --dm-scale: 1;
-    --dm-ui-font: 8px;
-    --dm-ui-font-sm: 7px;
-    --dm-ui-font-xs: 6px;
-    --dm-ui-pad: 2px;
-    --dm-ui-gap: 2px;
-    --dm-ui-btn-h: 18px;
-    --dm-ui-chrome-h: 20px;
-    --dm-ui-rail: 96px;
-    --dm-taskbar-h: 26px;
+    --dm-ui-font: 11px;
+    --dm-ui-font-sm: 9px;
+    --dm-ui-font-xs: 8px;
+    --dm-ui-pad: 3px;
+    --dm-ui-gap: 3px;
+    --dm-ui-btn-h: 22px;
+    --dm-ui-chrome-h: 24px;
+    --dm-ui-rail: 108px;
+    --dm-taskbar-h: 30px;
   }
 
   body {
@@ -616,23 +616,28 @@ button, input, select, textarea, div, span, a {
     height: 100%;
     transform: none;
     font-size: var(--dm-ui-font);
+    /* ~12% lift so hard-coded 7–9px labels stay readable */
+    zoom: 1.12;
   }
 }
 
-/* -- 4K : densest auto chrome (still 1× layout, no giant upscale) -- */
+/*
+ * -- 4K : still 1× layout (no giant 2–4× pixel upscale), but type must be
+ * readable. ~20% zoom lifts hard-coded micro fontSize styles app-wide.
+ */
 @media (min-width: 3840px) {
   :root {
-    --dm-slime-size: 12px;
+    --dm-slime-size: 16px;
     --dm-scale: 1;
-    --dm-ui-font: 8px;
-    --dm-ui-font-sm: 6px;
-    --dm-ui-font-xs: 5px;
-    --dm-ui-pad: 2px;
-    --dm-ui-gap: 2px;
-    --dm-ui-btn-h: 18px;
-    --dm-ui-chrome-h: 20px;
-    --dm-ui-rail: 92px;
-    --dm-taskbar-h: 26px;
+    --dm-ui-font: 12px;
+    --dm-ui-font-sm: 10px;
+    --dm-ui-font-xs: 9px;
+    --dm-ui-pad: 4px;
+    --dm-ui-gap: 4px;
+    --dm-ui-btn-h: 24px;
+    --dm-ui-chrome-h: 26px;
+    --dm-ui-rail: 112px;
+    --dm-taskbar-h: 32px;
   }
 
   body {
@@ -640,6 +645,7 @@ button, input, select, textarea, div, span, a {
     height: 100%;
     transform: none;
     font-size: var(--dm-ui-font);
+    zoom: 1.2;
   }
 }
 

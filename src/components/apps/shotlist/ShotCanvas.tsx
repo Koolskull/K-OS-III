@@ -108,6 +108,10 @@ export function ShotCanvas({
   const [ditherPattern, setDitherPattern] = useState<DitherPatternId>(
     DEFAULT_DITHER_PATTERN,
   );
+  /** Left collapsible dither-pattern rail */
+  const [ditherPanelOpen, setDitherPanelOpen] = useState(false);
+  /** Far lower-right help (`?`) — status/shortcuts only when open */
+  const [helpOpen, setHelpOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("Loading plate…");
   const [baseScale, setBaseScale] = useState(0.5);
@@ -458,8 +462,23 @@ export function ShotCanvas({
         userSelect: "none",
       };
 
+  const sideToggle: React.CSSProperties = {
+    width: 36,
+    height: 28,
+    flexShrink: 0,
+    border: "1px solid #555",
+    background: ditherPanelOpen ? "#fff" : "#000",
+    color: ditherPanelOpen ? "#000" : "#888",
+    fontFamily: "inherit",
+    fontSize: 8,
+    letterSpacing: 1,
+    cursor: "pointer",
+    touchAction: "manipulation",
+  };
+
   return (
     <div style={rootStyle}>
+      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -504,6 +523,7 @@ export function ShotCanvas({
         </div>
       </div>
 
+      {/* Compact main tools (no dither patterns here) */}
       <div
         style={{
           display: "flex",
@@ -521,7 +541,15 @@ export function ShotCanvas({
         <button type="button" style={toolBtn(tool === "pen")} onClick={() => setTool("pen")}>
           PEN
         </button>
-        <button type="button" style={toolBtn(tool === "dither")} onClick={() => setTool("dither")}>
+        <button
+          type="button"
+          style={toolBtn(tool === "dither")}
+          onClick={() => {
+            setTool("dither");
+            setDitherPanelOpen(true);
+          }}
+          title="Dither — open patterns on left"
+        >
           DITHER
         </button>
         <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
@@ -541,145 +569,234 @@ export function ShotCanvas({
         <button type="button" style={miniBtn()} onClick={fillInk}>
           FILL
         </button>
-
-        {/* Desktop zoom controls */}
         <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
-        <button
-          type="button"
-          style={miniBtn()}
-          onClick={zoomOut}
-          title="Zoom out (scroll down)"
-        >
+        <button type="button" style={miniBtn()} onClick={zoomOut} title="Zoom out">
           −
         </button>
-        <button
-          type="button"
-          style={{ ...miniBtn(), minWidth: 48 }}
-          onClick={zoomFit}
-          title="Fit / reset zoom (0)"
-        >
+        <button type="button" style={{ ...miniBtn(), minWidth: 48 }} onClick={zoomFit} title="Fit">
           {zoomPct}%
         </button>
-        <button
-          type="button"
-          style={miniBtn()}
-          onClick={zoomIn}
-          title="Zoom in (scroll up)"
-        >
+        <button type="button" style={miniBtn()} onClick={zoomIn} title="Zoom in">
           +
         </button>
-        <button
-          type="button"
-          style={miniBtn()}
-          onClick={() => setZoom(1)}
-          title="100% camera zoom"
-        >
+        <button type="button" style={miniBtn()} onClick={() => setZoom(1)} title="1:1 camera">
           1:1
         </button>
-
-        {tool === "dither" && (
-          <>
-            <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
-            {DITHER_PATTERNS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                style={miniBtn(ditherPattern === p.id)}
-                onClick={() => {
-                  setDitherPattern(p.id);
-                  setStatus(`DITHER · ${p.title}`);
-                }}
-                title={p.title}
-              >
-                {p.label}
-              </button>
-            ))}
-            <button type="button" style={miniBtn()} onClick={() => setDitherOx((v) => (v + 1) % 8)}>
-              OX {ditherOx}
-            </button>
-            <button type="button" style={miniBtn()} onClick={() => setDitherOy((v) => (v + 1) % 8)}>
-              OY {ditherOy}
-            </button>
-            <DitherPreview
-              pattern={ditherPattern}
-              ox={ditherOx}
-              oy={ditherOy}
-              ink={ink}
-            />
-          </>
-        )}
       </div>
 
+      {/* Canvas row: left dither rail + stage */}
       <div
-        ref={wrapRef}
-        onWheel={onWheelZoom}
         style={{
           flex: 1,
           minHeight: 0,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#111",
+          position: "relative",
           overflow: "hidden",
-          touchAction: "none",
-          cursor: grab ? "grab" : "crosshair",
         }}
       >
-        {ready ? (
-          <canvas
-            ref={viewRef}
-            width={plateW}
-            height={plateH}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endStroke}
-            onPointerCancel={endStroke}
-            onWheel={onWheelZoom}
-            style={{
-              width: cssW,
-              height: cssH,
-              imageRendering: "pixelated",
-              // outline does not affect hit-testing / getBoundingClientRect
-              outline: "1px solid #444",
-              border: "none",
-              padding: 0,
-              margin: 0,
-              display: "block",
-              touchAction: "none",
-              background: bg === "white" ? "#fff" : "#000",
-              // Only apply transform when non-identity (avoids subpixel drift at rest)
-              transform:
-                Math.abs(viewport.panX) > 0.01 ||
-                Math.abs(viewport.panY) > 0.01 ||
-                Math.abs(viewport.rotation) > 0.01
-                  ? transformStyle
-                  : undefined,
-              transformOrigin: "center center",
-            }}
-          />
-        ) : (
-          <div style={{ color: "#555", letterSpacing: 2, fontSize: 11 }}>LOADING…</div>
-        )}
-      </div>
+        {/* Left dither pattern rail */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            borderRight: "1px solid #222",
+            background: "#000",
+            zIndex: 5,
+          }}
+        >
+          <button
+            type="button"
+            style={{ ...sideToggle, border: "none", borderBottom: "1px solid #333", width: 36 }}
+            onClick={() => setDitherPanelOpen((v) => !v)}
+            title={ditherPanelOpen ? "Hide dither patterns" : "Show dither patterns"}
+            aria-expanded={ditherPanelOpen}
+          >
+            DTH
+          </button>
+          {ditherPanelOpen && (
+            <div
+              style={{
+                width: 52,
+                flex: 1,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                padding: 4,
+                alignItems: "stretch",
+              }}
+            >
+              <div style={{ fontSize: 7, color: "#555", letterSpacing: 1, textAlign: "center" }}>
+                DITHER
+              </div>
+              {DITHER_PATTERNS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  style={{
+                    ...miniBtn(ditherPattern === p.id),
+                    width: "100%",
+                    minWidth: 0,
+                    padding: "6px 2px",
+                    fontSize: 8,
+                  }}
+                  onClick={() => {
+                    setTool("dither");
+                    setDitherPattern(p.id);
+                    setStatus(`DITHER · ${p.title}`);
+                  }}
+                  title={p.title}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                style={{ ...miniBtn(), width: "100%", minWidth: 0, fontSize: 8 }}
+                onClick={() => setDitherOx((v) => (v + 1) % 8)}
+                title="Phase X"
+              >
+                OX{ditherOx}
+              </button>
+              <button
+                type="button"
+                style={{ ...miniBtn(), width: "100%", minWidth: 0, fontSize: 8 }}
+                onClick={() => setDitherOy((v) => (v + 1) % 8)}
+                title="Phase Y"
+              >
+                OY{ditherOy}
+              </button>
+              <div style={{ display: "flex", justifyContent: "center", paddingTop: 4 }}>
+                <DitherPreview
+                  pattern={ditherPattern}
+                  ox={ditherOx}
+                  oy={ditherOy}
+                  ink={ink}
+                />
+              </div>
+              <button
+                type="button"
+                style={{ ...miniBtn(), width: "100%", minWidth: 0, fontSize: 7, marginTop: "auto" }}
+                onClick={() => setDitherPanelOpen(false)}
+                title="Hide dither panel"
+              >
+                HIDE
+              </button>
+            </div>
+          )}
+        </div>
 
-      <div
-        style={{
-          borderTop: "1px solid #222",
-          padding: "4px 10px",
-          fontSize: 8,
-          color: "#666",
-          letterSpacing: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          flexShrink: 0,
-          gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
-        <span>{status}</span>
-        <span>
-          FIT reset view · SCROLL zoom · SPACE pan · SHIFT/ALT rotate · 0
-        </span>
+        {/* Drawing stage */}
+        <div
+          ref={wrapRef}
+          onWheel={onWheelZoom}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#111",
+            overflow: "hidden",
+            touchAction: "none",
+            cursor: grab ? "grab" : "crosshair",
+            position: "relative",
+          }}
+        >
+          {ready ? (
+            <canvas
+              ref={viewRef}
+              width={plateW}
+              height={plateH}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endStroke}
+              onPointerCancel={endStroke}
+              onWheel={onWheelZoom}
+              style={{
+                width: cssW,
+                height: cssH,
+                imageRendering: "pixelated",
+                outline: "1px solid #444",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                display: "block",
+                touchAction: "none",
+                background: bg === "white" ? "#fff" : "#000",
+                transform:
+                  Math.abs(viewport.panX) > 0.01 ||
+                  Math.abs(viewport.panY) > 0.01 ||
+                  Math.abs(viewport.rotation) > 0.01
+                    ? transformStyle
+                    : undefined,
+                transformOrigin: "center center",
+              }}
+            />
+          ) : (
+            <div style={{ color: "#555", letterSpacing: 2, fontSize: 11 }}>LOADING…</div>
+          )}
+
+          {/* Far lower-right help toggle */}
+          <button
+            type="button"
+            onClick={() => setHelpOpen((v) => !v)}
+            title="Help / shortcuts"
+            style={{
+              position: "absolute",
+              bottom: 6,
+              right: 6,
+              zIndex: 12,
+              width: 32,
+              height: 28,
+              border: helpOpen ? "1px solid #fff" : "1px solid #555",
+              background: helpOpen ? "#fff" : "#000",
+              color: helpOpen ? "#000" : "#888",
+              fontFamily: "inherit",
+              fontSize: 12,
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
+          >
+            ?
+          </button>
+          {helpOpen && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: 40,
+                right: 6,
+                zIndex: 12,
+                maxWidth: 220,
+                padding: 8,
+                background: "#000",
+                border: "1px solid #444",
+                fontSize: 8,
+                color: "#888",
+                letterSpacing: 1,
+                lineHeight: 1.6,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ color: "#aaa", marginBottom: 4 }}>{status}</div>
+              <div>FIT · 0 — reset view</div>
+              <div>SCROLL / +− — zoom</div>
+              <div>SPACE+DRAG — pan</div>
+              <div>SHIFT/ALT+DRAG — rotate</div>
+              <div>DTH — dither patterns (left)</div>
+              <div>2-FINGER TAP — undo</div>
+              <button
+                type="button"
+                style={{ ...miniBtn(), marginTop: 6, width: "100%" }}
+                onClick={() => setHelpOpen(false)}
+              >
+                CLOSE
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

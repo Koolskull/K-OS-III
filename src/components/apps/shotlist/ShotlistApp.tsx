@@ -6,7 +6,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   CornerHost,
   CornerPanel,
@@ -169,6 +169,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
   const [pickOrientation, setPickOrientation] = useState<PlateOrientation>("portrait");
   const [pickBg, setPickBg] = useState<ShotBg>("black");
+  /** Draggable Shot info footer height (px) while drawing */
+  const [shotInfoHeight, setShotInfoHeight] = useState(148);
+  const infoDragRef = useRef<{ startY: number; startH: number } | null>(null);
 
   /* Creative bus return */
   useEffect(() => {
@@ -480,30 +483,48 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     sequence.shots,
   ]);
 
-  /* ---- Metadata form (used beside / below canvas) ---- */
-  const metadataForm = (shot: Shot) => (
+  const onInfoDragStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      infoDragRef.current = { startY: e.clientY, startH: shotInfoHeight };
+    },
+    [shotInfoHeight],
+  );
+
+  const onInfoDragMove = useCallback((e: React.PointerEvent) => {
+    const d = infoDragRef.current;
+    if (!d) return;
+    // Drag handle at top of footer: drag up → taller footer
+    const dy = d.startY - e.clientY;
+    const next = Math.min(Math.max(40, d.startH + dy), Math.floor(window.innerHeight * 0.55));
+    setShotInfoHeight(next);
+  }, []);
+
+  const onInfoDragEnd = useCallback(() => {
+    infoDragRef.current = null;
+  }, []);
+
+  /* ---- Shot info footer body (grey title, fields) ---- */
+  const shotInfoBody = (shot: Shot) => (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        padding: 10,
-        height: "100%",
+        padding: "0 10px 10px",
+        flex: 1,
+        minHeight: 0,
         overflowY: "auto",
-        background: "#050505",
-        border: "1px solid #222",
-        minWidth: 0,
+        background: "#0a0a0a",
       }}
     >
-      <div style={{ color: "#ffff00", fontSize: 9, letterSpacing: 2 }}>
-        SHOT METADATA
-      </div>
       <div style={{ fontSize: 8, color: "#555", letterSpacing: 1 }}>
         {shot.orientation.toUpperCase()} · {shot.plateW}×{shot.plateH} ·{" "}
         {shot.bg.toUpperCase()}
         {shot.hasCommittedThumbnail ? " · THUMB OK" : " · DRAW & SAVE FIRST"}
       </div>
-      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+      <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
         TITLE
         <input
           value={shot.title}
@@ -511,16 +532,16 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           style={fieldStyle}
         />
       </label>
-      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+      <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
         DESCRIPTION
         <textarea
           value={shot.description}
           onChange={(e) => updateShotField(shot.id, { description: e.target.value })}
-          rows={3}
+          rows={2}
           style={{ ...fieldStyle, resize: "vertical" }}
         />
       </label>
-      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+      <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
         DURATION (FRAMES @ 24 FPS)
         <input
           type="number"
@@ -535,7 +556,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           style={{ ...fieldStyle, width: 120 }}
         />
       </label>
-      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+      <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
         AUDIO TIMING NOTES
         <textarea
           value={shot.audioNotes}
@@ -745,7 +766,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         </button>
                       )}
                   </div>
-                  {metadataForm(shot)}
+                  <div style={{ marginTop: 8 }}>{shotInfoBody(shot)}</div>
                 </div>
               )}
             </div>
@@ -997,7 +1018,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       </div>
     ) : null;
 
-  /* Draw + metadata split */
+  /* Draw full-bleed + draggable Shot info footer */
   const drawWorkspace =
     editor.mode === "draw" && editingShot ? (
       <div
@@ -1007,11 +1028,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           zIndex: 50,
           background: "#000",
           display: "flex",
-          flexDirection: isNarrow ? "column" : "row",
+          flexDirection: "column",
           minHeight: 0,
         }}
       >
-        <div style={{ flex: isNarrow ? "1 1 58%" : "1 1 62%", minHeight: 0, minWidth: 0 }}>
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
           <ShotCanvas
             key={`${editingShot.id}-${editingShot.plateW}x${editingShot.plateH}`}
             embedded
@@ -1025,17 +1046,67 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             onOpenInSpriteEditor={(live) => openInSpriteEditor(editingShot.id, live)}
           />
         </div>
+
+        {/* Shot info footer — drag handle to resize (up = more info, more drawing room when small) */}
         <div
           style={{
-            flex: isNarrow ? "0 0 42%" : "0 0 320px",
-            minHeight: isNarrow ? 160 : 0,
-            maxHeight: isNarrow ? "42%" : "none",
-            borderLeft: isNarrow ? "none" : "1px solid #333",
-            borderTop: isNarrow ? "1px solid #333" : "none",
-            minWidth: 0,
+            flexShrink: 0,
+            height: shotInfoHeight,
+            display: "flex",
+            flexDirection: "column",
+            borderTop: "1px solid #333",
+            background: "#0a0a0a",
+            minHeight: 40,
           }}
         >
-          {metadataForm(editingShot)}
+          <div
+            onPointerDown={onInfoDragStart}
+            onPointerMove={onInfoDragMove}
+            onPointerUp={onInfoDragEnd}
+            onPointerCancel={onInfoDragEnd}
+            style={{
+              flexShrink: 0,
+              height: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              cursor: "ns-resize",
+              touchAction: "none",
+              userSelect: "none",
+              borderBottom: shotInfoHeight > 48 ? "1px solid #222" : "none",
+              background: "#0c0c0c",
+            }}
+            title="Drag up/down to resize Shot info"
+          >
+            <span
+              style={{
+                width: 36,
+                height: 3,
+                background: "#444",
+                display: "block",
+              }}
+            />
+            <span
+              style={{
+                color: "#666",
+                fontSize: 9,
+                letterSpacing: 2,
+                fontFamily: "inherit",
+              }}
+            >
+              Shot info
+            </span>
+            <span
+              style={{
+                width: 36,
+                height: 3,
+                background: "#444",
+                display: "block",
+              }}
+            />
+          </div>
+          {shotInfoHeight > 52 && shotInfoBody(editingShot)}
         </div>
       </div>
     ) : null;

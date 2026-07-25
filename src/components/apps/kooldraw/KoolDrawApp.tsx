@@ -22,6 +22,11 @@ import {
   downloadFramesAsZip,
   loadProjectFromDataUrl,
   dataUrlToMonoDataUrl,
+  resizeProject,
+  clampCanvasSize,
+  clampPixelZoom,
+  fitPixelZoom,
+  CANVAS_SIZE_PRESETS,
   DITHER_PATTERNS,
   DEFAULT_DITHER_PATTERN,
   INDEXED_PALETTE_PRESETS,
@@ -32,6 +37,7 @@ import { FREEHAND_TOOLS, useCreativeWorkflow } from "@/lib/creative";
 import {
   SpriteCanvas,
   DEFAULT_BRUSH,
+  ONION_RANGE,
   type BrushSettings,
   type OnionSkinSettings,
 } from "./SpriteCanvas";
@@ -42,6 +48,8 @@ import {
   CornerDismissLayer,
   useCornerChromeOptional,
 } from "@/components/ui/CornerChrome";
+import { PixelKnob } from "@/components/ui/PixelKnob";
+import { PixelColorPicker } from "@/components/ui/PixelColorPicker";
 
 export interface KoolDrawEmbeddedMode {
   initialWidth?: number;
@@ -75,21 +83,62 @@ const TOOLS: { id: ToolId; label: string; key: string; title?: string }[] = [
 ];
 
 const MAX_HISTORY = 100;
-const DEFAULT_PREV_OP: [number, number, number] = [0.45, 0.28, 0.14];
-const DEFAULT_NEXT_OP: [number, number, number] = [0.45, 0.28, 0.14];
 
+/**
+ * Falloff for ±1…±3 (index 0 = closest).
+ * Strong near current, soft at outer ring.
+ */
+function defaultOnionSide(): number[] {
+  const arr = new Array(ONION_RANGE).fill(0) as number[];
+  const seeds = [0.7, 0.4, 0.18];
+  for (let i = 0; i < ONION_RANGE; i++) arr[i] = seeds[i] ?? 0;
+  return arr;
+}
+
+
+/** Shared grid cell button — monochrome, hard edges */
 const toolBtn = (active: boolean): React.CSSProperties => ({
-  height: 32,
-  border: "none",
-  borderBottom: "1px solid #1a1a1a",
-  backgroundColor: active ? "#1a1a1a" : "#000000",
-  color: active ? "#ffffff" : "#555555",
+  height: "100%",
+  minHeight: 24,
+  border: "1px solid #222",
+  backgroundColor: active ? "#ffffff" : "#000000",
+  color: active ? "#000000" : "#888888",
   fontFamily: "var(--dm-font-primary)",
-  fontSize: 7,
-  letterSpacing: 1,
+  fontSize: 6,
+  letterSpacing: 0,
   cursor: "pointer",
   width: "100%",
+  padding: 0,
+  margin: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxSizing: "border-box",
 });
+
+const grid4: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  gap: 0,
+  width: "100%",
+};
+
+const grid2: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 1fr)",
+  gap: 0,
+  width: "100%",
+};
+
+const gridCell: React.CSSProperties = {
+  minHeight: 24,
+  border: "1px solid #1a1a1a",
+  boxSizing: "border-box",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#000",
+};
 
 const mobileOnionBtn = (active: boolean): React.CSSProperties => ({
   width: 44,
@@ -202,9 +251,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   // Onion skin ON by default (mobile + desktop)
   const [onionEnabled, setOnionEnabled] = useState(true);
   const [onionLoopWrap, setOnionLoopWrap] = useState(true);
+  const [onionTint, setOnionTint] = useState(0.88);
   const [showOnionOptions, setShowOnionOptions] = useState(false);
-  const [prevOpacities, setPrevOpacities] = useState<[number, number, number]>([...DEFAULT_PREV_OP]);
-  const [nextOpacities, setNextOpacities] = useState<[number, number, number]>([...DEFAULT_NEXT_OP]);
+  const [showSizeSettings, setShowSizeSettings] = useState(false);
+  const [prevOpacities, setPrevOpacities] = useState<number[]>(() => defaultOnionSide());
+  const [nextOpacities, setNextOpacities] = useState<number[]>(() => defaultOnionSide());
   /** Timeline panel height (0 = collapsed); drag handle resizes */
   const [timelineHeight, setTimelineHeight] = useState(72);
   const timelineDragRef = useRef<{ startY: number; startH: number } | null>(null);
@@ -214,6 +265,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     prevOpacities,
     nextOpacities,
     loopWrap: onionLoopWrap,
+    tint: onionTint,
   };
 
   const TIMELINE_MIN = 0;
@@ -270,9 +322,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       setActiveFrameIndex(0);
       setActiveLayerIndex(0);
       setZoom(
-        Math.max(
-          1,
-          Math.min(16, Math.floor(480 / Math.max(handoff.width, handoff.height))),
+        clampPixelZoom(
+          fitPixelZoom(handoff.width, handoff.height, 720, 520),
         ),
       );
       historyRef.current = [];
@@ -533,6 +584,35 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const handlePaletteClick = useCallback((hex: string) => { setPrimaryColor(hexToPackedColor(hex)); }, []);
   const handleColorPicked = useCallback((c: PackedColor) => { setPrimaryColor(c); }, []);
 
+  const [customW, setCustomW] = useState(32);
+  const [customH, setCustomH] = useState(32);
+
+  useEffect(() => {
+    setCustomW(project.width);
+    setCustomH(project.height);
+  }, [project.width, project.height]);
+
+  const applyCanvasSize = useCallback(
+    (w: number, h: number) => {
+      const nw = clampCanvasSize(w);
+      const nh = clampCanvasSize(h);
+      if (nw === project.width && nh === project.height) return;
+      if (nw * nh >= 1920 * 1080) {
+        // Soft warning for huge canvases (undo memory)
+        const ok = window.confirm(
+          `Resize all frames to ${nw}×${nh}?\nLarge sizes use more memory for undo.`,
+        );
+        if (!ok) return;
+      }
+      saveHistory();
+      setProject((prev) => resizeProject(prev, nw, nh));
+      // Fit large plates into the view (sub-1× zoom allowed)
+      setZoom(clampPixelZoom(fitPixelZoom(nw, nh, 720, 520)));
+      forceRender();
+    },
+    [project.width, project.height, saveHistory, forceRender],
+  );
+
   const frameCount = project.layers[0]?.frames.length ?? 1;
   const displayFrameIndex = playing ? previewFrame : activeFrameIndex;
 
@@ -550,90 +630,385 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     ctx.drawImage(frameCanvas, 0, 0);
   }, [project, displayFrameIndex, renderTick]);
 
+  const setPrevOpAt = (i: number, op01: number) => {
+    setPrevOpacities((prev) => {
+      const n = prev.slice();
+      while (n.length < ONION_RANGE) n.push(0);
+      n[i] = Math.min(1, Math.max(0, op01));
+      return n;
+    });
+  };
+  const setNextOpAt = (i: number, op01: number) => {
+    setNextOpacities((prev) => {
+      const n = prev.slice();
+      while (n.length < ONION_RANGE) n.push(0);
+      n[i] = Math.min(1, Math.max(0, op01));
+      return n;
+    });
+  };
+
+  /** Toggle a single offset: off → default seed, on → 0 (Krita top-box behaviour) */
+  const toggleOnionOffset = (side: "prev" | "next", idx: number) => {
+    const setter = side === "prev" ? setPrevOpacities : setNextOpacities;
+    setter((prev) => {
+      const n = prev.slice();
+      while (n.length < ONION_RANGE) n.push(0);
+      const cur = n[idx] ?? 0;
+      n[idx] = cur > 0.001 ? 0 : (defaultOnionSide()[idx] ?? 0.5);
+      return n;
+    });
+  };
+
+  /**
+   * Krita-style onion docker (compact):
+   *   −3 … −1 | 0 (locked 100%) | +1 … +3
+   * Vertical opacity bars; left = past, right = future.
+   */
   const onionOptionsContent = (
-    <div style={{ padding: 8, backgroundColor: "#000", border: "1px solid #333", minWidth: 200, fontFamily: "var(--dm-font-primary)" }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
-      <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>ONION SKIN OPTIONS</div>
-      <button
-        type="button"
-        onClick={() => setOnionLoopWrap((v) => !v)}
-        title="On frame 1, show last as previous; on last frame, show first as next"
+    <div
+      style={{
+        padding: 0,
+        backgroundColor: "#1a1a1a",
+        border: "1px solid #555",
+        width: "min(92vw, 220px)",
+        fontFamily: "var(--dm-font-primary)",
+        imageRendering: "pixelated",
+        boxShadow: "4px 4px 0 #000",
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {/* Title bar */}
+      <div
         style={{
-          width: "100%",
-          height: 24,
-          marginBottom: 10,
-          border: onionLoopWrap ? "1px solid #ffff00" : "1px solid #555",
-          background: onionLoopWrap ? "#ffff00" : "#000",
-          color: onionLoopWrap ? "#000" : "#ccc",
-          fontFamily: "inherit",
-          fontSize: 7,
-          letterSpacing: 1,
-          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "5px 8px",
+          borderBottom: "1px solid #333",
+          background: "#222",
         }}
       >
-        LOOP WRAP {onionLoopWrap ? "ON" : "OFF"}
-      </button>
-      <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 10, lineHeight: 1.4 }}>
-        When ON: first frame ghosts the last; last frame ghosts the first (cycle anims).
+        <span style={{ fontSize: 8, color: "#ddd", letterSpacing: 1 }}>ONION SKINS</span>
+        <button
+          type="button"
+          onClick={() => setShowOnionOptions(false)}
+          style={{
+            border: "1px solid #555",
+            background: "#111",
+            color: "#aaa",
+            fontFamily: "inherit",
+            fontSize: 9,
+            width: 18,
+            height: 16,
+            cursor: "pointer",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          title="Close"
+        >
+          ×
+        </button>
       </div>
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>PREV (PURPLE)</div>
-        {[0, 1, 2].map((i) => (
-          <div key={`prev-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 7, color: "#666", width: 28 }}>-{i + 1}</span>
-            <input type="range" min={0} max={100} value={Math.round(prevOpacities[i] * 100)} onChange={(e) => { const v = Number(e.target.value) / 100; setPrevOpacities((prev) => { const n = [...prev] as [number, number, number]; n[i] = v; return n; }); }} style={{ flex: 1, height: 4, accentColor: "#b850ff", cursor: "pointer" }} />
-            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(prevOpacities[i] * 100)}</span>
-          </div>
-        ))}
+
+      {/* Offset labels −10…0…+10 (click side labels to toggle on/off) */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${ONION_RANGE * 2 + 1}, minmax(0, 1fr))`,
+          gap: 1,
+          padding: "4px 6px 0",
+          background: "#141414",
+        }}
+      >
+        {Array.from({ length: ONION_RANGE }, (_, k) => {
+          const d = ONION_RANGE - k;
+          const idx = d - 1;
+          const on = (prevOpacities[idx] ?? 0) > 0.001;
+          return (
+            <button
+              key={`lbl-p${d}`}
+              type="button"
+              onClick={() => toggleOnionOffset("prev", idx)}
+              title={`Toggle frame −${d}`}
+              style={{
+                fontSize: 7,
+                color: on ? "#bbb" : "#444",
+                textAlign: "center",
+                padding: "3px 0",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                minWidth: 0,
+              }}
+            >
+              -{d}
+            </button>
+          );
+        })}
+        <div
+          style={{
+            fontSize: 8,
+            color: "#fff",
+            textAlign: "center",
+            padding: "3px 0",
+            fontWeight: 700,
+            background: "#2a2a2a",
+            borderRadius: 1,
+          }}
+          title="Current frame (always 100%)"
+        >
+          0
+        </div>
+        {Array.from({ length: ONION_RANGE }, (_, k) => {
+          const d = k + 1;
+          const idx = d - 1;
+          const on = (nextOpacities[idx] ?? 0) > 0.001;
+          return (
+            <button
+              key={`lbl-n${d}`}
+              type="button"
+              onClick={() => toggleOnionOffset("next", idx)}
+              title={`Toggle frame +${d}`}
+              style={{
+                fontSize: 7,
+                color: on ? "#bbb" : "#444",
+                textAlign: "center",
+                padding: "3px 0",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                minWidth: 0,
+              }}
+            >
+              {d}
+            </button>
+          );
+        })}
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 7, color: "#3cdc78", letterSpacing: 1, marginBottom: 4 }}>NEXT (GREEN)</div>
-        {[0, 1, 2].map((i) => (
-          <div key={`next-${i}`} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 7, color: "#666", width: 28 }}>+{i + 1}</span>
-            <input type="range" min={0} max={100} value={Math.round(nextOpacities[i] * 100)} onChange={(e) => { const v = Number(e.target.value) / 100; setNextOpacities((prev) => { const n = [...prev] as [number, number, number]; n[i] = v; return n; }); }} style={{ flex: 1, height: 4, accentColor: "#3cdc78", cursor: "pointer" }} />
-            <span style={{ fontSize: 7, color: "#888", width: 24, textAlign: "right" }}>{Math.round(nextOpacities[i] * 100)}</span>
-          </div>
-        ))}
+
+      {/* Vertical opacity histogram — drag each bar up/down */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${ONION_RANGE * 2 + 1}, minmax(0, 1fr))`,
+          gap: 3,
+          height: 96,
+          padding: "4px 8px 8px",
+          background: "#141414",
+          borderBottom: "1px solid #2a2a2a",
+        }}
+      >
+        {/* Past: −10 … −1 (left → right, farthest → closest) */}
+        {Array.from({ length: ONION_RANGE }, (_, k) => {
+          const d = ONION_RANGE - k;
+          const idx = d - 1;
+          const op = prevOpacities[idx] ?? 0;
+          return (
+            <OnionVertBar
+              key={`bar-p${d}`}
+              value={op}
+              locked={false}
+              side="prev"
+              onChange={(v) => setPrevOpAt(idx, v)}
+              title={`−${d}: ${Math.round(op * 100)}% · drag to set opacity`}
+            />
+          );
+        })}
+        {/* Current: locked 100% — uneditable */}
+        <OnionVertBar
+          value={1}
+          locked
+          side="current"
+          onChange={() => {}}
+          title="0 · current frame (100%, locked)"
+        />
+        {/* Future: +1 … +10 */}
+        {Array.from({ length: ONION_RANGE }, (_, k) => {
+          const d = k + 1;
+          const idx = d - 1;
+          const op = nextOpacities[idx] ?? 0;
+          return (
+            <OnionVertBar
+              key={`bar-n${d}`}
+              value={op}
+              locked={false}
+              side="next"
+              onChange={(v) => setNextOpAt(idx, v)}
+              title={`+${d}: ${Math.round(op * 100)}% · drag to set opacity`}
+            />
+          );
+        })}
       </div>
-      <div style={{ display: "flex", gap: 4 }}>
-        <button onClick={() => { setPrevOpacities([...DEFAULT_PREV_OP]); setNextOpacities([...DEFAULT_NEXT_OP]); setOnionLoopWrap(true); }} style={{ flex: 1, height: 18, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
-        <button onClick={() => setShowOnionOptions(false)} style={{ flex: 1, height: 18, border: "1px solid #555", background: "#000", color: "#aaa", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}>CLOSE</button>
+
+      {/* Tint (Krita master tint strength) */}
+      <div style={{ padding: "8px 10px 6px", borderBottom: "1px solid #2a2a2a" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, minWidth: 28 }}>TINT</span>
+          <OnionTintBar value={onionTint} onChange={setOnionTint} />
+          <span
+            style={{
+              fontSize: 7,
+              color: "#eee",
+              border: "1px solid #444",
+              background: "#0a0a0a",
+              padding: "2px 5px",
+              minWidth: 32,
+              textAlign: "center",
+            }}
+          >
+            {Math.round(onionTint * 100)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Previous / Next tint colour labels (fixed purple / green) */}
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          borderBottom: "1px solid #2a2a2a",
+          background: "#111",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "7px 10px",
+            borderRight: "1px solid #2a2a2a",
+            fontSize: 6,
+            color: "#aaa",
+            letterSpacing: 0.5,
+          }}
+        >
+          <span
+            style={{
+              width: 14,
+              height: 14,
+              background: "#c04040",
+              border: "1px solid #666",
+              flexShrink: 0,
+            }}
+            title="Previous-frame tint (on canvas: purple)"
+          />
+          PREVIOUS FRAMES
+        </div>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 6,
+            padding: "7px 10px",
+            fontSize: 6,
+            color: "#aaa",
+            letterSpacing: 0.5,
+          }}
+        >
+          NEXT FRAMES
+          <span
+            style={{
+              width: 14,
+              height: 14,
+              background: "#40b060",
+              border: "1px solid #666",
+              flexShrink: 0,
+            }}
+            title="Next-frame tint (on canvas: green)"
+          />
+        </div>
+      </div>
+
+      {/* Footer actions */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+        <button
+          type="button"
+          onClick={() => setOnionLoopWrap((v) => !v)}
+          style={{
+            height: 24,
+            border: "none",
+            borderRight: "1px solid #2a2a2a",
+            background: onionLoopWrap ? "#eee" : "#111",
+            color: onionLoopWrap ? "#000" : "#777",
+            fontFamily: "inherit",
+            fontSize: 6,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+          title="Loop: first ghosts last, last ghosts first"
+        >
+          LOOP {onionLoopWrap ? "ON" : "OFF"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setPrevOpacities(defaultOnionSide());
+            setNextOpacities(defaultOnionSide());
+            setOnionTint(0.88);
+            setOnionLoopWrap(true);
+          }}
+          style={{
+            height: 24,
+            border: "none",
+            borderRight: "1px solid #2a2a2a",
+            background: "#111",
+            color: "#888",
+            fontFamily: "inherit",
+            fontSize: 6,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+        >
+          RESET
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowOnionOptions(false)}
+          style={{
+            height: 24,
+            border: "none",
+            background: "#111",
+            color: "#aaa",
+            fontFamily: "inherit",
+            fontSize: 6,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+        >
+          CLOSE
+        </button>
       </div>
     </div>
   );
 
-  const railLabel: React.CSSProperties = {
-    fontSize: 6,
-    color: "#666",
-    letterSpacing: 1,
-    textAlign: "center",
-    lineHeight: 1.2,
-  };
-  const railInput: React.CSSProperties = {
-    width: "100%",
-    accentColor: "#ffff00",
-    height: 4,
-    cursor: "pointer",
-  };
-
-  // Tools + brush rail (desktop strip + mobile TOOL panel)
+  // Left rail: strict CSS grids (4-col tools/toggles/actions, 2-col knobs)
   const toolsContent = (
     <div
-      className="flex flex-col"
       style={{
-        width: collapse ? "auto" : 108,
+        width: collapse ? "auto" : 116,
         height: "100%",
         minHeight: 0,
         overflowY: "auto",
         overflowX: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        background: "#000",
       }}
     >
-      <div style={{ display: "flex", flexWrap: "wrap" }}>
+      {/* Tools — fill 4-col grid (wraps to next row) */}
+      <div style={grid4}>
         {TOOLS.map((t) => (
           <button
             key={t.id}
+            type="button"
             onClick={() => setActiveTool(t.id)}
-            style={{ ...toolBtn(activeTool === t.id), width: "50%", height: 28 }}
+            style={{ ...toolBtn(activeTool === t.id), minHeight: 26 }}
             title={t.title ?? `${t.label} (${t.key})`}
           >
             {t.label}
@@ -641,92 +1016,94 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         ))}
       </div>
 
-      {/* Brush size / opacity / feel — shared with freehand + paint */}
-      <div style={{ borderTop: "1px solid #1a1a1a", padding: 4, display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={railLabel}>SIZE {penSize}px</div>
-        <input
-          type="range"
-          min={1}
-          max={256}
-          value={penSize}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setPenSize(v);
-            setBrush((b) => ({ ...b, maxSize: v }));
-          }}
-          style={railInput}
-          title="Max pen width 1–256 · mouse = this size · stylus = pressure max"
-        />
-        <div style={railLabel}>OPAC {Math.round(brush.opacity * 100)}%</div>
-        <input
-          type="range"
-          min={1}
-          max={100}
-          value={Math.round(brush.opacity * 100)}
-          onChange={(e) =>
-            setBrush((b) => ({ ...b, opacity: Number(e.target.value) / 100 }))
-          }
-          style={railInput}
-          title="Base opacity (paint tool)"
-        />
-        <div style={railLabel}>SOFT {Math.round(brush.softness * 100)}</div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round(brush.softness * 100)}
-          onChange={(e) =>
-            setBrush((b) => ({ ...b, softness: Number(e.target.value) / 100 }))
-          }
-          style={railInput}
-          title="Feather / softness (paint)"
-        />
-        <div style={railLabel}>SCAT {Math.round(brush.scatter * 100)}</div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round(brush.scatter * 100)}
-          onChange={(e) =>
-            setBrush((b) => ({ ...b, scatter: Number(e.target.value) / 100 }))
-          }
-          style={railInput}
-          title="Pen scatter (paint)"
-        />
-        <button
-          type="button"
-          style={{ ...toolBtn(brush.antialias), height: 22, fontSize: 6 }}
-          onClick={() => setBrush((b) => ({ ...b, antialias: !b.antialias }))}
-          title="Antialiased soft edges"
-        >
-          AA {brush.antialias ? "ON" : "OFF"}
+      {/* Brush knobs — 2×2 grid cells */}
+      <div style={{ ...grid2, borderTop: "1px solid #333" }}>
+        {(
+          [
+            {
+              key: "size",
+              label: "SIZE",
+              min: 1,
+              max: 256,
+              value: penSize,
+              shown: `${penSize}`,
+              title: "Max pen width · drag ↑/→",
+              onChange: (v: number) => {
+                setPenSize(v);
+                setBrush((b) => ({ ...b, maxSize: v }));
+              },
+            },
+            {
+              key: "opac",
+              label: "OPAC",
+              min: 1,
+              max: 100,
+              value: Math.round(brush.opacity * 100),
+              shown: `${Math.round(brush.opacity * 100)}`,
+              title: "Base opacity",
+              onChange: (v: number) => setBrush((b) => ({ ...b, opacity: v / 100 })),
+            },
+            {
+              key: "soft",
+              label: "SOFT",
+              min: 0,
+              max: 100,
+              value: Math.round(brush.softness * 100),
+              shown: `${Math.round(brush.softness * 100)}`,
+              title: "Feather / softness",
+              onChange: (v: number) => setBrush((b) => ({ ...b, softness: v / 100 })),
+            },
+            {
+              key: "scat",
+              label: "SCAT",
+              min: 0,
+              max: 100,
+              value: Math.round(brush.scatter * 100),
+              shown: `${Math.round(brush.scatter * 100)}`,
+              title: "Pen scatter",
+              onChange: (v: number) => setBrush((b) => ({ ...b, scatter: v / 100 })),
+            },
+          ] as const
+        ).map((k) => (
+          <div
+            key={k.key}
+            style={{
+              ...gridCell,
+              minHeight: 72,
+              padding: "4px 2px",
+              flexDirection: "column",
+            }}
+          >
+            <PixelKnob
+              label={k.label}
+              min={k.min}
+              max={k.max}
+              step={1}
+              value={k.value}
+              displayValue={k.shown}
+              size={36}
+              layout="vertical"
+              title={k.title}
+              onChange={k.onChange}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Brush flags — 4-col */}
+      <div style={{ ...grid4, borderTop: "1px solid #333" }}>
+        <button type="button" style={toolBtn(brush.antialias)} onClick={() => setBrush((b) => ({ ...b, antialias: !b.antialias }))} title="Antialias">
+          AA
+        </button>
+        <button type="button" style={toolBtn(brush.sizeFromPressure)} onClick={() => setBrush((b) => ({ ...b, sizeFromPressure: !b.sizeFromPressure }))} title="Pressure → size">
+          P·S
+        </button>
+        <button type="button" style={toolBtn(brush.opacityFromPressure)} onClick={() => setBrush((b) => ({ ...b, opacityFromPressure: !b.opacityFromPressure }))} title="Pressure → opacity">
+          P·O
         </button>
         <button
           type="button"
-          style={{ ...toolBtn(brush.sizeFromPressure), height: 22, fontSize: 6 }}
-          onClick={() =>
-            setBrush((b) => ({ ...b, sizeFromPressure: !b.sizeFromPressure }))
-          }
-          title="Map stylus pressure → size"
-        >
-          P→SZ {brush.sizeFromPressure ? "ON" : "OFF"}
-        </button>
-        <button
-          type="button"
-          style={{ ...toolBtn(brush.opacityFromPressure), height: 22, fontSize: 6 }}
-          onClick={() =>
-            setBrush((b) => ({
-              ...b,
-              opacityFromPressure: !b.opacityFromPressure,
-            }))
-          }
-          title="Map stylus pressure → opacity"
-        >
-          P→OP {brush.opacityFromPressure ? "ON" : "OFF"}
-        </button>
-        <button
-          type="button"
-          style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
+          style={toolBtn(false)}
           onClick={() =>
             setBrush((b) => ({
               ...b,
@@ -737,52 +1114,63 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
               opacity: 1,
             }))
           }
-          title="Reset brush feel"
+          title="Reset brush"
         >
-          RST BRUSH
+          RST
         </button>
       </div>
 
       {activeTool === "dither" && (
-        <div style={{ borderTop: "1px solid #1a1a1a", padding: 2 }}>
-          <div style={railLabel}>DITHER</div>
+        <div style={{ ...grid4, borderTop: "1px solid #333" }}>
           {DITHER_PATTERNS.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => setDitherPattern(p.id)}
-              style={{ ...toolBtn(ditherPattern === p.id), height: 22, fontSize: 6 }}
+              style={{ ...toolBtn(ditherPattern === p.id), fontSize: 5, minHeight: 22 }}
               title={p.title}
             >
               {p.label}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => setDitherOx((v) => (v + 1) % 8)}
-            style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
-            title="Dither phase X"
-          >
-            OX{ditherOx}
+          <button type="button" onClick={() => setDitherOx((v) => (v + 1) % 8)} style={{ ...toolBtn(false), gridColumn: "span 2" }} title="Dither phase X">
+            OX {ditherOx}
           </button>
-          <button
-            type="button"
-            onClick={() => setDitherOy((v) => (v + 1) % 8)}
-            style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
-            title="Dither phase Y"
-          >
-            OY{ditherOy}
+          <button type="button" onClick={() => setDitherOy((v) => (v + 1) % 8)} style={{ ...toolBtn(false), gridColumn: "span 2" }} title="Dither phase Y">
+            OY {ditherOy}
           </button>
         </div>
       )}
-      <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
-        <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
-        <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
-        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (Space)">{playing ? "||" : ">"}</button>
-      </div>
-      <div style={{ marginTop: "auto" }}>
-        <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
-        <button onClick={redo} style={{ ...toolBtn(false), height: 24 }}>REDO</button>
+
+      {/* Bottom actions — 4-col + full-width second row for undo/redo */}
+      <div style={{ marginTop: "auto", borderTop: "1px solid #333" }}>
+        <div style={grid4}>
+          <button type="button" onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion (O)">
+            ONI
+          </button>
+          <button type="button" onClick={() => setShowOnionOptions((v) => !v)} style={toolBtn(showOnionOptions)} title="Onion options">
+            OPT
+          </button>
+          <button type="button" onClick={togglePlayback} style={toolBtn(playing)} title="Play">
+            {playing ? "||" : ">"}
+          </button>
+          <button type="button" onClick={undo} style={toolBtn(false)} title="Undo">
+            UND
+          </button>
+        </div>
+        <div style={grid2}>
+          <button type="button" onClick={redo} style={toolBtn(false)} title="Redo">
+            REDO
+          </button>
+          <button
+            type="button"
+            onClick={() => setTimelineHeight((h) => (h > 0 ? 0 : TIMELINE_DEFAULT))}
+            style={toolBtn(timelineHeight > 0)}
+            title="Toggle timeline"
+          >
+            FRM
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -814,34 +1202,55 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           </div>
         </div>
       </div>
-      <div className="border-b" style={{ borderColor: "#1a1a1a", padding: 4 }}>
-        <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>COLOR</span>
-        <div className="mt-1 mb-1" style={{ width: "100%", height: 16, backgroundColor: packedColorToHex(primaryColor), border: "1px solid #555" }} />
-        <input
-          type="color"
-          value={packedColorToHex(primaryColor)}
-          onChange={(e) => setPrimaryColor(hexToPackedColor(e.target.value))}
-          title="Hex color picker"
+      <div
+        className="border-b"
+        style={{
+          borderColor: "#1a1a1a",
+          padding: 4,
+          overflowY: "auto",
+          flexShrink: 0,
+          maxHeight: "55%",
+        }}
+      >
+        <div
           style={{
-            width: "100%",
-            height: 22,
-            border: "1px solid #333",
-            background: "#000",
-            padding: 0,
-            cursor: "pointer",
+            fontSize: 6,
+            color: "#666",
+            letterSpacing: 1,
             marginBottom: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
+        >
+          <span>COLOR</span>
+          <span style={{ color: "#444" }}>PIXEL</span>
+        </div>
+
+        <PixelColorPicker
+          value={packedColorToHex(primaryColor)}
+          onChange={(hex) => setPrimaryColor(hexToPackedColor(hex))}
+          width={112}
         />
-        <div style={{ display: "flex", gap: 2, marginBottom: 4 }}>
+
+        {/* Mode + palette — grid chrome */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 0,
+            marginTop: 4,
+            border: "1px solid #333",
+          }}
+        >
           <button
             type="button"
             onClick={() => setPaletteMode("free")}
             style={{
-              flex: 1,
-              height: 18,
+              height: 20,
               fontSize: 6,
               letterSpacing: 1,
-              border: paletteMode === "free" ? "1px solid #ffff00" : "1px solid #333",
+              border: "1px solid #222",
               background: paletteMode === "free" ? "#fff" : "#000",
               color: paletteMode === "free" ? "#000" : "#888",
               cursor: "pointer",
@@ -855,33 +1264,36 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             type="button"
             onClick={() => setPaletteMode("indexed")}
             style={{
-              flex: 1,
-              height: 18,
+              height: 20,
               fontSize: 6,
               letterSpacing: 1,
-              border: paletteMode === "indexed" ? "1px solid #ffff00" : "1px solid #333",
+              border: "1px solid #222",
               background: paletteMode === "indexed" ? "#fff" : "#000",
               color: paletteMode === "indexed" ? "#000" : "#888",
               cursor: "pointer",
               fontFamily: "inherit",
             }}
-            title="Snap paint to indexed palette (classic hardware)"
+            title="Snap paint to indexed palette"
           >
             IDX
           </button>
         </div>
+
         <select
           value={palettePreset}
           onChange={(e) => setPalettePreset(e.target.value)}
           style={{
             width: "100%",
             height: 20,
+            marginTop: 4,
             marginBottom: 4,
             background: "#000",
             color: "#ccc",
-            border: "1px solid #333",
+            border: "1px solid #555",
             fontFamily: "inherit",
-            fontSize: 7,
+            fontSize: 6,
+            letterSpacing: 1,
+            borderRadius: 0,
           }}
           title="Palette source"
         >
@@ -892,24 +1304,38 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             </option>
           ))}
         </select>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 1 }}>
-          {activePalette.map((hex, i) => (
-            <div
-              key={`${hex}-${i}`}
-              onClick={() => handlePaletteClick(hex)}
-              style={{
-                width: "100%",
-                aspectRatio: "1",
-                backgroundColor: hex,
-                border:
-                  packedColorToHex(primaryColor) === hex.toLowerCase() ||
-                  packedColorToHex(primaryColor) === hex
-                    ? "1px solid #fff"
-                    : "1px solid #333",
-                cursor: "pointer",
-              }}
-            />
-          ))}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 0,
+            border: "1px solid #333",
+          }}
+        >
+          {activePalette.map((hex, i) => {
+            const sel =
+              packedColorToHex(primaryColor) === hex.toLowerCase() ||
+              packedColorToHex(primaryColor) === hex;
+            return (
+              <button
+                key={`${hex}-${i}`}
+                type="button"
+                onClick={() => handlePaletteClick(hex)}
+                title={hex}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  padding: 0,
+                  backgroundColor: hex,
+                  border: sel ? "2px solid #fff" : "1px solid #222",
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                  imageRendering: "pixelated",
+                }}
+              />
+            );
+          })}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: 4 }}>
@@ -928,6 +1354,185 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>EXPORT</span>
         <button onClick={exportFrames} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>PNG ZIP</button>
         <button onClick={exportSpriteSheet} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>SHEET</button>
+      </div>
+    </div>
+  );
+
+  /** Canvas size settings — popup only (not always-on in the rail) */
+  const sizeSettingsContent = (
+    <div
+      style={{
+        padding: 0,
+        backgroundColor: "#1a1a1a",
+        border: "1px solid #555",
+        width: "min(92vw, 240px)",
+        fontFamily: "var(--dm-font-primary)",
+        imageRendering: "pixelated",
+        boxShadow: "4px 4px 0 #000",
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "5px 8px",
+          borderBottom: "1px solid #333",
+          background: "#222",
+        }}
+      >
+        <span style={{ fontSize: 8, color: "#ddd", letterSpacing: 1 }}>IMAGE SIZE</span>
+        <button
+          type="button"
+          onClick={() => setShowSizeSettings(false)}
+          style={{
+            border: "1px solid #555",
+            background: "#111",
+            color: "#aaa",
+            fontFamily: "inherit",
+            fontSize: 9,
+            width: 18,
+            height: 16,
+            cursor: "pointer",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          title="Close"
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{ padding: 8 }}>
+        <div
+          style={{
+            fontSize: 7,
+            color: "#666",
+            letterSpacing: 1,
+            marginBottom: 6,
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>CURRENT</span>
+          <span style={{ color: "#eee" }}>
+            {project.width}×{project.height}
+          </span>
+        </div>
+
+        <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 3 }}>
+          PRESETS
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 0,
+            border: "1px solid #333",
+            marginBottom: 8,
+          }}
+        >
+          {CANVAS_SIZE_PRESETS.map((p) => {
+            const on = project.width === p.w && project.height === p.h;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  applyCanvasSize(p.w, p.h);
+                  setShowSizeSettings(false);
+                }}
+                title={`Resize all frames to ${p.label} (nearest-neighbor)`}
+                style={{
+                  height: 24,
+                  border: "1px solid #222",
+                  background: on ? "#fff" : "#000",
+                  color: on ? "#000" : "#888",
+                  fontFamily: "inherit",
+                  fontSize: 6,
+                  letterSpacing: 0,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                }}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 3 }}>
+          CUSTOM
+        </div>
+        <div style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 6 }}>
+          <input
+            type="number"
+            min={1}
+            max={4096}
+            value={customW}
+            onChange={(e) => setCustomW(Number(e.target.value) || 1)}
+            title="Width"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              height: 24,
+              background: "#000",
+              color: "#fff",
+              border: "1px solid #555",
+              fontFamily: "inherit",
+              fontSize: 8,
+              padding: "0 6px",
+              outline: "none",
+            }}
+          />
+          <span style={{ fontSize: 8, color: "#555" }}>×</span>
+          <input
+            type="number"
+            min={1}
+            max={4096}
+            value={customH}
+            onChange={(e) => setCustomH(Number(e.target.value) || 1)}
+            title="Height"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              height: 24,
+              background: "#000",
+              color: "#fff",
+              border: "1px solid #555",
+              fontFamily: "inherit",
+              fontSize: 8,
+              padding: "0 6px",
+              outline: "none",
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            applyCanvasSize(customW, customH);
+            setShowSizeSettings(false);
+          }}
+          style={{
+            width: "100%",
+            height: 26,
+            border: "1px solid #555",
+            background: "#000",
+            color: "#ccc",
+            fontFamily: "inherit",
+            fontSize: 7,
+            letterSpacing: 1,
+            cursor: "pointer",
+          }}
+          title="Apply custom size to all frames (nearest-neighbor scale)"
+        >
+          APPLY SIZE
+        </button>
+        <div style={{ fontSize: 5, color: "#444", marginTop: 6, letterSpacing: 0.5, lineHeight: 1.4 }}>
+          Scales all frames · nearest-neighbor · undoable
+        </div>
       </div>
     </div>
   );
@@ -959,13 +1564,15 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         let isOnionPrev = false;
         let isOnionNext = false;
         if (!playing && onionEnabled && frameCount > 1 && i !== activeFrameIndex) {
-          for (let d = 1; d <= 3; d++) {
+          for (let d = 1; d <= ONION_RANGE; d++) {
+            const prevOp = prevOpacities[d - 1] ?? 0;
+            const nextOp = nextOpacities[d - 1] ?? 0;
             let prev = activeFrameIndex - d;
             if (prev < 0) prev = onionLoopWrap ? ((prev % frameCount) + frameCount) % frameCount : -1;
             let next = activeFrameIndex + d;
             if (next >= frameCount) next = onionLoopWrap ? next % frameCount : -1;
-            if (prev === i) isOnionPrev = true;
-            if (next === i) isOnionNext = true;
+            if (prev === i && prevOp > 0.001) isOnionPrev = true;
+            if (next === i && nextOp > 0.001) isOnionNext = true;
           }
         }
         return (
@@ -1054,7 +1661,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         <div className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 22 }}>
           <span style={{ letterSpacing: 2 }}>KOOLDRAW</span>
           <div className="flex gap-2 items-center">
-            <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
             <span style={{ color: "#555" }}>FRM:{displayFrameIndex + 1}/{frameCount}</span>
             <span style={{ color: "#555" }}>
               SZ:{penSize} · OP:{Math.round(brush.opacity * 100)}
@@ -1064,11 +1670,31 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
               <span style={{ color: "#666" }}>DΦ:{ditherOx},{ditherOy}</span>
             )}
 
+            {/* Size opens settings popup (not always visible in rail) */}
+            <button
+              type="button"
+              style={headerBtn(showSizeSettings)}
+              onClick={() => {
+                setShowSizeSettings((v) => !v);
+                setShowOnionOptions(false);
+              }}
+              title="Image size settings"
+            >
+              {project.width}×{project.height}
+            </button>
             {/* Desktop header: onion + play always visible */}
             <button type="button" style={headerBtn(onionEnabled)} onClick={() => setOnionEnabled((v) => !v)} title="Onion Skin (O)">
               {onionEnabled ? "ONION" : "ONI"}
             </button>
-            <button type="button" style={headerBtn(showOnionOptions)} onClick={() => setShowOnionOptions((v) => !v)} title="Onion Options">
+            <button
+              type="button"
+              style={headerBtn(showOnionOptions)}
+              onClick={() => {
+                setShowOnionOptions((v) => !v);
+                setShowSizeSettings(false);
+              }}
+              title="Onion Options"
+            >
               OPT
             </button>
             <button type="button" style={headerBtn(playing)} onClick={togglePlayback} title="Play / Pause (P)">
@@ -1088,7 +1714,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             className="flex flex-col border-r flex-shrink-0"
             style={{
               borderColor: "#1a1a1a",
-              width: 108,
+              width: 116,
               alignSelf: "stretch",
               height: "100%",
               minHeight: 0,
@@ -1136,15 +1762,46 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 {onionOptionsContent}
               </div>
             )}
+            {showSizeSettings && !collapse && (
+              <div style={{ position: "absolute", top: 8, right: 8, zIndex: 40 }}>
+                {sizeSettingsContent}
+              </div>
+            )}
             {collapse && (
               <>
                 <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, zIndex: 42 }}>
                   <button type="button" style={mobileOnionBtn(onionEnabled)} onClick={(e) => { e.stopPropagation(); setOnionEnabled((v) => !v); }}>{onionEnabled ? "ON" : "ONI"}</button>
-                  <button type="button" style={mobileOnionBtn(showOnionOptions)} onClick={(e) => { e.stopPropagation(); setShowOnionOptions((v) => !v); }}>OPT</button>
+                  <button
+                    type="button"
+                    style={mobileOnionBtn(showOnionOptions)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowOnionOptions((v) => !v);
+                      setShowSizeSettings(false);
+                    }}
+                  >
+                    OPT
+                  </button>
+                  <button
+                    type="button"
+                    style={mobileOnionBtn(showSizeSettings)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSizeSettings((v) => !v);
+                      setShowOnionOptions(false);
+                    }}
+                  >
+                    SIZE
+                  </button>
                 </div>
                 {showOnionOptions && (
                   <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>
                     {onionOptionsContent}
+                  </div>
+                )}
+                {showSizeSettings && (
+                  <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>
+                    {sizeSettingsContent}
                   </div>
                 )}
               </>
@@ -1273,7 +1930,30 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             </button>
             <CornerPanel id="info" corner="bottom-right" label="INFO">
               <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
-                <div>{project.width}×{project.height}</div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSizeSettings(true);
+                    setShowOnionOptions(false);
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    border: "1px solid #333",
+                    background: showSizeSettings ? "#fff" : "#000",
+                    color: showSizeSettings ? "#000" : "#aaa",
+                    fontFamily: "inherit",
+                    fontSize: 8,
+                    padding: "3px 4px",
+                    cursor: "pointer",
+                    marginBottom: 4,
+                  }}
+                  title="Image size settings"
+                >
+                  {project.width}×{project.height} · SIZE…
+                </button>
                 <div>FRM {displayFrameIndex + 1}/{frameCount}</div>
                 <div>SZ {penSize} · {activeTool.toUpperCase()}</div>
                 {activeTool === "dither" && (
@@ -1291,6 +1971,143 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
         <VerticalChromeToggle corner="bottom-right" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Vertical opacity column — drag up/down (Krita onion bar).
+ * Past / future share a soft blue-grey fill; center (current) is full white, locked.
+ */
+function OnionVertBar({
+  value,
+  onChange,
+  locked,
+  side,
+  title,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  locked?: boolean;
+  side: "prev" | "next" | "current";
+  title?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Krita uses one blue for all offset bars; center is the active frame.
+  const fill = side === "current" ? "#f0f0f0" : "#7a9eb8";
+
+  const setFromY = (clientY: number) => {
+    if (locked) return;
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const t = 1 - (clientY - rect.top) / Math.max(1, rect.height);
+    onChange(Math.min(1, Math.max(0, t)));
+  };
+
+  return (
+    <div
+      ref={ref}
+      title={title}
+      onPointerDown={(e) => {
+        if (locked) return;
+        e.preventDefault();
+        e.stopPropagation();
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        setFromY(e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (locked || e.buttons === 0) return;
+        setFromY(e.clientY);
+      }}
+      style={{
+        position: "relative",
+        height: "100%",
+        minWidth: 0,
+        background: locked ? "#1e1e1e" : "#0c0c0c",
+        border: locked ? "1px solid #3a3a3a" : "1px solid #222",
+        cursor: locked ? "default" : "ns-resize",
+        touchAction: "none",
+        opacity: !locked && value < 0.001 ? 0.35 : 1,
+      }}
+    >
+      {/* Fill grows from bottom (0% → empty, 100% → full) */}
+      <div
+        style={{
+          position: "absolute",
+          left: 1,
+          right: 1,
+          bottom: 0,
+          height: `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%`,
+          background: fill,
+          imageRendering: "pixelated",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Floor line */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 1,
+          background: "#333",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+/** Horizontal tint strength bar (0–100%) */
+function OnionTintBar({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const setFromX = (clientX: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const t = (clientX - rect.left) / Math.max(1, rect.width);
+    onChange(Math.min(1, Math.max(0, t)));
+  };
+  return (
+    <div
+      ref={ref}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        setFromX(e.clientX);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons === 0) return;
+        setFromX(e.clientX);
+      }}
+      style={{
+        flex: 1,
+        height: 14,
+        border: "1px solid #444",
+        background: "#0a0a0a",
+        position: "relative",
+        cursor: "ew-resize",
+        touchAction: "none",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: `${Math.round(value * 100)}%`,
+          background: "linear-gradient(90deg, #444 0%, #aaa 100%)",
+        }}
+      />
     </div>
   );
 }

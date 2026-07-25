@@ -8,6 +8,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clientToCanvasBitmap, useCanvasViewport } from "@/lib/creative";
+import { PixelKnob } from "@/components/ui/PixelKnob";
 import {
   DEFAULT_DITHER_PATTERN,
   DEFAULT_PRESSURE_CURVE,
@@ -386,10 +387,16 @@ export function ShotCanvas({
       }
       if (!ready) return;
       if (vpDown(e)) {
-        // Multi-touch / pan / rotate — stop drawing so strokes don't offset
-        drawingRef.current = false;
-        pointerIdRef.current = null;
-        lastPtRef.current = null;
+        // Multi-touch / pan / rotate — stop only if this pointer owns the stroke
+        // (pen keeps drawing when palm ghosts are rejected by the viewport)
+        if (
+          drawingRef.current &&
+          (pointerIdRef.current === null || pointerIdRef.current === e.pointerId)
+        ) {
+          drawingRef.current = false;
+          pointerIdRef.current = null;
+          lastPtRef.current = null;
+        }
         try {
           e.currentTarget.setPointerCapture(e.pointerId);
         } catch {
@@ -397,7 +404,7 @@ export function ShotCanvas({
         }
         return;
       }
-      if (e.button !== 0 && e.pointerType === "mouse") return;
+      if (e.button !== 0) return;
       const pt = clientToPlate(e.clientX, e.clientY);
       if (!pt) return;
       e.preventDefault();
@@ -420,7 +427,10 @@ export function ShotCanvas({
   const onStagePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (vpMove(e)) {
-        if (drawingRef.current) {
+        if (
+          drawingRef.current &&
+          (pointerIdRef.current === null || pointerIdRef.current === e.pointerId)
+        ) {
           drawingRef.current = false;
           pointerIdRef.current = null;
           lastPtRef.current = null;
@@ -1477,29 +1487,33 @@ function PressureCurvePanel({
         Live: r{liveR} @ {Math.round(lastPressure * 100)}%
       </div>
 
-      {/* Min / Max controls */}
-      <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 8, color: "#777", letterSpacing: 1 }}>
-        MIN {minSize}px
-        <input
-          type="range"
+      {/* Min / Max — pixel knobs (linear drag, not circular twist) */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <PixelKnob
+          label="MIN"
           min={PEN_SIZE_FLOOR}
           max={PEN_SIZE_CEIL}
+          step={1}
           value={minSize}
-          onChange={(e) => onMinChange(Number(e.target.value))}
-          style={{ width: "100%", accentColor: "#ffff00" }}
+          displayValue={`${minSize}`}
+          size={34}
+          layout="vertical"
+          title="Min size at zero pressure · drag ↑/→"
+          onChange={onMinChange}
         />
-      </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 8, color: "#777", letterSpacing: 1 }}>
-        MAX WIDTH {maxSize}px  ·  [ ] · rail
-        <input
-          type="range"
+        <PixelKnob
+          label="MAX"
           min={PEN_SIZE_FLOOR}
           max={PEN_SIZE_CEIL}
+          step={1}
           value={maxSize}
-          onChange={(e) => onMaxChange(Number(e.target.value))}
-          style={{ width: "100%", accentColor: "#ffff00" }}
+          displayValue={`${maxSize}`}
+          size={34}
+          layout="vertical"
+          title="Max width · [ ] · drag ↑/→"
+          onChange={onMaxChange}
         />
-      </label>
+      </div>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
         <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 9 }} onClick={() => onMaxChange(maxSize - 1)} title="[">

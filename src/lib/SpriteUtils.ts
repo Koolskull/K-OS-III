@@ -85,6 +85,111 @@ export function cloneFrame(frame: SpriteFrame, newId?: number): SpriteFrame {
   };
 }
 
+/** Clamp canvas dimensions (1…4096) to keep memory sane */
+export function clampCanvasSize(n: number): number {
+  return Math.min(4096, Math.max(1, Math.round(n)));
+}
+
+/** Pixel-zoom floor/ceiling (allows sub-1× for large canvases) */
+export const PIXEL_ZOOM_MIN = 0.05;
+export const PIXEL_ZOOM_MAX = 64;
+
+export function clampPixelZoom(z: number): number {
+  if (!Number.isFinite(z) || z <= 0) return 1;
+  return Math.min(PIXEL_ZOOM_MAX, Math.max(PIXEL_ZOOM_MIN, z));
+}
+
+/**
+ * Zoom that fits spriteW×spriteH into a view box (with padding).
+ * Used after resize / reset so large canvases open fully visible.
+ */
+export function fitPixelZoom(
+  spriteW: number,
+  spriteH: number,
+  viewW: number,
+  viewH: number,
+  padding = 48,
+): number {
+  const aw = Math.max(32, viewW - padding);
+  const ah = Math.max(32, viewH - padding);
+  const zx = aw / Math.max(1, spriteW);
+  const zy = ah / Math.max(1, spriteH);
+  return clampPixelZoom(Math.min(zx, zy));
+}
+
+/** Human-readable zoom label: 12× · 1.5× · 0.25× */
+export function formatPixelZoom(z: number): string {
+  const v = clampPixelZoom(z);
+  if (v >= 10) return `${Math.round(v)}`;
+  if (v >= 1) return (Math.round(v * 10) / 10).toString();
+  if (v >= 0.1) return (Math.round(v * 100) / 100).toString();
+  return (Math.round(v * 1000) / 1000).toString();
+}
+
+/**
+ * Nearest-neighbor resize of a single frame into newW×newH.
+ * Stretches content to fill the new canvas (pixel-art friendly).
+ */
+export function resizeFrameNearest(
+  frame: SpriteFrame,
+  newW: number,
+  newH: number,
+  newId?: number,
+): SpriteFrame {
+  const w = clampCanvasSize(newW);
+  const h = clampCanvasSize(newH);
+  const next = createFrame(newId ?? frame.id, w, h);
+  if (frame.width < 1 || frame.height < 1) return next;
+  for (let y = 0; y < h; y++) {
+    const sy = Math.min(frame.height - 1, Math.floor((y / h) * frame.height));
+    for (let x = 0; x < w; x++) {
+      const sx = Math.min(frame.width - 1, Math.floor((x / w) * frame.width));
+      next.pixels[y * w + x] = frame.pixels[sy * frame.width + sx]!;
+    }
+  }
+  return next;
+}
+
+/**
+ * Resize entire project (all layers / frames) to newW×newH via nearest-neighbor.
+ */
+export function resizeProject(
+  project: SpriteProject,
+  newW: number,
+  newH: number,
+): SpriteProject {
+  const w = clampCanvasSize(newW);
+  const h = clampCanvasSize(newH);
+  if (w === project.width && h === project.height) return project;
+  return {
+    ...project,
+    width: w,
+    height: h,
+    layers: project.layers.map((layer) => ({
+      ...layer,
+      frames: layer.frames.map((f) => resizeFrameNearest(f, w, h)),
+    })),
+  };
+}
+
+/** Common canvas size presets for KoolDraw settings */
+export const CANVAS_SIZE_PRESETS: readonly {
+  id: string;
+  label: string;
+  w: number;
+  h: number;
+}[] = [
+  { id: "16", label: "16×16", w: 16, h: 16 },
+  { id: "32", label: "32×32", w: 32, h: 32 },
+  { id: "64", label: "64×64", w: 64, h: 64 },
+  { id: "128", label: "128×128", w: 128, h: 128 },
+  { id: "vga", label: "640×480", w: 640, h: 480 },
+  { id: "hd", label: "1920×1080", w: 1920, h: 1080 },
+  // User-facing “4K-class” size (3840×2160); 3080×2160 kept as optional alias
+  { id: "4k", label: "3840×2160", w: 3840, h: 2160 },
+  { id: "4k-alt", label: "3080×2160", w: 3080, h: 2160 },
+] as const;
+
 /** Get pixel at (x, y), returns 0 if out of bounds */
 export function getPixel(frame: SpriteFrame, x: number, y: number): PackedColor {
   if (x < 0 || x >= frame.width || y < 0 || y >= frame.height) return 0;

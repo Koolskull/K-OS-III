@@ -33,22 +33,37 @@ import {
   stampFrameDither,
   stampFrameEraserDisk,
   stampFrameSoftPaint,
+  clampPixelZoom,
+  fitPixelZoom,
+  formatPixelZoom,
   type DitherPatternId,
   type PressureCurve,
   DEFAULT_PRESSURE_CURVE,
 } from "@/lib/SpriteUtils";
 
+/** Max onion offsets on each side of current (Krita-style −N…+N) */
+export const ONION_RANGE = 3;
+
 export interface OnionSkinSettings {
   enabled: boolean;
-  /** Opacity for previous frames: index 0 = frame-1, 1 = frame-2, 2 = frame-3 */
-  prevOpacities: [number, number, number];
-  /** Opacity for next frames: index 0 = frame+1, 1 = frame+2, 2 = frame+3 */
-  nextOpacities: [number, number, number];
+  /**
+   * Opacity for previous frames: index 0 = frame−1 (closest), 1 = frame−2, …
+   * Length up to ONION_RANGE.
+   */
+  prevOpacities: number[];
+  /**
+   * Opacity for next frames: index 0 = frame+1 (closest), …
+   */
+  nextOpacities: number[];
   /**
    * Wrap onion around the animation loop:
    * first frame sees last as previous; last frame sees first as next.
    */
   loopWrap?: boolean;
+  /**
+   * 0 = original colors only, 1 = full prev/next tint (Krita “Tint”).
+   */
+  tint?: number;
 }
 
 /** Soft paint / pressure brush settings (full color) */
@@ -135,13 +150,28 @@ function packFrameToImageData(
   height: number,
   tint?: { r: number; g: number; b: number },
   opacity = 1,
+  /** 0 = keep original RGB, 1 = full tint color */
+  tintStrength = 1,
 ): void {
   const composited = compositeFrame(layers, frameIndex, width, height);
   const buf = new Uint32Array(imageData.data.buffer);
-  if (!tint) {
-    buf.set(composited.pixels);
+  if (!tint || tintStrength <= 0.001) {
+    if (opacity >= 0.999) {
+      buf.set(composited.pixels);
+      return;
+    }
+    for (let i = 0; i < width * height; i++) {
+      const c = composited.pixels[i]!;
+      if (c === 0) {
+        buf[i] = 0;
+        continue;
+      }
+      const a = Math.round(((c >>> 24) & 0xff) * opacity);
+      buf[i] = (c & 0x00ffffff) | (a << 24);
+    }
     return;
   }
+  const ts = Math.min(1, Math.max(0, tintStrength));
   for (let i = 0; i < width * height; i++) {
     const c = composited.pixels[i]!;
     if (c === 0) {
@@ -154,11 +184,13 @@ function packFrameToImageData(
       continue;
     }
     const lum = (rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114) / 255;
-    const r = Math.round(tint.r * (0.35 + lum * 0.65));
-    const g = Math.round(tint.g * (0.35 + lum * 0.65));
-    const b = Math.round(tint.b * (0.35 + lum * 0.65));
+    const tr = tint.r * (0.35 + lum * 0.65);
+    const tg = tint.g * (0.35 + lum * 0.65);
+    const tb = tint.b * (0.35 + lum * 0.65);
+    const r = Math.round(rgba.r * (1 - ts) + tr * ts);
+    const g = Math.round(rgba.g * (1 - ts) + tg * ts);
+    const b = Math.round(rgba.b * (1 - ts) + tb * ts);
     const a = Math.round(rgba.a * opacity);
-    // ABGR packed (little-endian ImageData)
     buf[i] = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
   }
 }
@@ -201,20 +233,24 @@ export function SpriteCanvas({
     onPointerMove: vpMove,
     onPointerUp: vpUp,
     spaceDownRef,
-    onWheelZoom: camWheelZoom,
     resetViewport,
   } = useCanvasViewport({
     onUndo,
     onRedo,
-    minZoom: 0.35,
-    maxZoom: 4,
+    // Pinch multiplies on top of base pixel zoom; allow deep zoom-out for large plates
+    minZoom: 0.15,
+    maxZoom: 8,
     enabled: !playing,
     enableRotation: true,
     pinchRotate: true,
   });
 
-  /** Pixel zoom × camera zoom (pinch / scroll multiplies camera) */
-  const drawZoom = Math.max(1, zoom * (viewport.zoom || 1));
+  /**
+   * Effective screen scale (sprite px → canvas px).
+   * Allows sub-1× so large canvases (HD/4K) can fit the view — previously
+   * Math.max(1, …) locked zoom-out and made big plates glitch/overflow.
+   */
+  const drawZoom = clampPixelZoom(zoom * (viewport.zoom || 1));
   /** Sub-pixel stroke continuity for freehand tools */
   const lastPixelRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
@@ -297,13 +333,14 @@ export function SpriteCanvas({
     const z = drawZoom;
     const ox = offset.x;
     const oy = offset.y;
+    // Keep blit sizes finite (huge plate × high zoom can exceed canvas limits)
     const dw = width * z;
     const dh = height * z;
+    if (!Number.isFinite(dw) || !Number.isFinite(dh) || dw < 0.25 || dh < 0.25) return;
 
-    // Checker background (two-color grid via few rects when z is large is still OK;
-    // for speed use a 2×2 pattern scaled to z)
+    // Checker background — tile scales with zoom; at sub-1× use 8px screen tiles
     {
-      const tile = Math.max(1, Math.floor(z));
+      const tile = z >= 1 ? Math.max(1, Math.floor(z)) : 8;
       const pat = document.createElement("canvas");
       pat.width = tile * 2;
       pat.height = tile * 2;
@@ -331,6 +368,7 @@ export function SpriteCanvas({
       const img = octx.createImageData(width, height);
       const frameCount = layers[0]?.frames.length ?? 0;
       const wrap = !!onionSkin.loopWrap && frameCount > 1;
+      const tintAmt = onionSkin.tint ?? 1;
       const resolvePrev = (d: number): number | null => {
         let fi = viewFrameIndex - d;
         if (fi >= 0) return fi;
@@ -345,21 +383,42 @@ export function SpriteCanvas({
         fi = fi % frameCount;
         return fi === viewFrameIndex ? null : fi;
       };
-      for (let d = 3; d >= 1; d--) {
+      const prevN = onionSkin.prevOpacities.length;
+      const nextN = onionSkin.nextOpacities.length;
+      // Farthest first so closer frames paint on top
+      for (let d = prevN; d >= 1; d--) {
         const fi = resolvePrev(d);
         const op = onionSkin.prevOpacities[d - 1] ?? 0;
         if (fi != null && op > 0.001) {
-          packFrameToImageData(img, layers, fi, width, height, ONION_PREV, op);
+          packFrameToImageData(
+            img,
+            layers,
+            fi,
+            width,
+            height,
+            ONION_PREV,
+            op,
+            tintAmt,
+          );
           octx.putImageData(img, 0, 0);
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(onion, ox, oy, dw, dh);
         }
       }
-      for (let d = 3; d >= 1; d--) {
+      for (let d = nextN; d >= 1; d--) {
         const fi = resolveNext(d);
         const op = onionSkin.nextOpacities[d - 1] ?? 0;
         if (fi != null && op > 0.001) {
-          packFrameToImageData(img, layers, fi, width, height, ONION_NEXT, op);
+          packFrameToImageData(
+            img,
+            layers,
+            fi,
+            width,
+            height,
+            ONION_NEXT,
+            op,
+            tintAmt,
+          );
           octx.putImageData(img, 0, 0);
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(onion, ox, oy, dw, dh);
@@ -386,7 +445,10 @@ export function SpriteCanvas({
       ctx.drawImage(buf, ox, oy, dw, dh);
     }
 
-    if (z >= 6 && !playing) {
+    // Pixel grid only when zoomed in enough AND canvas isn't enormous
+    // (drawing 4K×4K grid lines freezes the main thread)
+    const gridOk = z >= 6 && !playing && width <= 512 && height <= 512;
+    if (gridOk) {
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -417,15 +479,20 @@ export function SpriteCanvas({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const observer = new ResizeObserver(() => {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      setOffset({
-        x: Math.floor((canvas.width - width * drawZoom) / 2),
-        y: Math.floor((canvas.height - height * drawZoom) / 2),
-      });
+    const layout = () => {
+      const cw = Math.max(1, container.clientWidth);
+      const ch = Math.max(1, container.clientHeight);
+      // Avoid pointless buffer thrash
+      if (canvas.width !== cw) canvas.width = cw;
+      if (canvas.height !== ch) canvas.height = ch;
+      const nx = Math.round((cw - width * drawZoom) / 2);
+      const ny = Math.round((ch - height * drawZoom) / 2);
+      setOffset((prev) => (prev.x === nx && prev.y === ny ? prev : { x: nx, y: ny }));
       render();
-    });
+    };
+
+    layout();
+    const observer = new ResizeObserver(layout);
     observer.observe(container);
     return () => observer.disconnect();
   }, [width, height, drawZoom, render]);
@@ -633,8 +700,13 @@ export function SpriteCanvas({
     (e: React.PointerEvent) => {
       if (playing) return;
       if (vpDown(e)) {
-        // Multi-touch / pan / rotate — cancel any in-progress stroke
-        if (drawingRef.current) {
+        // Multi-touch / pan / rotate — cancel only if this pointer owns the stroke
+        // (pen keeps drawing when a palm ghost is rejected by the viewport)
+        if (
+          drawingRef.current &&
+          (activePointerIdRef.current === null ||
+            activePointerIdRef.current === e.pointerId)
+        ) {
           drawingRef.current = false;
           activePointerIdRef.current = null;
           lastPixelRef.current = null;
@@ -642,7 +714,8 @@ export function SpriteCanvas({
         }
         return;
       }
-      if (e.button !== 0 && e.pointerType === "mouse") return;
+      // Primary contact only (mouse left / pen tip). Barrel ≠ draw.
+      if (e.button !== 0) return;
       if (drawingRef.current) return;
 
       e.preventDefault();
@@ -668,8 +741,12 @@ export function SpriteCanvas({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (vpMove(e)) {
-        // Multi-touch mid-stroke: stop drawing
-        if (drawingRef.current) {
+        // Viewport gesture consumed this pointer — stop only if it is our stroke
+        if (
+          drawingRef.current &&
+          (activePointerIdRef.current === null ||
+            activePointerIdRef.current === e.pointerId)
+        ) {
           drawingRef.current = false;
           activePointerIdRef.current = null;
           lastPixelRef.current = null;
@@ -722,32 +799,36 @@ export function SpriteCanvas({
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
-      // Desktop mouse / trackpad: scroll = zoom in/out (pixel zoom)
+      // Single zoom path (no dual pixel+camera) — multiplicative for smooth large-canvas zoom-out
       const dy = e.deltaY;
-      if (Math.abs(dy) < 40) {
-        // trackpad — also nudge camera for fine control
-        camWheelZoom(e);
-      }
-      const step = Math.max(1, Math.floor(zoom / 4));
-      const delta = dy > 0 ? -step : step;
-      const newZoom = Math.max(1, Math.min(64, zoom + delta));
-      onZoomChange(newZoom);
+      // Pixel scroll: gentle; line/page scroll: bigger steps
+      const sensitivity =
+        e.deltaMode === 1 ? 0.08 : e.deltaMode === 2 ? 0.25 : 0.0018;
+      const factor = Math.exp(-dy * sensitivity);
+      // Guard extreme trackpad bursts
+      const f = Math.min(1.35, Math.max(1 / 1.35, factor));
+      onZoomChange(clampPixelZoom(zoom * f));
     },
-    [zoom, onZoomChange, camWheelZoom],
+    [zoom, onZoomChange],
   );
 
   const zoomInBtn = useCallback(() => {
-    onZoomChange(Math.min(64, zoom + Math.max(1, Math.floor(zoom / 4))));
+    onZoomChange(clampPixelZoom(zoom * 1.25));
   }, [zoom, onZoomChange]);
 
   const zoomOutBtn = useCallback(() => {
-    onZoomChange(Math.max(1, zoom - Math.max(1, Math.floor(zoom / 4))));
+    onZoomChange(clampPixelZoom(zoom / 1.25));
   }, [zoom, onZoomChange]);
 
   const zoomResetBtn = useCallback(() => {
-    onZoomChange(12);
+    const c = containerRef.current;
+    if (c) {
+      onZoomChange(fitPixelZoom(width, height, c.clientWidth, c.clientHeight));
+    } else {
+      onZoomChange(clampPixelZoom(fitPixelZoom(width, height, 640, 480)));
+    }
     resetViewport();
-  }, [onZoomChange, resetViewport]);
+  }, [onZoomChange, resetViewport, width, height]);
 
   const zBtn: React.CSSProperties = {
     width: 28,
@@ -811,11 +892,11 @@ export function SpriteCanvas({
           </button>
           <button
             type="button"
-            style={{ ...zBtn, width: 40, fontSize: 9 }}
+            style={{ ...zBtn, width: 48, fontSize: 9 }}
             onClick={zoomResetBtn}
-            title="Reset zoom"
+            title="Fit canvas to view"
           >
-            {zoom}×
+            {formatPixelZoom(drawZoom)}×
           </button>
           <button type="button" style={zBtn} onClick={zoomInBtn} title="Zoom in (scroll)">
             +
@@ -834,7 +915,8 @@ export function SpriteCanvas({
           pointerEvents: "none",
         }}
       >
-        {zoom}X · SCROLL ZOOM
+        {formatPixelZoom(drawZoom)}× · SCROLL ZOOM
+        {drawZoom < 1 ? " · FIT" : ""}
         {playing ? " · PLAY" : onionSkin?.enabled ? " · ONION" : ""}
       </div>
     </div>

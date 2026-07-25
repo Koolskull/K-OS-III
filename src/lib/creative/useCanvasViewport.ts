@@ -4,13 +4,20 @@
  * - Three-finger tap → redo
  * - Pinch → zoom + pan; twist → rotate (when enabled)
  * - Space + drag → pan
- * - Shift + drag → rotate (when enableRotation)
+ * - Shift + drag (mouse only) → rotate (when enableRotation)
  *
  * Drawing must not run while multi-touch is active (onPointerDown returns true).
  * Apply rotation via CSS rotate(); map pointers with clientToCanvasBitmap(..., rotation).
  *
  * NOTE (macOS): Do NOT use Ctrl+click for rotate — macOS maps Ctrl+click to
  * a secondary/right-click. Use Shift only (not Alt).
+ *
+ * STYLUS / HUION / WACOM:
+ * Drivers often inject a second "touch" (palm, hover, or dual-contact) while the
+ * pen is down. That used to start a two-finger pinch-twist and rotate the view
+ * instead of drawing. Palm rejection: while a pen pointer is active, ignore
+ * touch contacts; never run multi-touch gestures involving a pen; Shift+rotate
+ * is mouse-only so a pen never enters rotate mode.
  */
 
 "use client";
@@ -36,12 +43,13 @@ export interface UseCanvasViewportOptions {
   onRedo?: () => void;
   enabled?: boolean;
   /**
-   * Allow rotate (Shift/Alt drag + optional pinch twist).
+   * Allow rotate (Shift drag mouse + optional pinch twist).
    * Default true for natural drawing-app feel.
    */
   enableRotation?: boolean;
   /**
    * Two-finger twist rotates the view. Default matches enableRotation.
+   * Only applies to pure touch pairs (never pen).
    */
   pinchRotate?: boolean;
 }
@@ -50,6 +58,7 @@ interface ActivePointer {
   id: number;
   x: number;
   y: number;
+  type: string;
 }
 
 function dist(a: ActivePointer, b: ActivePointer): number {
@@ -73,6 +82,20 @@ function centroid(pts: ActivePointer[]): { x: number; y: number } {
   }
   const n = Math.max(1, pts.length);
   return { x: x / n, y: y / n };
+}
+
+function mapHasType(map: Map<number, ActivePointer>, type: string): boolean {
+  for (const p of map.values()) {
+    if (p.type === type) return true;
+  }
+  return false;
+}
+
+/** Drop all non-pen contacts (palm / ghost touch while stylus is active). */
+function purgeNonPen(map: Map<number, ActivePointer>): void {
+  for (const [id, p] of [...map.entries()]) {
+    if (p.type !== "pen") map.delete(id);
+  }
 }
 
 const INITIAL: ViewportState = { panX: 0, panY: 0, zoom: 1, rotation: 0 };
@@ -241,17 +264,47 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     (e: React.PointerEvent): boolean => {
       if (!enabled) return false;
       const map = pointersRef.current;
-      map.set(e.pointerId, { id: e.pointerId, x: e.clientX, y: e.clientY });
       const g = gestureRef.current;
+      const pType = e.pointerType || "mouse";
 
-      // Multi-touch: never draw
+      // Palm / ghost touch while stylus is drawing — never treat as a 2nd finger.
+      // Return false so callers do not cancel an in-progress pen stroke.
+      if (pType === "touch" && mapHasType(map, "pen")) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Stylus takes priority: drop palm contacts so pinch-twist never starts
+      if (pType === "pen") {
+        purgeNonPen(map);
+        if (g.mode === "pinch" || g.mode === "multi") {
+          g.mode = "none";
+          g.peakFingers = 0;
+          g.multiDownAt = null;
+          g.multiMoved = false;
+        }
+      }
+
+      map.set(e.pointerId, {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        type: pType,
+      });
+
+      // Multi-touch only for pure finger/mouse pairs — never with a pen in the set
       if (map.size >= 2) {
+        if (mapHasType(map, "pen")) {
+          purgeNonPen(map);
+          g.mode = "draw";
+          return false; // let the pen stroke proceed
+        }
         e.preventDefault();
         beginMultiTouch(g, map);
         return true;
       }
 
-      // Reset peak when starting a fresh single-finger episode
+      // Reset peak when starting a fresh single-pointer episode
       if (map.size === 1 && g.mode !== "pinch" && g.mode !== "multi") {
         g.peakFingers = 1;
         g.multiMoved = false;
@@ -263,8 +316,10 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
       }
 
       const wantPan = spaceDownRef.current || e.button === 1;
-      // Shift+drag only (not Alt) for rotate
-      const wantRotate = enableRotation && e.shiftKey && !e.altKey;
+      // Shift+drag rotate: mouse only. Pen must always draw (Huion drivers
+      // sometimes report sticky modifiers / secondary buttons oddly).
+      const wantRotate =
+        enableRotation && e.shiftKey && !e.altKey && pType === "mouse";
 
       if (wantPan) {
         g.mode = "pan";
@@ -273,7 +328,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         e.preventDefault();
         return true;
       }
-      if (wantRotate && (e.pointerType === "mouse" || e.pointerType === "pen")) {
+      if (wantRotate) {
         g.mode = "rotate";
         g.lastX = e.clientX;
         g.lastY = e.clientY;
@@ -291,17 +346,40 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     (e: React.PointerEvent): boolean => {
       if (!enabled) return false;
       const map = pointersRef.current;
+      const pType = e.pointerType || "mouse";
+
+      // Ignore stray palm moves while pen is active (do not cancel pen stroke)
+      if (pType === "touch" && mapHasType(map, "pen") && !map.has(e.pointerId)) {
+        e.preventDefault();
+        return false;
+      }
+
       if (map.has(e.pointerId)) {
-        map.set(e.pointerId, { id: e.pointerId, x: e.clientX, y: e.clientY });
+        const prev = map.get(e.pointerId)!;
+        map.set(e.pointerId, {
+          id: e.pointerId,
+          x: e.clientX,
+          y: e.clientY,
+          type: prev.type || pType,
+        });
       }
       const g = gestureRef.current;
 
-      // Promote to multi if a second finger arrived without re-down (rare)
-      if (map.size >= 2 && g.mode === "draw") {
-        beginMultiTouch(g, map);
+      // Second contact during draw: only promote to multi if no pen is involved
+      if (map.size >= 2 && (g.mode === "draw" || mapHasType(map, "pen"))) {
+        if (mapHasType(map, "pen")) {
+          purgeNonPen(map);
+          g.mode = "draw";
+        } else if (g.mode === "draw") {
+          beginMultiTouch(g, map);
+        }
       }
 
-      if ((g.mode === "pinch" || g.mode === "multi") && map.size >= 2) {
+      if (
+        (g.mode === "pinch" || g.mode === "multi") &&
+        map.size >= 2 &&
+        !mapHasType(map, "pen")
+      ) {
         const pts = [...map.values()];
         g.peakFingers = Math.max(g.peakFingers, map.size);
         const [a, b] = pts;
@@ -311,9 +389,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
           g.multiMoved = true;
         }
         const m = centroid(pts);
-        if (
-          Math.hypot(m.x - g.pinchMidX, m.y - g.pinchMidY) > 10
-        ) {
+        if (Math.hypot(m.x - g.pinchMidX, m.y - g.pinchMidY) > 10) {
           g.multiMoved = true;
         }
 
@@ -354,8 +430,9 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         return true;
       }
 
-      // Drawing: viewport does not consume
-      return map.size >= 2;
+      // Drawing: viewport does not consume (unless multi without pen slipped through)
+      if (map.size >= 2 && !mapHasType(map, "pen")) return true;
+      return false;
     },
     [enabled, minZoom, maxZoom, enableRotation, allowPinchRotate],
   );

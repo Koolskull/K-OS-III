@@ -1,10 +1,9 @@
 /*
  * Shared canvas viewport gestures for drawing apps.
  * - Two-finger tap → undo
- * - Pinch → zoom + rotate
+ * - Pinch → zoom + pan (rotation OFF by default — was glitchy)
  * - Space + drag → pan
- * - Shift + drag → rotate
- * - Alt + drag → rotate
+ * - Shift/Alt + drag → rotate only when enableRotation is true
  *
  * NOTE (macOS): Do NOT use Ctrl+click for rotate — macOS maps Ctrl+click to
  * a secondary/right-click. Use Shift or Alt only.
@@ -20,7 +19,7 @@ export interface ViewportState {
   panY: number;
   /** Multiplier (1 = 100%) */
   zoom: number;
-  /** Degrees clockwise */
+  /** Degrees clockwise — only used if enableRotation */
   rotation: number;
 }
 
@@ -30,6 +29,13 @@ export interface UseCanvasViewportOptions {
   /** Called on two-finger tap */
   onUndo?: () => void;
   enabled?: boolean;
+  /**
+   * Allow Shift/Alt+drag rotate. Default false (accurate drawing first).
+   * Pinch never rotates unless pinchRotate is also true.
+   */
+  enableRotation?: boolean;
+  /** Allow two-finger twist to rotate. Default false. */
+  pinchRotate?: boolean;
 }
 
 interface ActivePointer {
@@ -62,6 +68,8 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     maxZoom = 8,
     onUndo,
     enabled = true,
+    enableRotation = false,
+    pinchRotate = false,
   } = opts;
 
   const [viewport, setViewport] = useState<ViewportState>(INITIAL);
@@ -284,8 +292,9 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
       }
 
       const wantPan = spaceDownRef.current || e.button === 1;
-      // Shift or Alt only — never Ctrl (macOS Ctrl+click = right-click)
-      const wantRotate = e.shiftKey || e.altKey;
+      // Shift or Alt only when rotation is enabled — never Ctrl
+      const wantRotate =
+        enableRotation && (e.shiftKey || e.altKey);
 
       if (wantPan) {
         g.mode = "pan";
@@ -305,7 +314,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
       g.mode = "draw";
       return false;
     },
-    [enabled],
+    [enabled, enableRotation],
   );
 
   /**
@@ -329,10 +338,12 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
           g.twoFingerMoved = true;
         }
         const scale = d / g.startDist;
-        const dAng = ang - g.startAngle;
         const m = mid(a!, b!);
         const dmx = m.x - g.pinchMidX;
         const dmy = m.y - g.pinchMidY;
+        // Pinch: zoom + pan only. Rotation only if explicitly enabled (default off).
+        const dAng =
+          pinchRotate && enableRotation ? ang - g.startAngle : 0;
         setViewport({
           zoom: Math.min(maxZoom, Math.max(minZoom, g.startZoom * scale)),
           rotation: g.startRotation + dAng,
@@ -353,7 +364,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         return true;
       }
 
-      if (g.mode === "rotate") {
+      if (g.mode === "rotate" && enableRotation) {
         const dx = e.clientX - g.lastX;
         g.lastX = e.clientX;
         g.lastY = e.clientY;
@@ -364,7 +375,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
 
       return false;
     },
-    [enabled, minZoom, maxZoom],
+    [enabled, minZoom, maxZoom, enableRotation, pinchRotate],
   );
 
   const onPointerUp = useCallback(

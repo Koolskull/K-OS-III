@@ -158,11 +158,94 @@ export function forEachStrokePoint(
 
 export type StampWrite = (x: number, y: number) => void;
 
+/**
+ * Cubic-Bezier pressure→size anchors in the unit square.
+ * Endpoints are fixed: (0,0)=min radius, (1,1)=max radius.
+ * `a` and `b` are the two free vector control points (like Illustrator handles).
+ */
+export interface PressureAnchor {
+  /** Pressure axis 0..1 */
+  x: number;
+  /** Normalized size 0..1 (0 = minRadius, 1 = maxRadius) */
+  y: number;
+}
+
+export interface PressureCurve {
+  a: PressureAnchor;
+  b: PressureAnchor;
+}
+
+/** Soft exponential default — stays thin at light pressure, ramps late */
+export const DEFAULT_PRESSURE_CURVE: PressureCurve = {
+  a: { x: 0.28, y: 0.04 },
+  b: { x: 0.62, y: 0.38 },
+};
+
+/** Straight diagonal (legacy linear feel) */
+export const LINEAR_PRESSURE_CURVE: PressureCurve = {
+  a: { x: 0.33, y: 0.33 },
+  b: { x: 0.66, y: 0.66 },
+};
+
+export function clamp01(v: number): number {
+  return Math.min(1, Math.max(0, v));
+}
+
+export function clampPressureCurve(curve: PressureCurve): PressureCurve {
+  return {
+    a: { x: clamp01(curve.a.x), y: clamp01(curve.a.y) },
+    b: { x: clamp01(curve.b.x), y: clamp01(curve.b.y) },
+  };
+}
+
+/** Cubic Bernstein basis B(t) with fixed ends 0 → 1 via controls c1, c2 */
+function cubic01(t: number, c1: number, c2: number): number {
+  const u = 1 - t;
+  return 3 * u * u * t * c1 + 3 * u * t * t * c2 + t * t * t;
+}
+
+function cubic01Deriv(t: number, c1: number, c2: number): number {
+  // d/dt [3(1-t)²t c1 + 3(1-t)t² c2 + t³]
+  const u = 1 - t;
+  return (
+    3 * u * u * c1 +
+    6 * u * t * (c2 - c1) +
+    3 * t * t * (1 - c2)
+  );
+}
+
+/**
+ * Given pressure p (x), invert cubic Bezier X(t)=p then sample Y(t).
+ * Returns normalized size factor 0..1.
+ */
+export function samplePressureCurve(
+  pressure: number,
+  curve: PressureCurve = DEFAULT_PRESSURE_CURVE,
+): number {
+  const p = clamp01(pressure);
+  const { a, b } = clampPressureCurve(curve);
+  // Newton–Raphson: find t where X(t) ≈ p
+  let t = p;
+  for (let i = 0; i < 10; i++) {
+    const x = cubic01(t, a.x, b.x);
+    const dx = cubic01Deriv(t, a.x, b.x);
+    if (Math.abs(dx) < 1e-7) break;
+    t -= (x - p) / dx;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+  }
+  return clamp01(cubic01(t, a.y, b.y));
+}
+
 export interface DiskStampOpts {
   /** 0..1 */
   pressure: number;
-  /** Max brush radius in pixels (from UI pen size). Min effective 1. */
+  /** Max brush radius in pixels at full pressure. */
   maxRadius: number;
+  /** Min brush radius in pixels at zero pressure. Default 1. */
+  minRadius?: number;
+  /** Optional cubic-Bezier pressure→size curve (two anchors). */
+  curve?: PressureCurve;
 }
 
 /**
@@ -175,19 +258,27 @@ export function stampHarshDisk(
   opts: DiskStampOpts,
   write: StampWrite,
 ): void {
-  const cap = Math.max(1, Math.min(5, opts.maxRadius));
-  const r = Math.max(1, Math.round(1 + opts.pressure * (cap - 1)));
+  const maxR = Math.max(1, Math.min(5, opts.maxRadius));
+  const minR = Math.max(1, Math.min(opts.minRadius ?? 1, maxR));
+  const r = radiusFromPressure(opts.pressure, maxR, minR, opts.curve);
   stampSolidDisk(cx, cy, r, write);
 }
 
 /**
- * Pressure→radius mapping used by pen and dither.
- * maxRadius 1 → always 1; otherwise 1..maxRadius by pressure.
+ * Pressure→radius via cubic Bezier (two vector anchors).
+ * p=0 → minRadius, p=1 → maxRadius (clamped, integers ≥ 1).
  */
-export function radiusFromPressure(pressure: number, maxRadius: number): number {
+export function radiusFromPressure(
+  pressure: number,
+  maxRadius: number,
+  minRadius = 1,
+  curve: PressureCurve = DEFAULT_PRESSURE_CURVE,
+): number {
   const maxR = Math.max(1, Math.round(maxRadius));
-  if (maxR <= 1) return 1;
-  return Math.max(1, Math.round(1 + pressure * (maxR - 1)));
+  const minR = Math.max(1, Math.min(Math.round(minRadius), maxR));
+  if (maxR <= minR) return minR;
+  const y = samplePressureCurve(pressure, curve);
+  return Math.round(minR + y * (maxR - minR));
 }
 
 /**
@@ -212,7 +303,15 @@ export function stampDitherDisk(
 ): void {
   const pattern = opts.pattern ?? DEFAULT_DITHER_PATTERN;
   const coverage = Math.min(1, Math.max(0, opts.coverage ?? opts.pressure));
-  const r = Math.max(1, radiusFromPressure(opts.pressure, opts.maxRadius));
+  const r = Math.max(
+    1,
+    radiusFromPressure(
+      opts.pressure,
+      opts.maxRadius,
+      opts.minRadius ?? 1,
+      opts.curve,
+    ),
+  );
 
   // Full solid / empty short-circuit (ends of the ordered-dither gradient)
   if (coverage >= 0.999) {
@@ -305,5 +404,15 @@ export function stampPressureDisk(
   opts: DiskStampOpts,
   write: StampWrite,
 ): void {
-  stampSolidDisk(cx, cy, radiusFromPressure(opts.pressure, opts.maxRadius), write);
+  stampSolidDisk(
+    cx,
+    cy,
+    radiusFromPressure(
+      opts.pressure,
+      opts.maxRadius,
+      opts.minRadius ?? 1,
+      opts.curve,
+    ),
+    write,
+  );
 }

@@ -290,6 +290,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     (dataUrl: string) => {
       if (editor.mode !== "draw") return;
       const id = editor.shotId;
+      const shot = sequence.shots.find((s) => s.id === id);
+      // Commit plate, select shot, always return to the list
       setSequence((prev) => ({
         ...prev,
         shots: prev.shots.map((s) =>
@@ -298,17 +300,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             : s,
         ),
       }));
-      const shot = sequence.shots.find((s) => s.id === id);
-      // Stay on draw with metadata if new; close only on explicit done from meta DONE
-      if (editor.isNew) {
-        setStatusLine(
-          `Thumbnail saved · fill metadata · unlock HD/4K (${shot?.plateW}×${shot?.plateH})`,
-        );
-        // Keep draw mode open so metadata dialog remains
-      } else {
-        setEditor({ mode: "closed" });
-        setStatusLine(`Plate saved · ${shot?.plateW}×${shot?.plateH}`);
-      }
+      setSelectedShotId(id);
+      setEditor({ mode: "closed" });
+      setStatusLine(
+        `Saved · ${shot?.plateW ?? "?"}×${shot?.plateH ?? "?"} · expand for metadata / HD-4K`,
+      );
     },
     [editor, sequence.shots],
   );
@@ -1024,6 +1020,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             height={editingShot.plateH}
             title={editingShot.title}
             onSave={savePlate}
+            onCancel={finishDrawSession}
             onOpenInSpriteEditor={(live) => openInSpriteEditor(editingShot.id, live)}
           />
           {/* Toggle — stays on the canvas edge so it works when panel is hidden */}

@@ -18,6 +18,15 @@ import {
   stampHarshDisk,
   stampPressureDisk,
   type DitherPatternId,
+  type PressureCurve,
+} from "@/lib/drawStamps";
+
+export type { PressureCurve } from "@/lib/drawStamps";
+export {
+  DEFAULT_PRESSURE_CURVE,
+  LINEAR_PRESSURE_CURVE,
+  radiusFromPressure,
+  samplePressureCurve,
 } from "@/lib/drawStamps";
 
 export {
@@ -171,6 +180,12 @@ export interface StampOpts {
   ditherPattern?: DitherPatternId;
   /** Gray coverage 0..1 for ordered dither (Bayer gradient stop) */
   coverage?: number;
+  /** Pen radius at full pressure (px) */
+  maxRadius?: number;
+  /** Pen radius at zero pressure (px) */
+  minRadius?: number;
+  /** Cubic-Bezier pressure→size curve (two vector anchors) */
+  curve?: PressureCurve;
 }
 
 function writeMono(
@@ -210,7 +225,12 @@ export function stampPen(
   stampPressureDisk(
     cx,
     cy,
-    { pressure: opts.pressure, maxRadius: 23 },
+    {
+      pressure: opts.pressure,
+      maxRadius: opts.maxRadius ?? 24,
+      minRadius: opts.minRadius ?? 1,
+      curve: opts.curve,
+    },
     writeMono(bmp, opts.ink, opts.width, opts.height),
   );
 }
@@ -226,7 +246,9 @@ export function stampDither(
     cy,
     {
       pressure: opts.pressure,
-      maxRadius: 28,
+      maxRadius: opts.maxRadius ?? 28,
+      minRadius: opts.minRadius ?? 1,
+      curve: opts.curve,
       ditherOx: opts.ditherOx,
       ditherOy: opts.ditherOy,
       pattern: opts.ditherPattern ?? DEFAULT_DITHER_PATTERN,

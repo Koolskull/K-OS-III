@@ -5,16 +5,17 @@
  *            ║  SKULLTEXT       ║
  *            ╚═══════════════════╝
  *
- *   Local-first notes + code editor.
- *   Soft wrap on by default. Tab = 2 spaces.
- *   Files live in localStorage cache; export to disk anytime.
+ *   Local-first notes + code editor (CodeMirror 6 + K-OS theme).
+ *   Soft wrap on by default. Tab indent. Highlight by extension.
+ *   Files in localStorage; export to disk anytime.
  *
  *   Saint Jerome, patron of translators and scribes — keep these lines true.
  */
 
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { SkullEditor } from "./SkullEditor";
 
 /* ------------------------------------------------------------------ */
 /*  Types & constants                                                  */
@@ -98,10 +99,6 @@ function saveFiles(files: SkullFile[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
 }
 
-/* ------------------------------------------------------------------ */
-/*  Lightweight syntax checks                                          */
-/* ------------------------------------------------------------------ */
-
 function syntaxError(name: string, content: string): string | null {
   const ext = extOf(name);
   if (ext === ".json") {
@@ -115,7 +112,6 @@ function syntaxError(name: string, content: string): string | null {
   }
   if (ext === ".xml" || ext === ".svg") {
     if (!content.trim()) return null;
-    // crude balance check — not a full parser
     const open = (content.match(/<[^/!?][^>]*>/g) || []).length;
     const close = (content.match(/<\/[^>]+>/g) || []).length;
     const self = (content.match(/\/>/g) || []).length;
@@ -123,10 +119,6 @@ function syntaxError(name: string, content: string): string | null {
   }
   return null;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Styles                                                             */
-/* ------------------------------------------------------------------ */
 
 const btn = (active = false): React.CSSProperties => ({
   padding: "4px 8px",
@@ -141,10 +133,6 @@ const btn = (active = false): React.CSSProperties => ({
   whiteSpace: "nowrap",
 });
 
-/* ------------------------------------------------------------------ */
-/*  App                                                                */
-/* ------------------------------------------------------------------ */
-
 interface SkullTextAppProps {
   isFocused?: boolean;
 }
@@ -153,14 +141,13 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
   const [files, setFiles] = useState<SkullFile[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState("SKULLTEXT · local cache");
-  const [wrap, setWrap] = useState(true); // soft wrap ON by default
+  const [status, setStatus] = useState("SKULLTEXT · CodeMirror 6 · local cache");
+  const [wrap, setWrap] = useState(true);
   const [showBrowser, setShowBrowser] = useState(true);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // hydrate from localStorage
   useEffect(() => {
     const list = loadFiles();
     if (list.length === 0) {
@@ -168,7 +155,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         id: uid(),
         name: defaultName(".md"),
         content:
-          "# SKULLTEXT\n\nLocal-first notes and code.\n\n- Soft wrap is on by default\n- Tab inserts 2 spaces\n- Save to cache · Export to disk\n",
+          "# SKULLTEXT\n\nLocal-first notes and code (CodeMirror 6).\n\n- Soft wrap on by default\n- Tab indents · Ctrl-Space completes\n- Save to cache · Export to disk\n",
         updatedAt: Date.now(),
       };
       setFiles([starter]);
@@ -181,6 +168,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
       const pick = list.find((f) => f.id === last) ?? list[0]!;
       setActiveId(pick.id);
     }
+    setHydrated(true);
   }, []);
 
   const active = useMemo(
@@ -195,14 +183,17 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
     saveFiles(next);
   }, []);
 
-  const openFile = useCallback((id: string) => {
-    setActiveId(id);
-    localStorage.setItem(LAST_OPEN_KEY, id);
-    setDirty(false);
-    setRenameId(null);
-    const f = files.find((x) => x.id === id);
-    setStatus(f ? `Opened ${f.name}` : "Opened");
-  }, [files]);
+  const openFile = useCallback(
+    (id: string) => {
+      setActiveId(id);
+      localStorage.setItem(LAST_OPEN_KEY, id);
+      setDirty(false);
+      setRenameId(null);
+      const f = files.find((x) => x.id === id);
+      setStatus(f ? `Opened ${f.name}` : "Opened");
+    },
+    [files],
+  );
 
   const updateContent = useCallback(
     (content: string) => {
@@ -242,7 +233,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
       localStorage.setItem(LAST_OPEN_KEY, f.id);
       setDirty(false);
       setStatus(`New ${f.name}`);
-      requestAnimationFrame(() => taRef.current?.focus());
     },
     [files, persist],
   );
@@ -268,11 +258,10 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
       return;
     }
     let name = renameValue.trim();
-    if (!extOf(name) || extOf(name) === name) {
-      // no extension — keep old or default .txt
+    if (!name.includes(".")) {
       const old = files.find((f) => f.id === renameId);
       const e = old ? extOf(old.name) : ".txt";
-      if (!name.includes(".")) name = name + e;
+      name = name + e;
     }
     const next = files.map((f) =>
       f.id === renameId ? { ...f, name, updatedAt: Date.now() } : f,
@@ -287,7 +276,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
     const mime = MIME[extOf(active.name)] ?? "text/plain";
     const blob = new Blob([active.content], { type: mime });
 
-    // File System Access API when available
     const w = window as Window & {
       showSaveFilePicker?: (opts: {
         suggestedName?: string;
@@ -311,7 +299,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         setStatus(`Exported ${active.name} → disk`);
         return;
       } catch (e) {
-        // user cancelled or unsupported — fall through to download
         if (e instanceof Error && e.name === "AbortError") {
           setStatus("Export cancelled");
           return;
@@ -319,7 +306,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
       }
     }
 
-    // download fallback
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -355,7 +341,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
     input.click();
   }, [files, persist]);
 
-  // keyboard shortcuts when focused
   useEffect(() => {
     if (!isFocused) return;
     const onKey = (e: KeyboardEvent) => {
@@ -374,22 +359,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isFocused, saveActive, newFile, exportFile]);
-
-  // Tab → 2 spaces inside textarea
-  const onKeyDownTa = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const ta = e.currentTarget;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const val = ta.value;
-      const next = val.slice(0, start) + "  " + val.slice(end);
-      updateContent(next);
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      });
-    }
-  };
 
   const sorted = useMemo(
     () => [...files].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -410,7 +379,6 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         overflow: "hidden",
       }}
     >
-      {/* toolbar */}
       <div
         style={{
           flexShrink: 0,
@@ -459,9 +427,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         )}
       </div>
 
-      {/* body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-        {/* file browser */}
         {showBrowser && (
           <aside
             style={{
@@ -578,35 +544,14 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
           </aside>
         )}
 
-        {/* editor */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
-          {active ? (
-            <textarea
-              ref={taRef}
+          {hydrated && active ? (
+            <SkullEditor
+              key={active.id}
               value={active.content}
-              onChange={(e) => updateContent(e.target.value)}
-              onKeyDown={onKeyDownTa}
-              spellCheck={extOf(active.name) === ".txt" || extOf(active.name) === ".md"}
-              style={{
-                flex: 1,
-                width: "100%",
-                height: "100%",
-                resize: "none",
-                border: "none",
-                outline: "none",
-                background: "#000000",
-                color: "#e8e8e8",
-                fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
-                fontSize: 13,
-                lineHeight: 1.5,
-                padding: "12px 14px",
-                whiteSpace: wrap ? "pre-wrap" : "pre",
-                overflowWrap: wrap ? "break-word" : "normal",
-                wordBreak: wrap ? "break-word" : "normal",
-                overflow: "auto",
-                tabSize: 2,
-                caretColor: "#ffff00",
-              }}
+              filename={active.name}
+              wrap={wrap}
+              onChange={updateContent}
             />
           ) : (
             <div
@@ -620,11 +565,10 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
                 fontSize: 11,
               }}
             >
-              NO FILE OPEN · NEW TO START
+              {hydrated ? "NO FILE OPEN · NEW TO START" : "LOADING…"}
             </div>
           )}
 
-          {/* status bar */}
           <div
             style={{
               flexShrink: 0,
@@ -646,7 +590,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
             <span>
               {active
                 ? `${active.content.length} chars · ${active.content.split("\n").length} lines · wrap ${wrap ? "on" : "off"}`
-                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · Tab indent"}
+                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · Tab indent · Ctrl-Space complete"}
             </span>
           </div>
         </div>

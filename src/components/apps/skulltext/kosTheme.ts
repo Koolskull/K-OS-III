@@ -6,23 +6,37 @@
 import { EditorView } from "@codemirror/view";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
-import { Extension } from "@codemirror/state";
+import type { Extension } from "@codemirror/state";
 
-/** Chrome + layout — pure pixel OS look */
+/** Chrome + layout — pure pixel OS look; fills flex parent */
 export const kosEditorTheme = EditorView.theme(
   {
     "&": {
       backgroundColor: "#000000",
       color: "#e8e8e8",
       height: "100%",
+      maxHeight: "100%",
+      width: "100%",
       fontSize: "13px",
       fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
+    },
+    "&.cm-editor": {
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+    },
+    ".cm-scroller": {
+      flex: "1 1 auto",
+      overflow: "auto",
+      fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
+      minHeight: "0",
     },
     ".cm-content": {
       caretColor: "#ffff00",
       fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
       padding: "12px 14px",
       lineHeight: "1.5",
+      minHeight: "100%",
     },
     ".cm-cursor, .cm-dropCursor": {
       borderLeftColor: "#ffff00",
@@ -49,9 +63,9 @@ export const kosEditorTheme = EditorView.theme(
       minWidth: "2.5em",
     },
     ".cm-foldPlaceholder": {
-      backgroundColor: "#111",
-      border: "1px solid #444",
-      color: "#888",
+      backgroundColor: "#111111",
+      border: "1px solid #444444",
+      color: "#888888",
     },
     ".cm-tooltip": {
       backgroundColor: "#000000",
@@ -85,24 +99,24 @@ export const kosEditorTheme = EditorView.theme(
     },
     ".cm-panel": {
       backgroundColor: "#0a0a0a",
-      borderTop: "1px solid #333",
-      color: "#ccc",
+      borderTop: "1px solid #333333",
+      color: "#cccccc",
       fontFamily: "var(--dm-font-primary), monospace",
       fontSize: "11px",
     },
     ".cm-panel input, .cm-panel button": {
       borderRadius: "0",
-      border: "1px solid #555",
-      background: "#000",
-      color: "#ccc",
+      border: "1px solid #555555",
+      background: "#000000",
+      color: "#cccccc",
       fontFamily: "inherit",
     },
     ".cm-panel button": {
       cursor: "pointer",
     },
     ".cm-panel button:hover": {
-      background: "#fff",
-      color: "#000",
+      background: "#ffffff",
+      color: "#000000",
     },
     ".cm-searchMatch": {
       backgroundColor: "#333300",
@@ -110,15 +124,10 @@ export const kosEditorTheme = EditorView.theme(
     ".cm-searchMatch.cm-searchMatch-selected": {
       backgroundColor: "#666600",
     },
-    ".cm-scroller": {
-      overflow: "auto",
-      fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
-    },
   },
   { dark: true },
 );
 
-/** Syntax colors — high contrast, limited palette */
 const kosHighlightStyle = HighlightStyle.define([
   { tag: t.keyword, color: "#ffff00" },
   { tag: t.operator, color: "#cccccc" },
@@ -147,7 +156,4 @@ const kosHighlightStyle = HighlightStyle.define([
   { tag: t.invalid, color: "#ff4444" },
 ]);
 
-export const kosTheme: Extension = [
-  kosEditorTheme,
-  syntaxHighlighting(kosHighlightStyle),
-];
+export const kosTheme: Extension = [kosEditorTheme, syntaxHighlighting(kosHighlightStyle)];

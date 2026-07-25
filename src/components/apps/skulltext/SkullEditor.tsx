@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { EditorState, Compartment, Extension } from "@codemirror/state";
+import { EditorState, Compartment, type Extension } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -14,7 +14,12 @@ import {
   highlightActiveLineGutter,
   drawSelection,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import {
   autocompletion,
@@ -23,7 +28,11 @@ import {
   closeBracketsKeymap,
 } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
-import { bracketMatching, foldGutter, indentOnInput } from "@codemirror/language";
+import {
+  bracketMatching,
+  foldGutter,
+  indentOnInput,
+} from "@codemirror/language";
 import { kosTheme } from "./kosTheme";
 import { languageForFilename } from "./languages";
 
@@ -32,19 +41,24 @@ export interface SkullEditorProps {
   filename: string;
   wrap: boolean;
   onChange: (value: string) => void;
-  onReady?: (view: EditorView) => void;
 }
 
-export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullEditorProps) {
+export function SkullEditor({ value, filename, wrap, onChange }: SkullEditorProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const langComp = useRef(new Compartment());
   const wrapComp = useRef(new Compartment());
-  // avoid feedback loop when we setDoc from props
+  const onChangeRef = useRef(onChange);
   const applyingExternal = useRef(false);
 
   useEffect(() => {
-    if (!parentRef.current) return;
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  // Create editor once per mount (parent remounts via key={fileId})
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent) return;
 
     const lang = languageForFilename(filename);
 
@@ -58,10 +72,7 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
       indentOnInput(),
       bracketMatching(),
       closeBrackets(),
-      foldGutter({
-        openText: "▾",
-        closedText: "▸",
-      }),
+      foldGutter(),
       autocompletion(),
       highlightSelectionMatches(),
       keymap.of([
@@ -77,10 +88,11 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
       wrapComp.current.of(wrap ? EditorView.lineWrapping : []),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !applyingExternal.current) {
-          onChange(update.state.doc.toString());
+          onChangeRef.current(update.state.doc.toString());
         }
       }),
       EditorState.tabSize.of(2),
+      EditorView.editable.of(true),
     ];
 
     const state = EditorState.create({
@@ -90,20 +102,18 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
 
     const view = new EditorView({
       state,
-      parent: parentRef.current,
+      parent,
     });
     viewRef.current = view;
-    onReady?.(view);
 
     return () => {
       view.destroy();
       viewRef.current = null;
     };
-    // mount once — filename/wrap/value synced below
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; file switches remount via key
   }, []);
 
-  // external value (file switch)
+  // Sync doc when parent forces a new value without remount (rare)
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -116,7 +126,6 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
     applyingExternal.current = false;
   }, [value]);
 
-  // language when filename changes
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -126,7 +135,6 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
     });
   }, [filename]);
 
-  // soft wrap toggle
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -138,6 +146,7 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
   return (
     <div
       ref={parentRef}
+      className="skulltext-cm-host"
       style={{
         flex: 1,
         minHeight: 0,
@@ -145,6 +154,8 @@ export function SkullEditor({ value, filename, wrap, onChange, onReady }: SkullE
         width: "100%",
         height: "100%",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     />
   );

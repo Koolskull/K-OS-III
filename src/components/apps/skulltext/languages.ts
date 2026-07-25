@@ -2,7 +2,7 @@
  * Map file extensions → CodeMirror language support.
  */
 
-import { Extension } from "@codemirror/state";
+import type { Extension } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
 import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
@@ -17,11 +17,13 @@ export function languageForFilename(name: string): Extension | null {
 
   switch (ext) {
     case ".ts":
+      return javascript({ typescript: true, jsx: false });
     case ".tsx":
-      return javascript({ typescript: true, jsx: ext === ".tsx" });
+      return javascript({ typescript: true, jsx: true });
     case ".js":
+      return javascript({ jsx: false });
     case ".jsx":
-      return javascript({ jsx: ext === ".jsx" });
+      return javascript({ jsx: true });
     case ".html":
     case ".htm":
       return html();
@@ -42,8 +44,6 @@ export function languageForFilename(name: string): Extension | null {
     case ".cc":
       return cpp();
     case ".cs":
-      // No official csharp package in core set — plain text for now
-      return null;
     case ".csv":
     case ".txt":
     default:

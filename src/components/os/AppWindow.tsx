@@ -34,9 +34,8 @@ interface AppWindowProps {
   onClose: () => void;
 }
 
-const TITLE_BAR_H = 24;
-const MIN_WIDTH = 320;
-const MIN_HEIGHT = 200;
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 180;
 const RESIZE_HANDLE = 4;
 
 export function AppWindow({
@@ -169,7 +168,7 @@ export function AppWindow({
       style={{
         position: "absolute",
         ...(state.isMaximized
-          ? { left: 0, top: 0, right: 0, bottom: 36 }
+          ? { left: 0, top: 0, right: 0, bottom: "var(--dm-taskbar-h, 32px)" }
           : { left: state.x, top: state.y, width: state.width, height: state.height }),
         zIndex,
         border: `2px solid ${borderColor}`,
@@ -187,9 +186,9 @@ export function AppWindow({
       {/* Title bar */}
       <div
         style={{
-          height: `${TITLE_BAR_H}px`,
+          height: "var(--dm-ui-chrome-h, 22px)",
           backgroundColor: titleBg,
-          borderBottom: `2px solid ${borderColor}`,
+          borderBottom: `1px solid ${borderColor}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -206,9 +205,9 @@ export function AppWindow({
           <span
             style={{
               fontFamily: "var(--dm-font-primary)",
-              fontSize: "10px",
+              fontSize: "var(--dm-ui-font-sm, 8px)",
               color: titleColor,
-              letterSpacing: "2px",
+              letterSpacing: "1px",
             }}
           >
             ☦ {title}

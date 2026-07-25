@@ -37,12 +37,12 @@ export interface PreferencesData {
 
 const SCALE_VALUES: ScalePreset[] = ["auto", "tiny", "1x", "2x", "3x", "4x"];
 const SCALE_DESCS: Record<ScalePreset, string> = {
-  auto: "DETECT FROM SCREEN SIZE",
+  auto: "COMPACT ON LARGE (IPAD / 4K)",
   tiny: "MIYOO MINI / HANDHELDS",
-  "1x": "BASE / TABLETS",
-  "2x": "1080P DESKTOPS",
-  "3x": "1440P / ULTRAWIDE",
-  "4x": "4K DISPLAYS",
+  "1x": "FIXED COMPACT 1×",
+  "2x": "LARGE UI · PIXEL 2×",
+  "3x": "LARGE UI · PIXEL 3×",
+  "4x": "LARGE UI · PIXEL 4×",
 };
 
 const AVAILABLE_FONTS = [

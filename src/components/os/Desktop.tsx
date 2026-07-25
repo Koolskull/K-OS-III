@@ -81,9 +81,9 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
           flexDirection: "column",
           flexWrap: "wrap",
           alignContent: "flex-start",
-          gap: "8px",
-          padding: "16px",
-          height: "calc(100% - 40px)",
+          gap: "var(--dm-ui-gap, 4px)",
+          padding: "var(--dm-ui-pad, 4px)",
+          height: "calc(100% - var(--dm-taskbar-h, 32px))",
         }}
       >
         {ICONS.map((icon) => {
@@ -93,12 +93,12 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               key={icon.id}
               onClick={() => handleIconClick(icon.id)}
               style={{
-                width: "80px",
+                width: "64px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "4px",
-                padding: "8px 4px",
+                gap: "2px",
+                padding: "4px 2px",
                 cursor: "pointer",
                 backgroundColor: isSelected ? "rgba(255,255,255,0.1)" : "transparent",
                 border: isSelected ? "1px solid #555555" : "1px solid transparent",
@@ -108,12 +108,12 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               {/* Icon glyph */}
               <div
                 style={{
-                  width: "48px",
-                  height: "48px",
+                  width: "36px",
+                  height: "36px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "28px",
+                  fontSize: "20px",
                   color: "#ffffff",
                   imageRendering: "pixelated",
                 }}
@@ -124,12 +124,12 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               <span
                 style={{
                   fontFamily: "var(--dm-font-primary)",
-                  fontSize: "8px",
+                  fontSize: "var(--dm-ui-font-xs, 7px)",
                   color: "#ffffff",
                   letterSpacing: "1px",
                   textAlign: "center",
                   wordBreak: "break-all",
-                  lineHeight: "1.3",
+                  lineHeight: "1.25",
                 }}
               >
                 {icon.label}

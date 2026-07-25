@@ -36,6 +36,10 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    // SKULLTEXT CodeMirror 6 host — deferred (deps not installed; textarea editor is live)
+    "src/components/apps/skulltext/SkullEditor.tsx",
+    "src/components/apps/skulltext/kosTheme.ts",
+    "src/components/apps/skulltext/languages.ts"
   ]
 }

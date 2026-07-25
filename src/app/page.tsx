@@ -41,6 +41,7 @@ import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWiki
 import TilemapApp from "@/components/apps/tilemap/TilemapApp";
 import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { assetUrl } from "@/lib/assets";
+import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
@@ -181,66 +182,68 @@ export default function KoolskullOS() {
   }
 
   return (
-    <div
-      className="w-full h-full relative overflow-hidden"
-      style={{ backgroundColor: "#000000" }}
-    >
-      <Desktop onLaunchApp={launchApp} />
-
-      {windows.map((win) => (
-        <AppWindow
-          key={win.id}
-          id={win.id}
-          title={win.title}
-          state={win.state}
-          zIndex={win.zIndex}
-          isFocused={win.id === focusedWindowId}
-          onFocus={() => focusWindow(win.id)}
-          onStateChange={(state) => updateWindowState(win.id, state)}
-          onClose={() => closeWindow(win.id)}
-        >
-          {win.appId === "datamoshpit" && (
-            <DatamoshpitApp isFocused={win.id === focusedWindowId} />
-          )}
-          {win.appId === "bible" && <BibleReader />}
-          {win.appId === "games" && <GameMenu />}
-          {win.appId === "kooldraw" && (
-            <KoolDrawApp isFocused={win.id === focusedWindowId} />
-          )}
-          {win.appId === "manual" && <ManualApp />}
-          {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
-          {win.appId === "tilemap" && (
-            <TilemapApp isFocused={win.id === focusedWindowId} />
-          )}
-          {win.appId === "shotlist" && (
-            <ShotlistApp isFocused={win.id === focusedWindowId} />
-          )}
-        </AppWindow>
-      ))}
-
-      <Taskbar
-        windows={windows.map((w) => ({
-          id: w.id,
-          title: w.title,
-          isMinimized: w.state.isMinimized,
-        }))}
-        focusedId={focusedWindowId}
-        onWindowClick={handleTaskbarClick}
-        onShowDesktop={showDesktop}
-      />
-
-      {/* Screen glitch overlay */}
+    <CreativeWorkflowProvider onLaunchApp={launchApp}>
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.07,
-          zIndex: 999999,
-          mixBlendMode: "screen",
-        }}
-      />
-    </div>
+        className="w-full h-full relative overflow-hidden"
+        style={{ backgroundColor: "#000000" }}
+      >
+        <Desktop onLaunchApp={launchApp} />
+
+        {windows.map((win) => (
+          <AppWindow
+            key={win.id}
+            id={win.id}
+            title={win.title}
+            state={win.state}
+            zIndex={win.zIndex}
+            isFocused={win.id === focusedWindowId}
+            onFocus={() => focusWindow(win.id)}
+            onStateChange={(state) => updateWindowState(win.id, state)}
+            onClose={() => closeWindow(win.id)}
+          >
+            {win.appId === "datamoshpit" && (
+              <DatamoshpitApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "bible" && <BibleReader />}
+            {win.appId === "games" && <GameMenu />}
+            {win.appId === "kooldraw" && (
+              <KoolDrawApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "manual" && <ManualApp />}
+            {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
+            {win.appId === "tilemap" && (
+              <TilemapApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "shotlist" && (
+              <ShotlistApp isFocused={win.id === focusedWindowId} />
+            )}
+          </AppWindow>
+        ))}
+
+        <Taskbar
+          windows={windows.map((w) => ({
+            id: w.id,
+            title: w.title,
+            isMinimized: w.state.isMinimized,
+          }))}
+          focusedId={focusedWindowId}
+          onWindowClick={handleTaskbarClick}
+          onShowDesktop={showDesktop}
+        />
+
+        {/* Screen glitch overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+            opacity: 0.07,
+            zIndex: 999999,
+            mixBlendMode: "screen",
+          }}
+        />
+      </div>
+    </CreativeWorkflowProvider>
   );
 }

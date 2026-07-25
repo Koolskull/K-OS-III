@@ -165,10 +165,33 @@ This maps onto existing K-Wallet and PRODEV plans. It is explicitly **not** requ
 - Register desktop icon and AppId (done)
 - Basic empty window + variable-duration shot fields + CornerChrome (done)
 
+### Phase 0.5 — Mono shot plate (landed)
+Every shot starts on a **480 × 853** monochrome thumbnail plate (≈ 9:16 portrait).
+
+- **Start color:** black or white (chosen when adding a shot)
+- **Ink:** black or white only (no gray)
+- **Tools** (shared `src/lib/drawStamps.ts` + `monoDraw.ts` / `ShotCanvas.tsx`):
+  - **HARSH** — solid hard disk; pressure only widens slightly. Fast carve / sketch.
+  - **PEN** — solid B/W; **pressure → brush size**. Stylus preferred; mouse/touch get a default.
+  - **DITHER** — Bayer 8×8; **pressure → density + size**; **OX/OY phase**.
+- Plate PNG is the shot `thumbnail` data-URL at `plateW`×`plateH`.
+- **Optional size upgrade** (only after first committed thumbnail save / sprite return):
+  - **HD** 1920×1080
+  - **4K** 3840×2160  
+  Letterboxed nearest-neighbor mono upscale from the thumbnail. UI: **HD/4K** / **U**.
+- Keys: `1/H` harsh · `2/B` pen · `3/D` dither · `X` ink · phase keys · `⌘Z` · `Enter` save · `Esc`
+
+### Phase 0.6 — Cross-app workflow (landed)
+Sprite Editor round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md):
+
+- **S** / **SPRITE** / plate **→ SPRITE** hands the plate to KoolDraw  
+- KoolDraw yellow bar: **RETURN TO SHOTLIST** (mono threshold on return)  
+- Shared freehand registry: `FREEHAND_TOOLS` in `@/lib/creative`
+
 ### Phase 1 — Offline MVP
-- Sequence view of Shots (thumbnail + description + **variable duration**)
+- Sequence view of Shots (thumbnail + description + **variable duration**) — *list + plate draw: done*
 - Expand Shot → 24 fps X-Sheet editor (frame rows driven by duration / exposures)
-- Quick thumbnail creation / assignment
+- Quick thumbnail creation / assignment — *inline mono + Sprite Editor round-trip: done*
 - Basic audio-timing notes
 - Sprite assignment + round-trip to Sprite Editor
 - Full keyboard model + mobile CornerChrome

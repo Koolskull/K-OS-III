@@ -8,6 +8,7 @@
  *   Main drawing canvas with zoom, pan, pixel grid.
  *   Handles mouse/touch input and routes to active tool.
  *   Uses Pointer Events so finger-drag paints continuously on mobile.
+ *   Pressure-aware freehand: pen / harsh / dither / eraser.
  *   Supports onion skinning (previous = purple, next = green).
  *   Supports playback displayFrameIndex for main-canvas animation preview.
  */
@@ -15,19 +16,22 @@
 "use client";
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
-import type { SpriteFrame, SpriteLayer, ToolId, PackedColor } from "@/types/sprite";
+import type { SpriteLayer, ToolId, PackedColor } from "@/types/sprite";
 import {
   getPixel,
   setPixel,
   getLinePixels,
   getRectPixels,
-  getFilledRectPixels,
   floodFill,
-  getPenPixels,
   compositeFrame,
   packedColorToRGBA,
-  cloneFrame,
   TRANSPARENT,
+  forEachStrokePoint,
+  normalizePressure,
+  stampFramePressurePen,
+  stampFrameHarsh,
+  stampFrameDither,
+  stampFrameEraserDisk,
 } from "@/lib/SpriteUtils";
 
 export interface OnionSkinSettings {
@@ -51,9 +55,18 @@ interface SpriteCanvasProps {
   tool: ToolId;
   color: PackedColor;
   penSize: number;
+  /** Bayer phase X for dither pencil (0–7) */
+  ditherOx?: number;
+  /** Bayer phase Y for dither pencil (0–7) */
+  ditherOy?: number;
   zoom: number;
   onZoomChange: (zoom: number) => void;
+  /** Called after discrete edits (fill, shape commit) — parent should push undo + re-render chrome. */
   onPixelsChanged: () => void;
+  /** Called once at freehand stroke start, before paint — parent should snapshot undo. */
+  onStrokeBegin?: () => void;
+  /** Called at freehand stroke end — parent should refresh thumbs (no new undo entry). */
+  onStrokeEnd?: () => void;
   onColorPicked: (color: PackedColor) => void;
   onionSkin?: OnionSkinSettings;
 }
@@ -112,9 +125,13 @@ export function SpriteCanvas({
   tool,
   color,
   penSize,
+  ditherOx = 0,
+  ditherOy = 0,
   zoom,
   onZoomChange,
   onPixelsChanged,
+  onStrokeBegin,
+  onStrokeEnd,
   onColorPicked,
   onionSkin,
 }: SpriteCanvasProps) {
@@ -122,16 +139,28 @@ export function SpriteCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drawingRef = useRef(false);
-  const lastPixelRef = useRef<[number, number] | null>(null);
+  /** Sub-pixel stroke continuity for freehand tools */
+  const lastPixelRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
   const overlayRef = useRef<[number, number, PackedColor][]>([]);
   const activePointerIdRef = useRef<number | null>(null);
+  const toolRef = useRef(tool);
+  const colorRef = useRef(color);
+  const penSizeRef = useRef(penSize);
+  const ditherOxRef = useRef(ditherOx);
+  const ditherOyRef = useRef(ditherOy);
+  toolRef.current = tool;
+  colorRef.current = color;
+  penSizeRef.current = penSize;
+  ditherOxRef.current = ditherOx;
+  ditherOyRef.current = ditherOy;
 
   const viewFrameIndex = displayFrameIndex ?? activeFrameIndex;
   const activeLayer = layers[activeLayerIndex];
   const activeFrame = activeLayer?.frames[activeFrameIndex];
 
-  const screenToPixel = useCallback(
+  /** Sub-pixel coords for smooth freehand stamping. */
+  const screenToFloatPixel = useCallback(
     (clientX: number, clientY: number): [number, number] => {
       const canvas = canvasRef.current;
       if (!canvas) return [-1, -1];
@@ -140,11 +169,20 @@ export function SpriteCanvas({
       const scaleY = canvas.height / rect.height;
       const sx = (clientX - rect.left) * scaleX;
       const sy = (clientY - rect.top) * scaleY;
-      const px = Math.floor((sx - offset.x) / zoom);
-      const py = Math.floor((sy - offset.y) / zoom);
+      const px = (sx - offset.x) / zoom;
+      const py = (sy - offset.y) / zoom;
       return [px, py];
     },
     [zoom, offset],
+  );
+
+  /** Integer pixel coords (shapes / fill / picker). */
+  const screenToPixel = useCallback(
+    (clientX: number, clientY: number): [number, number] => {
+      const [fx, fy] = screenToFloatPixel(clientX, clientY);
+      return [Math.floor(fx), Math.floor(fy)];
+    },
+    [screenToFloatPixel],
   );
 
   const render = useCallback(() => {
@@ -244,80 +282,125 @@ export function SpriteCanvas({
     return () => observer.disconnect();
   }, [width, height, zoom, render]);
 
+  const applyFreehandStamp = useCallback(
+    (fx: number, fy: number, pressure: number) => {
+      if (!activeFrame) return;
+      const t = toolRef.current;
+      const c = colorRef.current;
+      const maxR = Math.max(1, penSizeRef.current);
+      switch (t) {
+        case "pen":
+          stampFramePressurePen(activeFrame, fx, fy, c, pressure, maxR);
+          break;
+        case "harsh":
+          stampFrameHarsh(activeFrame, fx, fy, c, pressure, maxR);
+          break;
+        case "dither":
+          stampFrameDither(
+            activeFrame,
+            fx,
+            fy,
+            c,
+            pressure,
+            maxR,
+            ditherOxRef.current,
+            ditherOyRef.current,
+          );
+          break;
+        case "eraser":
+          stampFrameEraserDisk(activeFrame, fx, fy, pressure, maxR);
+          break;
+        default:
+          break;
+      }
+    },
+    [activeFrame],
+  );
+
   const applyTool = useCallback(
-    (px: number, py: number, isStart: boolean) => {
+    (px: number, py: number, isStart: boolean, pressure: number) => {
       if (playing) return;
       if (!activeFrame) return;
-      if (px < 0 || px >= width || py < 0 || py >= height) return;
 
-      switch (tool) {
-        case "pen": {
-          const pixels = getPenPixels(px, py, penSize);
-          for (const [x, y] of pixels) setPixel(activeFrame, x, y, color);
-          if (!isStart && lastPixelRef.current) {
-            const [lx, ly] = lastPixelRef.current;
-            const linePixels = getLinePixels(lx, ly, px, py);
-            for (const [lxp, lyp] of linePixels) {
-              const penPx = getPenPixels(lxp, lyp, penSize);
-              for (const [x, y] of penPx) setPixel(activeFrame, x, y, color);
-            }
-          }
-          lastPixelRef.current = [px, py];
-          onPixelsChanged();
-          break;
+      const t = toolRef.current;
+      const freehand = t === "pen" || t === "harsh" || t === "dither" || t === "eraser";
+
+      if (freehand) {
+        if (isStart) onStrokeBegin?.();
+        const last = lastPixelRef.current;
+        if (!last || isStart) {
+          applyFreehandStamp(px, py, pressure);
+        } else {
+          forEachStrokePoint(last.x, last.y, px, py, (x, y) => {
+            applyFreehandStamp(x, y, pressure);
+          });
         }
-        case "eraser": {
-          const pixels = getPenPixels(px, py, penSize);
-          for (const [x, y] of pixels) setPixel(activeFrame, x, y, TRANSPARENT);
-          if (!isStart && lastPixelRef.current) {
-            const [lx, ly] = lastPixelRef.current;
-            const linePixels = getLinePixels(lx, ly, px, py);
-            for (const [lxp, lyp] of linePixels) {
-              const penPx = getPenPixels(lxp, lyp, penSize);
-              for (const [x, y] of penPx) setPixel(activeFrame, x, y, TRANSPARENT);
-            }
-          }
-          lastPixelRef.current = [px, py];
-          onPixelsChanged();
-          break;
-        }
+        lastPixelRef.current = { x: px, y: py };
+        // Live paint: re-composite only. Undo snapshot was taken at stroke begin.
+        render();
+        return;
+      }
+
+      const ix = Math.floor(px);
+      const iy = Math.floor(py);
+      if (ix < 0 || ix >= width || iy < 0 || iy >= height) return;
+
+      switch (t) {
         case "fill": {
           if (isStart) {
-            floodFill(activeFrame, px, py, color);
+            floodFill(activeFrame, ix, iy, colorRef.current);
             onPixelsChanged();
           }
           break;
         }
         case "picker": {
           if (isStart) {
-            const pickedColor = getPixel(activeFrame, px, py);
+            const pickedColor = getPixel(activeFrame, ix, iy);
             if (pickedColor !== 0) onColorPicked(pickedColor);
           }
           break;
         }
         case "line": {
           if (isStart) {
-            shapeStartRef.current = [px, py];
+            shapeStartRef.current = [ix, iy];
           } else if (shapeStartRef.current) {
             const [sx, sy] = shapeStartRef.current;
-            overlayRef.current = getLinePixels(sx, sy, px, py).map(([x, y]) => [x, y, color]);
+            overlayRef.current = getLinePixels(sx, sy, ix, iy).map(([x, y]) => [
+              x,
+              y,
+              colorRef.current,
+            ]);
           }
           render();
           break;
         }
         case "rect": {
           if (isStart) {
-            shapeStartRef.current = [px, py];
+            shapeStartRef.current = [ix, iy];
           } else if (shapeStartRef.current) {
             const [sx, sy] = shapeStartRef.current;
-            overlayRef.current = getRectPixels(sx, sy, px, py).map(([x, y]) => [x, y, color]);
+            overlayRef.current = getRectPixels(sx, sy, ix, iy).map(([x, y]) => [
+              x,
+              y,
+              colorRef.current,
+            ]);
           }
           render();
           break;
         }
       }
     },
-    [activeFrame, tool, color, penSize, width, height, onPixelsChanged, onColorPicked, render, playing],
+    [
+      activeFrame,
+      width,
+      height,
+      onPixelsChanged,
+      onStrokeBegin,
+      onColorPicked,
+      render,
+      playing,
+      applyFreehandStamp,
+    ],
   );
 
   const commitShape = useCallback(
@@ -342,14 +425,17 @@ export function SpriteCanvas({
       if (!drawingRef.current) return;
       drawingRef.current = false;
       activePointerIdRef.current = null;
-      if (tool === "line" || tool === "rect") {
+      const t = toolRef.current;
+      if (t === "line" || t === "rect") {
         const [px, py] = screenToPixel(clientX, clientY);
         commitShape(px, py);
+      } else if (t === "pen" || t === "harsh" || t === "dither" || t === "eraser") {
+        onStrokeEnd?.();
       }
       lastPixelRef.current = null;
       render();
     },
-    [tool, screenToPixel, commitShape, render],
+    [screenToPixel, commitShape, render, onStrokeEnd],
   );
 
   const handlePointerDown = useCallback(
@@ -371,10 +457,11 @@ export function SpriteCanvas({
       activePointerIdRef.current = e.pointerId;
       drawingRef.current = true;
       lastPixelRef.current = null;
-      const [px, py] = screenToPixel(e.clientX, e.clientY);
-      applyTool(px, py, true);
+      const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
+      const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
+      applyTool(px, py, true, pressure);
     },
-    [screenToPixel, applyTool, playing],
+    [screenToFloatPixel, applyTool, playing],
   );
 
   const handlePointerMove = useCallback(
@@ -383,10 +470,11 @@ export function SpriteCanvas({
       if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
 
       e.preventDefault();
-      const [px, py] = screenToPixel(e.clientX, e.clientY);
-      applyTool(px, py, false);
+      const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
+      const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
+      applyTool(px, py, false, pressure);
     },
-    [screenToPixel, applyTool],
+    [screenToFloatPixel, applyTool],
   );
 
   const handlePointerUp = useCallback(

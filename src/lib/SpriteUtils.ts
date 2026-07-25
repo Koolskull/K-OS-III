@@ -9,6 +9,13 @@
  */
 
 import type { SpriteFrame, SpriteLayer, SpriteProject, RGBA, PackedColor } from "@/types/sprite";
+import {
+  stampDitherDisk,
+  stampHarshDisk,
+  stampPressureDisk,
+} from "@/lib/drawStamps";
+
+export { forEachStrokePoint, normalizePressure, BAYER8 } from "@/lib/drawStamps";
 
 // ── COLOR CONVERSION ──
 
@@ -160,6 +167,62 @@ export function getPenPixels(cx: number, cy: number, size: number): [number, num
   return pixels;
 }
 
+// ── PRESSURE / HARSH / DITHER STAMPS (shared with SHOTLIST via drawStamps) ──
+
+/** Write a solid pressure pen disk (color) onto a frame. */
+export function stampFramePressurePen(
+  frame: SpriteFrame,
+  cx: number,
+  cy: number,
+  color: PackedColor,
+  pressure: number,
+  maxRadius: number,
+): void {
+  stampPressureDisk(cx, cy, { pressure, maxRadius }, (x, y) => setPixel(frame, x, y, color));
+}
+
+/** Harsh solid carve disk. */
+export function stampFrameHarsh(
+  frame: SpriteFrame,
+  cx: number,
+  cy: number,
+  color: PackedColor,
+  pressure: number,
+  maxRadius: number,
+): void {
+  stampHarshDisk(cx, cy, { pressure, maxRadius }, (x, y) => setPixel(frame, x, y, color));
+}
+
+/** Ordered-dither pencil with phase offsets. */
+export function stampFrameDither(
+  frame: SpriteFrame,
+  cx: number,
+  cy: number,
+  color: PackedColor,
+  pressure: number,
+  maxRadius: number,
+  ditherOx: number,
+  ditherOy: number,
+): void {
+  stampDitherDisk(
+    cx,
+    cy,
+    { pressure, maxRadius, ditherOx, ditherOy },
+    (x, y) => setPixel(frame, x, y, color),
+  );
+}
+
+/** Erase with pressure-sized solid disk (transparent). */
+export function stampFrameEraserDisk(
+  frame: SpriteFrame,
+  cx: number,
+  cy: number,
+  pressure: number,
+  maxRadius: number,
+): void {
+  stampPressureDisk(cx, cy, { pressure, maxRadius }, (x, y) => setPixel(frame, x, y, TRANSPARENT));
+}
+
 // ── LAYER COMPOSITING ──
 
 /** Composite all visible layers at a given frame index into a single frame */
@@ -275,6 +338,127 @@ export function createBlankSprite(name: string, width: number, height: number): 
       "#000088", "#888800", "#880088", "#008888",
     ],
   };
+}
+
+/**
+ * Build a sprite project from a data URL (creative workflow handoff).
+ * Image is scaled to width×height with nearest-neighbor feel (smoothing off).
+ * When mono is true, pixels are thresholded to pure black / white (alpha kept).
+ */
+export async function loadProjectFromDataUrl(
+  name: string,
+  width: number,
+  height: number,
+  dataUrl: string | null | undefined,
+  opts?: { mono?: boolean; bg?: "black" | "white" },
+): Promise<SpriteProject> {
+  const project = createBlankSprite(name, width, height);
+  const frame = project.layers[0]!.frames[0]!;
+
+  if (!dataUrl || typeof Image === "undefined") {
+    if (opts?.bg === "white") {
+      const white = rgbaToPackedColor(255, 255, 255, 255);
+      frame.pixels.fill(white);
+    }
+    return project;
+  }
+
+  await new Promise<void>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve();
+        return;
+      }
+      if (opts?.bg === "white") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+      } else if (opts?.bg === "black" || opts?.mono) {
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, width, height);
+      }
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, width, height);
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const d = imageData.data;
+      for (let i = 0; i < width * height; i++) {
+        const o = i * 4;
+        let r = d[o]!;
+        let g = d[o + 1]!;
+        let b = d[o + 2]!;
+        const a = d[o + 3]!;
+        if (a === 0) {
+          frame.pixels[i] = TRANSPARENT;
+          continue;
+        }
+        if (opts?.mono) {
+          const lum = (r + g + b) / 3;
+          const v = lum >= 128 ? 255 : 0;
+          r = g = b = v;
+        }
+        frame.pixels[i] = rgbaToPackedColor(r, g, b, a);
+      }
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = dataUrl;
+  });
+
+  return project;
+}
+
+/**
+ * Threshold a data URL to pure mono black/white PNG (SHOTLIST plate return path).
+ */
+export async function dataUrlToMonoDataUrl(
+  dataUrl: string,
+  width: number,
+  height: number,
+  bg: "black" | "white" = "black",
+): Promise<string> {
+  if (typeof document === "undefined") return dataUrl;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.fillStyle = bg === "white" ? "#ffffff" : "#000000";
+      ctx.fillRect(0, 0, width, height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, width, height);
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const d = imageData.data;
+      for (let i = 0; i < width * height; i++) {
+        const o = i * 4;
+        const a = d[o + 3]!;
+        if (a < 128) {
+          // transparent → background
+          const v = bg === "white" ? 255 : 0;
+          d[o] = d[o + 1] = d[o + 2] = v;
+          d[o + 3] = 255;
+        } else {
+          const lum = (d[o]! + d[o + 1]! + d[o + 2]!) / 3;
+          const v = lum >= 128 ? 255 : 0;
+          d[o] = d[o + 1] = d[o + 2] = v;
+          d[o + 3] = 255;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 // ── EXPORT HELPERS ──

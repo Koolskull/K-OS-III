@@ -1,5 +1,7 @@
 /*
  * KOOLDRAW SPRITE EDITOR
+ * Freehand tools from @/lib/creative tool registry.
+ * Cross-app handoffs via CreativeWorkflow (SHOTLIST ↔ etc.).
  */
 
 "use client";
@@ -18,7 +20,10 @@ import {
   renderSpriteSheet,
   downloadCanvasAsPng,
   downloadFramesAsZip,
+  loadProjectFromDataUrl,
+  dataUrlToMonoDataUrl,
 } from "@/lib/SpriteUtils";
+import { FREEHAND_TOOLS, useCreativeWorkflow } from "@/lib/creative";
 import { SpriteCanvas, type OnionSkinSettings } from "./SpriteCanvas";
 import {
   CornerHost,
@@ -41,13 +46,22 @@ interface KoolDrawAppProps {
   embeddedMode?: KoolDrawEmbeddedMode;
 }
 
-const TOOLS: { id: ToolId; label: string; key: string }[] = [
-  { id: "pen", label: "PEN", key: "B" },
-  { id: "eraser", label: "ERA", key: "E" },
+/** Shape / utility tools (freehand stack comes from modular registry) */
+const SHAPE_TOOLS: { id: ToolId; label: string; key: string }[] = [
   { id: "fill", label: "FIL", key: "G" },
   { id: "picker", label: "PKR", key: "I" },
   { id: "line", label: "LIN", key: "L" },
   { id: "rect", label: "RCT", key: "R" },
+];
+
+const TOOLS: { id: ToolId; label: string; key: string; title?: string }[] = [
+  ...FREEHAND_TOOLS.map((t) => ({
+    id: t.id as ToolId,
+    label: t.label,
+    key: t.key,
+    title: t.title,
+  })),
+  ...SHAPE_TOOLS,
 ];
 
 const MAX_HISTORY = 100;
@@ -135,12 +149,19 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const uiHidden = chrome?.uiHidden ?? false;
   const collapse = isNarrow || uiHidden;
 
+  const workflow = useCreativeWorkflow();
+  const handoff = workflow.sessionFor("kooldraw");
+
   const [project, setProject] = useState<SpriteProject>(() =>
     createBlankSprite("SPRITE", embeddedMode?.initialWidth ?? 32, embeddedMode?.initialHeight ?? 32),
   );
+  const [handoffReady, setHandoffReady] = useState(true);
   const [activeTool, setActiveTool] = useState<ToolId>("pen");
   const [primaryColor, setPrimaryColor] = useState<PackedColor>(hexToPackedColor("#ffffff"));
-  const [penSize, setPenSize] = useState(1);
+  const [penSize, setPenSize] = useState(4);
+  /** Bayer matrix phase for dither pencil (variable-positioned dither) */
+  const [ditherOx, setDitherOx] = useState(0);
+  const [ditherOy, setDitherOy] = useState(0);
   const [zoom, setZoom] = useState(12);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
@@ -157,6 +178,68 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
   const forceRender = useCallback(() => setRenderTick((t) => t + 1), []);
+
+  /* Load creative-bus handoff into the canvas (SHOTLIST plates, etc.) */
+  useEffect(() => {
+    if (!handoff || embeddedMode) return;
+    let cancelled = false;
+    setHandoffReady(false);
+    (async () => {
+      const proj = await loadProjectFromDataUrl(
+        handoff.label || "HANDOFF",
+        handoff.width,
+        handoff.height,
+        handoff.dataUrl,
+        { mono: handoff.mono, bg: handoff.bg },
+      );
+      if (cancelled) return;
+      setProject(proj);
+      setActiveFrameIndex(0);
+      setActiveLayerIndex(0);
+      setZoom(
+        Math.max(
+          1,
+          Math.min(16, Math.floor(480 / Math.max(handoff.width, handoff.height))),
+        ),
+      );
+      historyRef.current = [];
+      historyIndexRef.current = -1;
+      setHandoffReady(true);
+      forceRender();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [handoff?.id, embeddedMode, forceRender, handoff]);
+
+  const exportCurrentDataUrl = useCallback(() => {
+    return frameToCanvas(
+      compositeFrame(project.layers, activeFrameIndex, project.width, project.height),
+      1,
+    ).toDataURL("image/png");
+  }, [project, activeFrameIndex]);
+
+  const returnHandoff = useCallback(async () => {
+    if (!handoff) return;
+    let dataUrl = exportCurrentDataUrl();
+    if (handoff.mono) {
+      dataUrl = await dataUrlToMonoDataUrl(
+        dataUrl,
+        handoff.width,
+        handoff.height,
+        handoff.bg ?? "black",
+      );
+    }
+    workflow.complete({
+      dataUrl,
+      width: project.width,
+      height: project.height,
+    });
+  }, [handoff, exportCurrentDataUrl, project.width, project.height, workflow]);
+
+  const cancelHandoff = useCallback(() => {
+    workflow.cancel();
+  }, [workflow]);
 
   const togglePlayback = useCallback(() => {
     setPlaying((p) => {
@@ -228,6 +311,15 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     forceRender();
   }, [saveHistory, forceRender]);
 
+  /** Freehand: snapshot once before paint; refresh chrome after stroke. */
+  const handleStrokeBegin = useCallback(() => {
+    saveHistory();
+  }, [saveHistory]);
+
+  const handleStrokeEnd = useCallback(() => {
+    forceRender();
+  }, [forceRender]);
+
   useEffect(() => {
     if (!isFocused) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -237,8 +329,25 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       }
       const toolEntry = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());
       if (toolEntry) { setActiveTool(toolEntry.id); return; }
-      if (e.key === "[") setPenSize((s) => Math.max(1, s - 1));
-      if (e.key === "]") setPenSize((s) => Math.min(16, s + 1));
+      // Pen size — hold Shift to nudge dither phase instead
+      if (e.key === "[") {
+        if (e.shiftKey) setDitherOx((v) => (v + 7) % 8);
+        else setPenSize((s) => Math.max(1, s - 1));
+        return;
+      }
+      if (e.key === "]") {
+        if (e.shiftKey) setDitherOx((v) => (v + 1) % 8);
+        else setPenSize((s) => Math.min(32, s + 1));
+        return;
+      }
+      if (e.key === "," || e.key === ";") {
+        setDitherOy((v) => (v + 7) % 8);
+        return;
+      }
+      if (e.key === "." || e.key === "'") {
+        setDitherOy((v) => (v + 1) % 8);
+        return;
+      }
       if ((e.key === "o" || e.key === "O") && !e.ctrlKey && !e.metaKey && !e.altKey) setOnionEnabled((v) => !v);
       if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); togglePlayback(); }
     };
@@ -374,8 +483,35 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const toolsContent = (
     <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
       {TOOLS.map((t) => (
-        <button key={t.id} onClick={() => setActiveTool(t.id)} style={toolBtn(activeTool === t.id)} title={`${t.label} (${t.key})`}>{t.label}</button>
+        <button
+          key={t.id}
+          onClick={() => setActiveTool(t.id)}
+          style={toolBtn(activeTool === t.id)}
+          title={t.title ?? `${t.label} (${t.key})`}
+        >
+          {t.label}
+        </button>
       ))}
+      {activeTool === "dither" && (
+        <div style={{ borderTop: "1px solid #1a1a1a", padding: 2 }}>
+          <button
+            type="button"
+            onClick={() => setDitherOx((v) => (v + 1) % 8)}
+            style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
+            title="Dither phase X (Shift+])"
+          >
+            OX{ditherOx}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDitherOy((v) => (v + 1) % 8)}
+            style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
+            title="Dither phase Y (.)"
+          >
+            OY{ditherOy}
+          </button>
+        </div>
+      )}
       <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
         <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
         <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
@@ -486,8 +622,56 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         <div className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0" style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}>
           <span style={{ color: "#ffff00", letterSpacing: 2 }}>{embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}</span>
           <div className="flex gap-2">
-            <button onClick={() => embeddedMode.onUse(frameToCanvas(compositeFrame(project.layers, activeFrameIndex, project.width, project.height), 1).toDataURL("image/png"))} style={{ background: "#ffff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>USE THIS SPRITE</button>
+            <button onClick={() => embeddedMode.onUse(exportCurrentDataUrl())} style={{ background: "#ffff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>USE THIS SPRITE</button>
             <button onClick={() => embeddedMode.onCancel()} style={{ background: "#000", color: "#fff", border: "1px solid #fff", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>CANCEL</button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* OS creative-bus handoff (SHOTLIST ↔ Sprite Editor) */}
+      {!embeddedMode && handoff ? (
+        <div
+          className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0 flex-wrap gap-2"
+          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}
+        >
+          <span style={{ color: "#ffff00", letterSpacing: 1, fontSize: 10 }}>
+            ← {handoff.sourceApp.toUpperCase()} · {handoff.label}
+            {handoff.mono ? " · MONO" : ""} · {handoff.width}×{handoff.height}
+            {!handoffReady ? " · LOADING…" : ""}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void returnHandoff()}
+              disabled={!handoffReady}
+              style={{
+                background: "#ffff00",
+                color: "#000",
+                border: "1px solid #000",
+                fontFamily: "monospace",
+                fontSize: 10,
+                padding: "2px 8px",
+                cursor: handoffReady ? "pointer" : "wait",
+              }}
+              title="Return plate/sprite to calling app"
+            >
+              RETURN TO {handoff.sourceApp.toUpperCase()}
+            </button>
+            <button
+              type="button"
+              onClick={cancelHandoff}
+              style={{
+                background: "#000",
+                color: "#fff",
+                border: "1px solid #fff",
+                fontFamily: "monospace",
+                fontSize: 10,
+                padding: "2px 8px",
+                cursor: "pointer",
+              }}
+            >
+              CANCEL
+            </button>
           </div>
         </div>
       ) : null}
@@ -498,7 +682,10 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           <div className="flex gap-2 items-center">
             <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
             <span style={{ color: "#555" }}>FRM:{displayFrameIndex + 1}/{frameCount}</span>
-            <span style={{ color: "#555" }}>PEN:{penSize}</span>
+            <span style={{ color: "#555" }}>SZ:{penSize}</span>
+            {activeTool === "dither" && (
+              <span style={{ color: "#666" }}>DΦ:{ditherOx},{ditherOy}</span>
+            )}
 
             {/* Desktop header: onion + play always visible */}
             <button type="button" style={headerBtn(onionEnabled)} onClick={() => setOnionEnabled((v) => !v)} title="Onion Skin (O)">
@@ -529,9 +716,13 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             tool={activeTool}
             color={primaryColor}
             penSize={penSize}
+            ditherOx={ditherOx}
+            ditherOy={ditherOy}
             zoom={zoom}
             onZoomChange={setZoom}
             onPixelsChanged={handlePixelsChanged}
+            onStrokeBegin={handleStrokeBegin}
+            onStrokeEnd={handleStrokeEnd}
             onColorPicked={handleColorPicked}
             onionSkin={onionSkin}
           />
@@ -577,9 +768,12 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
               <div style={{ padding: 4, fontSize: 8, color: "#888" }}>
                 <div>{project.width}×{project.height}</div>
                 <div>FRM {displayFrameIndex + 1}/{frameCount}</div>
-                <div>PEN {penSize} · {activeTool.toUpperCase()}</div>
+                <div>SZ {penSize} · {activeTool.toUpperCase()}</div>
+                {activeTool === "dither" && (
+                  <div style={{ marginTop: 2 }}>DITHER Φ {ditherOx},{ditherOy}</div>
+                )}
                 <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>ONION {onionEnabled ? "ON" : "OFF"}</div>
-                <div style={{ marginTop: 6 }}>H = UI · O = onion · SPACE = play</div>
+                <div style={{ marginTop: 6 }}>B/K/D freehand · H = UI · O = onion</div>
               </div>
             </CornerPanel>
           </>
@@ -591,7 +785,9 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       {!collapse && <div className="flex items-center border-t flex-shrink-0 overflow-x-auto" style={{ borderColor: "#1a1a1a", minHeight: 48 }}>{timelineContent}</div>}
       {!collapse && (
         <div className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 18 }}>
-          <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>B:PEN E:ERA G:FILL I:PICK L:LINE R:RECT [/]:SIZE O:ONION SPACE:PLAY CTRL+Z:UNDO · H:ZEN</span>
+          <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
+            B:PEN(pressure) K:HARSH D:DITHER E:ERA G:FIL I:PKR L:LIN R:RCT [/]:SIZE Shift+[/].,:DITHER-Φ O:ONION SPACE:PLAY ⌘Z · H:ZEN
+          </span>
           <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>
       )}

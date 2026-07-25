@@ -251,6 +251,11 @@ interface CornerPanelProps {
   chrome?: boolean;
   /** Panel is always visible on wide screens unless zen is on */
   desktopInline?: boolean;
+  /**
+   * Always collapse to a corner affordance (even on wide desktop).
+   * Use for apps that want four-corner menus at all sizes (e.g. SHOTLIST).
+   */
+  forceCorner?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -258,7 +263,7 @@ interface CornerPanelProps {
 /**
  * A panel that either:
  * - sits inline on wide screens, or
- * - collapses to a corner affordance on narrow / zen mode.
+ * - collapses to a corner affordance on narrow / zen mode / forceCorner.
  */
 export function CornerPanel({
   id,
@@ -266,6 +271,7 @@ export function CornerPanel({
   label,
   children,
   chrome = true,
+  forceCorner = false,
   className,
   style,
 }: CornerPanelProps) {
@@ -274,7 +280,7 @@ export function CornerPanel({
 
   // Zen mode: only show affordances (and only one restore control is enough,
   // but each panel still gets its corner so tools stay reachable).
-  const showAsCorner = isNarrow || uiHidden;
+  const showAsCorner = forceCorner || isNarrow || uiHidden;
 
   if (!showAsCorner) {
     // Desktop / wide: render children inline (caller places them in layout)

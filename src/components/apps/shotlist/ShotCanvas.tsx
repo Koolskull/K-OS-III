@@ -1,12 +1,13 @@
 /*
  * SHOTLIST — mono shot plate editor
- * Default 480×853 thumbnail; optional HD / 4K after first commit.
- * Harsh pen · pressure pen · dither pencil
+ * Thumbnail portrait/landscape · optional HD/4K
+ * Harsh / pressure pen / dither + shared viewport gestures
  */
 
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCanvasViewport } from "@/lib/creative";
 import {
   BAYER8,
   SHOT_H,
@@ -27,13 +28,19 @@ import {
 export interface ShotCanvasProps {
   initialDataUrl: string | null;
   bg: ShotBg;
-  /** Working plate dimensions (thumbnail / HD / 4K) */
   width?: number;
   height?: number;
   onSave: (dataUrl: string) => void;
   onCancel: () => void;
   title?: string;
   onOpenInSpriteEditor?: (liveDataUrl: string) => void;
+  /**
+   * When true, fills parent instead of covering the whole app —
+   * used for draw + metadata split layout.
+   */
+  embedded?: boolean;
+  /** Live export of the plate (for parent metadata save without full SAVE) */
+  onLiveChange?: (dataUrl: string) => void;
 }
 
 const toolBtn = (active: boolean): React.CSSProperties => ({
@@ -71,6 +78,8 @@ export function ShotCanvas({
   onCancel,
   title = "SHOT PLATE",
   onOpenInSpriteEditor,
+  embedded = false,
+  onLiveChange,
 }: ShotCanvasProps) {
   const plateW = width;
   const plateH = height;
@@ -94,7 +103,7 @@ export function ShotCanvas({
   const [ditherOy, setDitherOy] = useState(0);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("Loading plate…");
-  const [scale, setScale] = useState(0.5);
+  const [baseScale, setBaseScale] = useState(0.5);
 
   toolRef.current = tool;
   inkRef.current = ink;
@@ -133,6 +142,20 @@ export function ShotCanvas({
     setStatus("Undo");
   }, [paintView]);
 
+  const {
+    viewport,
+    transformStyle,
+    resetViewport,
+    onPointerDown: vpDown,
+    onPointerMove: vpMove,
+    onPointerUp: vpUp,
+    spaceDownRef,
+  } = useCanvasViewport({
+    onUndo: undo,
+    minZoom: 0.2,
+    maxZoom: 6,
+  });
+
   useEffect(() => {
     let cancelled = false;
     setReady(false);
@@ -144,26 +167,26 @@ export function ShotCanvas({
       }
       if (cancelled) return;
       undoRef.current = [];
+      resetViewport();
       setReady(true);
-      setStatus(`${plateW}×${plateH} · ${bg.toUpperCase()} plate · mono`);
+      setStatus(`${plateW}×${plateH} · ${bg.toUpperCase()} · mono`);
       requestAnimationFrame(() => paintView());
     })();
     return () => {
       cancelled = true;
     };
-  }, [initialDataUrl, bg, plateW, plateH, paintView]);
+  }, [initialDataUrl, bg, plateW, plateH, paintView, resetViewport]);
 
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const fit = () => {
       const rect = el.getBoundingClientRect();
-      const pad = 8;
+      const pad = 16;
       const sx = (rect.width - pad) / plateW;
       const sy = (rect.height - pad) / plateH;
-      // Cap zoom lower for huge plates so they always fit
-      const cap = plateW >= 3000 ? 0.45 : plateW >= 1500 ? 0.75 : 1.25;
-      setScale(Math.max(0.05, Math.min(sx, sy, cap)));
+      const cap = plateW >= 3000 ? 0.4 : plateW >= 1500 ? 0.7 : 1.2;
+      setBaseScale(Math.max(0.05, Math.min(sx, sy, cap)));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -176,16 +199,36 @@ export function ShotCanvas({
       const canvas = viewRef.current;
       if (!canvas) return null;
       const { w, h } = sizeRef.current;
+      // Untransformed layout box (CSS size before viewport transform)
+      const cssW = Math.floor(w * baseScale);
+      const cssH = Math.floor(h * baseScale);
       const rect = canvas.getBoundingClientRect();
-      const x = ((clientX - rect.left) / rect.width) * w;
-      const y = ((clientY - rect.top) / rect.height) * h;
+      // Center of transformed element
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      let dx = clientX - cx;
+      let dy = clientY - cy;
+      // Inverse viewport: pan is already in rect center; undo zoom+rotation from gesture
+      const rad = (-viewport.rotation * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const z = (viewport.zoom || 1) * baseScale;
+      // getBoundingClientRect size already includes CSS scale+rotate;
+      // map using display size / plate size after inverse rotation/scale of delta from center
+      dx /= viewport.zoom || 1;
+      dy /= viewport.zoom || 1;
+      const rx = dx * cos - dy * sin;
+      const ry = dx * sin + dy * cos;
+      // Convert from CSS px (baseScale) to plate px
+      const x = w / 2 + rx / baseScale;
+      const y = h / 2 + ry / baseScale;
       if (x < -2 || y < -2 || x > w + 2 || y > h + 2) return null;
       return {
         x: Math.max(0, Math.min(w - 0.01, x)),
         y: Math.max(0, Math.min(h - 0.01, y)),
       };
     },
-    [],
+    [baseScale, viewport.rotation, viewport.zoom],
   );
 
   const strokeTo = useCallback(
@@ -216,10 +259,19 @@ export function ShotCanvas({
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!ready) return;
+      if (vpDown(e)) {
+        drawingRef.current = false;
+        return;
+      }
+      if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
       const pt = clientToPlate(e.clientX, e.clientY);
       if (!pt) return;
-      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+      try {
+        (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
       pointerIdRef.current = e.pointerId;
       drawingRef.current = true;
       pushUndo();
@@ -227,14 +279,15 @@ export function ShotCanvas({
       const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
       strokeTo(pt.x, pt.y, p);
       setStatus(
-        `${toolRef.current.toUpperCase()} · ink ${inkRef.current === 0 ? "BLK" : "WHT"} · p${p.toFixed(2)}`,
+        `${toolRef.current.toUpperCase()} · ${inkRef.current === 0 ? "BLK" : "WHT"} · p${p.toFixed(2)}`,
       );
     },
-    [ready, clientToPlate, pushUndo, strokeTo],
+    [ready, vpDown, clientToPlate, pushUndo, strokeTo],
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (vpMove(e)) return;
       if (!drawingRef.current || pointerIdRef.current !== e.pointerId) return;
       e.preventDefault();
       const pt = clientToPlate(e.clientX, e.clientY);
@@ -242,20 +295,28 @@ export function ShotCanvas({
       const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
       strokeTo(pt.x, pt.y, p);
     },
-    [clientToPlate, strokeTo],
+    [vpMove, clientToPlate, strokeTo],
   );
 
-  const endStroke = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (pointerIdRef.current !== e.pointerId) return;
-    drawingRef.current = false;
-    pointerIdRef.current = null;
-    lastPtRef.current = null;
-    try {
-      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
-    } catch {
-      /* already released */
-    }
-  }, []);
+  const endStroke = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      vpUp(e);
+      if (pointerIdRef.current !== e.pointerId && pointerIdRef.current != null) {
+        /* other pointer */
+      }
+      if (pointerIdRef.current === e.pointerId || pointerIdRef.current == null) {
+        drawingRef.current = false;
+        pointerIdRef.current = null;
+        lastPtRef.current = null;
+      }
+      try {
+        (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    },
+    [vpUp],
+  );
 
   const clearPlate = useCallback(() => {
     pushUndo();
@@ -271,26 +332,37 @@ export function ShotCanvas({
     setStatus(`Filled ${ink === 0 ? "BLACK" : "WHITE"}`);
   }, [ink, pushUndo, paintView]);
 
-  const handleSave = useCallback(() => {
+  const exportUrl = useCallback(() => {
     const { w, h } = sizeRef.current;
-    onSave(bitmapToDataURL(bmpRef.current, w, h));
-  }, [onSave]);
+    return bitmapToDataURL(bmpRef.current, w, h);
+  }, []);
+
+  const handleSave = useCallback(() => {
+    onSave(exportUrl());
+  }, [onSave, exportUrl]);
 
   const handleOpenSprite = useCallback(() => {
     if (!onOpenInSpriteEditor) return;
-    const { w, h } = sizeRef.current;
-    onOpenInSpriteEditor(bitmapToDataURL(bmpRef.current, w, h));
-  }, [onOpenInSpriteEditor]);
+    onOpenInSpriteEditor(exportUrl());
+  }, [onOpenInSpriteEditor, exportUrl]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
+      if (e.code === "Space") {
+        e.preventDefault(); // avoid page scroll while panning
+      }
       const k = e.key.toLowerCase();
       if ((e.metaKey || e.ctrlKey) && k === "z") {
         e.preventDefault();
         undo();
+        return;
+      }
+      if (k === "0" && !e.metaKey && !e.ctrlKey) {
+        resetViewport();
+        setStatus("Viewport reset");
         return;
       }
       switch (k) {
@@ -336,14 +408,28 @@ export function ShotCanvas({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, handleSave, onCancel]);
+  }, [undo, handleSave, onCancel, resetViewport]);
 
-  const cssW = Math.floor(plateW * scale);
-  const cssH = Math.floor(plateH * scale);
+  const cssW = Math.floor(plateW * baseScale);
+  const cssH = Math.floor(plateH * baseScale);
+  const grab = spaceDownRef.current;
 
-  return (
-    <div
-      style={{
+  const rootStyle: React.CSSProperties = embedded
+    ? {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+        background: "#000",
+        color: "#fff",
+        fontFamily: "var(--dm-font-primary), monospace",
+        display: "flex",
+        flexDirection: "column",
+        imageRendering: "pixelated",
+        userSelect: "none",
+        overflow: "hidden",
+      }
+    : {
         position: "absolute",
         inset: 0,
         zIndex: 50,
@@ -354,8 +440,10 @@ export function ShotCanvas({
         flexDirection: "column",
         imageRendering: "pixelated",
         userSelect: "none",
-      }}
-    >
+      };
+
+  return (
+    <div style={rootStyle}>
       <div
         style={{
           display: "flex",
@@ -372,16 +460,15 @@ export function ShotCanvas({
           ☦ {title}
         </span>
         <span style={{ color: "#666", fontSize: 9, letterSpacing: 1 }}>
-          {plateW}×{plateH} · MONO
+          {plateW}×{plateH} · MONO · z{viewport.zoom.toFixed(2)} · r
+          {Math.round(viewport.rotation)}°
         </span>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button type="button" style={miniBtn()} onClick={resetViewport} title="Reset view (0)">
+            VIEW
+          </button>
           {onOpenInSpriteEditor && (
-            <button
-              type="button"
-              style={miniBtn()}
-              onClick={handleOpenSprite}
-              title="Continue in Sprite Editor (layers, full tool set)"
-            >
+            <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
               → SPRITE
             </button>
           )}
@@ -405,43 +492,24 @@ export function ShotCanvas({
           flexShrink: 0,
         }}
       >
-        <button
-          type="button"
-          style={toolBtn(tool === "harsh")}
-          onClick={() => setTool("harsh")}
-          title="Harsh pen (1 / H)"
-        >
+        <button type="button" style={toolBtn(tool === "harsh")} onClick={() => setTool("harsh")}>
           HARSH
         </button>
-        <button
-          type="button"
-          style={toolBtn(tool === "pen")}
-          onClick={() => setTool("pen")}
-          title="Pen (2 / B) — pressure = size"
-        >
+        <button type="button" style={toolBtn(tool === "pen")} onClick={() => setTool("pen")}>
           PEN
         </button>
-        <button
-          type="button"
-          style={toolBtn(tool === "dither")}
-          onClick={() => setTool("dither")}
-          title="Dither pencil (3 / D)"
-        >
+        <button type="button" style={toolBtn(tool === "dither")} onClick={() => setTool("dither")}>
           DITHER
         </button>
-
         <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
-
         <button type="button" style={toolBtn(ink === 0)} onClick={() => setInk(0)}>
           BLK
         </button>
         <button type="button" style={toolBtn(ink === 255)} onClick={() => setInk(255)}>
           WHT
         </button>
-
         <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
-
-        <button type="button" style={miniBtn()} onClick={undo} title="Undo (Ctrl/Cmd+Z)">
+        <button type="button" style={miniBtn()} onClick={undo}>
           UNDO
         </button>
         <button type="button" style={miniBtn()} onClick={clearPlate}>
@@ -450,11 +518,8 @@ export function ShotCanvas({
         <button type="button" style={miniBtn()} onClick={fillInk}>
           FILL
         </button>
-
         {tool === "dither" && (
           <>
-            <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
-            <span style={{ color: "#666", fontSize: 9, letterSpacing: 1 }}>PHASE</span>
             <button type="button" style={miniBtn()} onClick={() => setDitherOx((v) => (v + 1) % 8)}>
               OX {ditherOx}
             </button>
@@ -477,6 +542,7 @@ export function ShotCanvas({
           background: "#111",
           overflow: "hidden",
           touchAction: "none",
+          cursor: grab ? "grab" : "crosshair",
         }}
       >
         {ready ? (
@@ -493,9 +559,10 @@ export function ShotCanvas({
               height: cssH,
               imageRendering: "pixelated",
               border: "1px solid #444",
-              cursor: "crosshair",
               touchAction: "none",
               background: bg === "white" ? "#fff" : "#000",
+              transform: transformStyle,
+              transformOrigin: "center center",
             }}
           />
         ) : (
@@ -507,7 +574,7 @@ export function ShotCanvas({
         style={{
           borderTop: "1px solid #222",
           padding: "4px 10px",
-          fontSize: 9,
+          fontSize: 8,
           color: "#666",
           letterSpacing: 1,
           display: "flex",
@@ -519,7 +586,7 @@ export function ShotCanvas({
       >
         <span>{status}</span>
         <span>
-          1/H HARSH · 2/B PEN · 3/D DITHER · X INK · ⌘Z · ENTER SAVE · ESC
+          SPACE+DRAG pan · SHIFT/CTRL+DRAG rotate · PINCH zoom/rot · 2-FINGER TAP undo · 0 reset
         </span>
       </div>
     </div>
@@ -557,7 +624,6 @@ function DitherPreview({
   return (
     <canvas
       ref={ref}
-      title="Dither matrix phase preview"
       style={{
         width: 24,
         height: 24,

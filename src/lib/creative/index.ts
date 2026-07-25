@@ -20,3 +20,9 @@ export {
   useCreativeWorkflowOptional,
   type HandoffRequest,
 } from "./CreativeWorkflow";
+
+export {
+  useCanvasViewport,
+  type ViewportState,
+  type UseCanvasViewportOptions,
+} from "./useCanvasViewport";

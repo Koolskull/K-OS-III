@@ -20,15 +20,19 @@ export { BAYER8, forEachStrokePoint, normalizePressure };
 /** Default first-drawing thumbnail size (portrait storyboard plate) */
 export const SHOT_W = 480;
 export const SHOT_H = 853;
+/** Landscape thumbnail (swap of portrait) */
+export const SHOT_LANDSCAPE_W = 853;
+export const SHOT_LANDSCAPE_H = 480;
 /** @deprecated use plate pixel count for current size — kept for list defaults */
 export const SHOT_PIXELS = SHOT_W * SHOT_H;
 
 export type MonoInk = 0 | 255;
 export type ShotBg = "black" | "white";
 export type DrawTool = "harsh" | "pen" | "dither";
+export type PlateOrientation = "portrait" | "landscape";
 
 /** Named plate sizes. Thumbnail is required first; HD/4K unlock after commit. */
-export type PlateSizeId = "thumb" | "hd" | "uhd";
+export type PlateSizeId = "thumb-portrait" | "thumb-landscape" | "hd" | "uhd";
 
 export interface PlateSize {
   id: PlateSizeId;
@@ -38,16 +42,27 @@ export interface PlateSize {
   height: number;
   /** Only available after the shot has a committed first thumbnail */
   requiresThumbnail: boolean;
+  orientation?: PlateOrientation;
 }
 
 export const PLATE_SIZES: readonly PlateSize[] = [
   {
-    id: "thumb",
-    label: "THUMB 480×853",
+    id: "thumb-portrait",
+    label: "THUMB PORTRAIT 480×853",
     short: "480×853",
     width: 480,
     height: 853,
     requiresThumbnail: false,
+    orientation: "portrait",
+  },
+  {
+    id: "thumb-landscape",
+    label: "THUMB LANDSCAPE 853×480",
+    short: "853×480",
+    width: 853,
+    height: 480,
+    requiresThumbnail: false,
+    orientation: "landscape",
   },
   {
     id: "hd",
@@ -66,6 +81,12 @@ export const PLATE_SIZES: readonly PlateSize[] = [
     requiresThumbnail: true,
   },
 ] as const;
+
+export function thumbSize(orientation: PlateOrientation): { width: number; height: number } {
+  return orientation === "landscape"
+    ? { width: SHOT_LANDSCAPE_W, height: SHOT_LANDSCAPE_H }
+    : { width: SHOT_W, height: SHOT_H };
+}
 
 export function plateSizeById(id: PlateSizeId): PlateSize {
   return PLATE_SIZES.find((p) => p.id === id) ?? PLATE_SIZES[0]!;

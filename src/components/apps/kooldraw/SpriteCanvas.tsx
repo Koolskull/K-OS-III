@@ -9,6 +9,7 @@
  *   Handles mouse/touch input and routes to active tool.
  *   Uses Pointer Events so finger-drag paints continuously on mobile.
  *   Pressure-aware freehand: pen / harsh / dither / eraser.
+ *   Viewport: space-pan, shift/ctrl rotate, pinch zoom+rot, 2-finger undo.
  *   Supports onion skinning (previous = purple, next = green).
  *   Supports playback displayFrameIndex for main-canvas animation preview.
  */
@@ -17,6 +18,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import type { SpriteLayer, ToolId, PackedColor } from "@/types/sprite";
+import { useCanvasViewport } from "@/lib/creative";
 import {
   getPixel,
   setPixel,
@@ -25,7 +27,6 @@ import {
   floodFill,
   compositeFrame,
   packedColorToRGBA,
-  TRANSPARENT,
   forEachStrokePoint,
   normalizePressure,
   stampFramePressurePen,
@@ -67,6 +68,8 @@ interface SpriteCanvasProps {
   onStrokeBegin?: () => void;
   /** Called at freehand stroke end — parent should refresh thumbs (no new undo entry). */
   onStrokeEnd?: () => void;
+  /** Two-finger tap / external undo */
+  onUndo?: () => void;
   onColorPicked: (color: PackedColor) => void;
   onionSkin?: OnionSkinSettings;
 }
@@ -132,6 +135,7 @@ export function SpriteCanvas({
   onPixelsChanged,
   onStrokeBegin,
   onStrokeEnd,
+  onUndo,
   onColorPicked,
   onionSkin,
 }: SpriteCanvasProps) {
@@ -139,6 +143,21 @@ export function SpriteCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drawingRef = useRef(false);
+
+  const {
+    viewport,
+    transformStyle,
+    onPointerDown: vpDown,
+    onPointerMove: vpMove,
+    onPointerUp: vpUp,
+    spaceDownRef,
+    setZoom: setCamZoom,
+  } = useCanvasViewport({
+    onUndo,
+    minZoom: 0.35,
+    maxZoom: 4,
+    enabled: !playing,
+  });
   /** Sub-pixel stroke continuity for freehand tools */
   const lastPixelRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
@@ -159,21 +178,35 @@ export function SpriteCanvas({
   const activeLayer = layers[activeLayerIndex];
   const activeFrame = activeLayer?.frames[activeFrameIndex];
 
-  /** Sub-pixel coords for smooth freehand stamping. */
+  /** Sub-pixel coords for smooth freehand stamping (inverse camera + pixel zoom). */
   const screenToFloatPixel = useCallback(
     (clientX: number, clientY: number): [number, number] => {
       const canvas = canvasRef.current;
       if (!canvas) return [-1, -1];
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const sx = (clientX - rect.left) * scaleX;
-      const sy = (clientY - rect.top) * scaleY;
+      // Center of transformed canvas
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      let dx = clientX - cx;
+      let dy = clientY - cy;
+      const rad = (-viewport.rotation * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      dx /= viewport.zoom || 1;
+      dy /= viewport.zoom || 1;
+      const rx = dx * cos - dy * sin;
+      const ry = dx * sin + dy * cos;
+      // Map from CSS px (post-layout, un-camera) into canvas backing store
+      // rect size includes CSS transform; use canvas CSS size ≈ offsetWidth
+      const dispW = canvas.offsetWidth || rect.width / (viewport.zoom || 1);
+      const dispH = canvas.offsetHeight || rect.height / (viewport.zoom || 1);
+      const sx = (dispW / 2 + rx) * (canvas.width / dispW);
+      const sy = (dispH / 2 + ry) * (canvas.height / dispH);
       const px = (sx - offset.x) / zoom;
       const py = (sy - offset.y) / zoom;
       return [px, py];
     },
-    [zoom, offset],
+    [zoom, offset, viewport.rotation, viewport.zoom],
   );
 
   /** Integer pixel coords (shapes / fill / picker). */
@@ -441,6 +474,10 @@ export function SpriteCanvas({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (playing) return;
+      if (vpDown(e)) {
+        drawingRef.current = false;
+        return;
+      }
       if (e.button !== 0 && e.pointerType === "mouse") return;
       if (drawingRef.current) return;
 
@@ -461,11 +498,12 @@ export function SpriteCanvas({
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
       applyTool(px, py, true, pressure);
     },
-    [screenToFloatPixel, applyTool, playing],
+    [screenToFloatPixel, applyTool, playing, vpDown],
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      if (vpMove(e)) return;
       if (!drawingRef.current) return;
       if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
 
@@ -474,11 +512,12 @@ export function SpriteCanvas({
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
       applyTool(px, py, false, pressure);
     },
-    [screenToFloatPixel, applyTool],
+    [screenToFloatPixel, applyTool, vpMove],
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
+      vpUp(e);
       if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
       e.preventDefault();
       const canvas = canvasRef.current;
@@ -489,13 +528,14 @@ export function SpriteCanvas({
           // ignore
         }
       }
-      endStroke(e.clientX, e.clientY);
+      if (drawingRef.current) endStroke(e.clientX, e.clientY);
     },
-    [endStroke],
+    [endStroke, vpUp],
   );
 
   const handlePointerCancel = useCallback(
     (e: React.PointerEvent) => {
+      vpUp(e);
       if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
       drawingRef.current = false;
       activePointerIdRef.current = null;
@@ -504,24 +544,35 @@ export function SpriteCanvas({
       shapeStartRef.current = null;
       render();
     },
-    [render],
+    [render, vpUp],
   );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        // Camera zoom
+        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+        setCamZoom(viewport.zoom * factor);
+        return;
+      }
       const delta = e.deltaY > 0 ? -1 : 1;
       const newZoom = Math.max(1, Math.min(64, zoom + delta * Math.max(1, Math.floor(zoom / 4))));
       onZoomChange(newZoom);
     },
-    [zoom, onZoomChange],
+    [zoom, onZoomChange, setCamZoom, viewport.zoom],
   );
+
+  // Pinch camera zoom also nudges pixel zoom slightly when cam hits limits — optional skip
 
   return (
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden"
-      style={{ backgroundColor: "#0a0a0a", cursor: playing ? "default" : "crosshair" }}
+      style={{
+        backgroundColor: "#0a0a0a",
+        cursor: playing ? "default" : spaceDownRef.current ? "grab" : "crosshair",
+      }}
     >
       <canvas
         ref={canvasRef}
@@ -536,6 +587,8 @@ export function SpriteCanvas({
           width: "100%",
           height: "100%",
           display: "block",
+          transform: transformStyle,
+          transformOrigin: "center center",
         }}
       />
       <div
@@ -550,7 +603,7 @@ export function SpriteCanvas({
           pointerEvents: "none",
         }}
       >
-        {zoom}X
+        {zoom}X · cam{viewport.zoom.toFixed(2)} · r{Math.round(viewport.rotation)}°
         {playing ? " · PLAY" : onionSkin?.enabled ? " · ONION" : ""}
       </div>
     </div>

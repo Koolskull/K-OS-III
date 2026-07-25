@@ -166,9 +166,10 @@ This maps onto existing K-Wallet and PRODEV plans. It is explicitly **not** requ
 - Basic empty window + variable-duration shot fields + CornerChrome (done)
 
 ### Phase 0.5 — Mono shot plate (landed)
-Every shot starts on a **480 × 853** monochrome thumbnail plate (≈ 9:16 portrait).
+Every shot starts on a monochrome thumbnail plate — **portrait 480×853** or **landscape 853×480** (chosen with plate color at create).
 
-- **Start color:** black or white (chosen when adding a shot)
+- **Start orientation + color:** portrait/landscape and black/white (new-shot prompt)
+- **Flow:** draw first, then fill metadata (below canvas on mobile, beside on desktop). Corner menus: ACT / ? / INFO / ZEN.
 - **Ink:** black or white only (no gray)
 - **Tools** (shared `src/lib/drawStamps.ts` + `monoDraw.ts` / `ShotCanvas.tsx`):
   - **HARSH** — solid hard disk; pressure only widens slightly. Fast carve / sketch.

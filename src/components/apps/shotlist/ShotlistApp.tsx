@@ -1,44 +1,7 @@
 /*
- *                          ☦
- *                  ╔════════════════╗
- *                  ║    IC    XC   ║
- *                  ║   NIKA NIKA   ║
- *                  ╚════════════════╝
- *
- *        ┌──────────────────────────────┐
- *        │                              │
- *        │    ††† KNIGHTS TEMPLAR †††   │
- *        │    SHOTLIST                  │
- *        │    Sequencing / Storyboard   │
- *        │    / X-Sheet Engine          │
- *        │                              │
- *        │    "Non nobis, Domine,       │
- *     non nobis, sed nomini    │
- *     tuo da gloriam."         │
- *        │                              │
- *        └──────────────────────────────┘
- *
- *   In the name of the Father, and of the Son, and of the Holy Spirit. Amen.
- *
- *   Saint Luke, patron of artists and physicians, pray for us.
- *   Saint Cecilia, patroness of musicians, pray for us.
- *   Saint Gabriel the Archangel, messenger of the Most High, intercede for us.
- *   Saint Michael the Archangel, defend us in battle.
- *   Holy Guardian Angels, watch over this code and every frame it holds.
- *
- *   May every shot list, every X-sheet, and every thumbnail be ordered
- *   under the providence of God, that the work of our hands may serve
- *   truth, beauty, and the greater glory of His Name.
- *
- *   ╔══════════════════════════════════════════╗
- *   ║  SHOTLIST — Phase 1 slice                ║
- *   ║  Sequence → Shot (480×853 mono plate)    ║
- *   ║  Harsh / Pen / Dither · offline first    ║
- *   ╚══════════════════════════════════════════╝
- *
- *   Hierarchy mirrors Datamoshpit Song → Chain → Phrase.
- *   Spec: docs/SHOTLIST_SPEC.md
- *   Mobile: docs/MOBILE_CREATIVE_UI.md (CornerChrome)
+ * SHOTLIST — Sequence / Storyboard / X-Sheet
+ * Portrait or landscape mono plates · corner chrome · draw-first new shot
+ * Spec: docs/SHOTLIST_SPEC.md · Mobile: docs/MOBILE_CREATIVE_UI.md
  */
 
 "use client";
@@ -58,7 +21,9 @@ import {
   availableUpgrades,
   bitmapToDataURL,
   createBlankBitmap,
+  thumbSize,
   upgradePlateDataUrl,
+  type PlateOrientation,
   type PlateSize,
   type ShotBg,
 } from "./monoDraw";
@@ -68,61 +33,39 @@ import { useCreativeWorkflow } from "@/lib/creative";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Single frame inside an X-Sheet (24 fps) */
 interface XFrame {
-  id: number,
-  /** Exposure / hold count in frames */
-  exposure: number,
-  action: string,
-  dialogue: string,
-  camera: string,
-  audioCue: string,
-  notes: string,
-  /** Optional sprite / asset reference id or path */
-  assetRef: string | null,
+  id: number;
+  exposure: number;
+  action: string;
+  dialogue: string;
+  camera: string;
+  audioCue: string;
+  notes: string;
+  assetRef: string | null;
 }
 
-/** A Shot — like a Chain in Datamoshpit */
 interface Shot {
-  id: number,
-  title: string,
-  description: string,
-  /** Duration in frames at 24 fps */
-  durationFrames: number,
-  /** High-level audio timing notes for the whole shot */
-  audioNotes: string,
-  /** Starting plate color (new strokes carve against this) */
-  bg: ShotBg,
-  /**
-   * Working plate size. Always starts at thumbnail 480×853.
-   * After first committed thumbnail, may upgrade to 1920×1080 or 3840×2160.
-   */
-  plateW: number,
-  plateH: number,
-  /**
-   * Mono PNG data-URL at plateW×plateH (list preview + working plate).
-   * Blank scaffold on create does not count as a committed thumbnail.
-   */
-  thumbnail: string | null,
-  /** True after user SAVEs first drawing or returns plate from Sprite Editor */
-  hasCommittedThumbnail: boolean,
-  /** Expandable 24 fps breakdown */
-  xsheet: XFrame[],
-  /** Placeholder for future wallet / approval status */
-  status: "draft" | "review" | "approved",
+  id: number;
+  title: string;
+  description: string;
+  durationFrames: number;
+  audioNotes: string;
+  bg: ShotBg;
+  orientation: PlateOrientation;
+  plateW: number;
+  plateH: number;
+  thumbnail: string | null;
+  hasCommittedThumbnail: boolean;
+  xsheet: XFrame[];
+  status: "draft" | "review" | "approved";
 }
 
-/** Top-level Sequence / Storyboard — like a Song */
 interface Sequence {
-  id: number,
-  name: string,
-  fps: number, // fixed 24 for production X-sheets
-  shots: Shot[],
+  id: number;
+  name: string;
+  fps: number;
+  shots: Shot[];
 }
-
-/* ------------------------------------------------------------------ */
-/*  Helpers under the watch of the Angels                             */
-/* ------------------------------------------------------------------ */
 
 let nextId = 1;
 function uid(): number {
@@ -142,22 +85,23 @@ function createEmptyXFrame(): XFrame {
   };
 }
 
-function createEmptyShot(title = "SHOT", bg: ShotBg = "black"): Shot {
-  // First drawing is always the thumbnail plate (480×853).
-  const plate = bitmapToDataURL(
-    createBlankBitmap(bg, SHOT_W, SHOT_H),
-    SHOT_W,
-    SHOT_H,
-  );
+function createEmptyShot(
+  title = "SHOT",
+  bg: ShotBg = "black",
+  orientation: PlateOrientation = "portrait",
+): Shot {
+  const { width, height } = thumbSize(orientation);
+  const plate = bitmapToDataURL(createBlankBitmap(bg, width, height), width, height);
   return {
     id: uid(),
     title,
     description: "",
-    durationFrames: 24, // 1 second default
+    durationFrames: 24,
     audioNotes: "",
     bg,
-    plateW: SHOT_W,
-    plateH: SHOT_H,
+    orientation,
+    plateW: width,
+    plateH: height,
     thumbnail: plate || null,
     hasCommittedThumbnail: false,
     xsheet: [createEmptyXFrame()],
@@ -167,32 +111,43 @@ function createEmptyShot(title = "SHOT", bg: ShotBg = "black"): Shot {
 
 type EditorState =
   | { mode: "closed" }
-  | { mode: "pick-bg" }
+  | { mode: "pick-start" }
   | { mode: "pick-upgrade"; shotId: number }
   | { mode: "draw"; shotId: number; isNew: boolean };
 
 function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
-  return {
-    id: uid(),
-    name,
-    fps: 24,
-    shots: [],
-  };
+  return { id: uid(), name, fps: 24, shots: [] };
 }
-
-/* ------------------------------------------------------------------ */
-/*  Public entry — wrapped in CornerHost so mobile chrome works       */
-/* ------------------------------------------------------------------ */
 
 interface ShotlistAppProps {
-  isFocused?: boolean,
+  isFocused?: boolean;
 }
 
+const btn = (active = false): React.CSSProperties => ({
+  padding: "6px 10px",
+  background: active ? "#ffffff" : "#000000",
+  color: active ? "#000000" : "#cccccc",
+  border: active ? "1px solid #ffffff" : "1px solid #555555",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  fontSize: 10,
+  letterSpacing: 1,
+  touchAction: "manipulation",
+});
+
+const fieldStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  marginTop: 2,
+  background: "#111",
+  color: "#eee",
+  border: "1px solid #333",
+  padding: "4px 6px",
+  fontFamily: "inherit",
+  fontSize: 11,
+};
+
 export default function ShotlistApp({ isFocused = true }: ShotlistAppProps) {
-  /*
-   *  Saint Joseph the Worker, pray for the builders of this OS.
-   *  May the scaffolding hold, and the real work begin in order.
-   */
   return (
     <CornerHost storageKey="kos-shotlist-chrome" style={{ background: "#000000" }}>
       <ShotlistInner isFocused={isFocused} />
@@ -200,26 +155,22 @@ export default function ShotlistApp({ isFocused = true }: ShotlistAppProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Inner app                                                          */
-/* ------------------------------------------------------------------ */
-
 function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
   const chrome = useCornerChromeOptional();
   const isNarrow = chrome?.isNarrow ?? false;
-  const uiHidden = chrome?.uiHidden ?? false;
-  const collapse = isNarrow || uiHidden;
   const workflow = useCreativeWorkflow();
 
   const [sequence, setSequence] = useState<Sequence>(() => createEmptySequence());
   const [selectedShotId, setSelectedShotId] = useState<number | null>(null);
   const [expandedShotId, setExpandedShotId] = useState<number | null>(null);
   const [statusLine, setStatusLine] = useState(
-    `SHOTLIST ready · offline · ${SHOT_W}×${SHOT_H} mono · 24 fps`,
+    `SHOTLIST · offline · thumb ${SHOT_W}×${SHOT_H} / landscape · 24 fps`,
   );
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
+  const [pickOrientation, setPickOrientation] = useState<PlateOrientation>("portrait");
+  const [pickBg, setPickBg] = useState<ShotBg>("black");
 
-  /* ---- Creative bus: accept plate returns from KoolDraw ---- */
+  /* Creative bus return */
   useEffect(() => {
     const ret = workflow.lastReturn;
     if (!ret || ret.session.sourceApp !== "shotlist") return;
@@ -246,9 +197,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         ),
       }));
       setSelectedShotId(shotId);
-      setStatusLine(
-        `Plate returned from SPRITE EDITOR · ${rw}×${rh} · shot ${shotId}`,
-      );
+      setStatusLine(`Returned from SPRITE · ${rw}×${rh}`);
     } else if (ret.cancelled) {
       setStatusLine("Sprite handoff cancelled");
     }
@@ -265,33 +214,26 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       ? sequence.shots.find((s) => s.id === editor.shotId) ?? null
       : null;
 
-  /* ---- Actions ---- */
-
-  /** Open BG picker — every new shot starts as a full mono plate. */
   const beginAddShot = useCallback(() => {
-    setEditor({ mode: "pick-bg" });
-    setStatusLine("Choose starting plate: BLACK or WHITE");
+    setPickOrientation("portrait");
+    setPickBg("black");
+    setEditor({ mode: "pick-start" });
+    setStatusLine("New shot — orientation + plate color, then draw");
   }, []);
 
-  const confirmAddShot = useCallback(
-    (bg: ShotBg) => {
-      const shot = createEmptyShot(`SHOT ${sequence.shots.length + 1}`, bg);
-      setSequence((prev) => ({
-        ...prev,
-        shots: [...prev.shots, shot],
-      }));
-      setSelectedShotId(shot.id);
-      setEditor({ mode: "draw", shotId: shot.id, isNew: true });
-      setStatusLine(`Drawing ${shot.title} · ${bg.toUpperCase()} plate`);
-    },
-    [sequence.shots.length],
-  );
-
-  const openDrawSelected = useCallback(() => {
-    if (selectedShotId == null) return;
-    setEditor({ mode: "draw", shotId: selectedShotId, isNew: false });
-    setStatusLine("Shot plate editor");
-  }, [selectedShotId]);
+  const confirmAddShot = useCallback(() => {
+    const shot = createEmptyShot(
+      `SHOT ${sequence.shots.length + 1}`,
+      pickBg,
+      pickOrientation,
+    );
+    setSequence((prev) => ({ ...prev, shots: [...prev.shots, shot] }));
+    setSelectedShotId(shot.id);
+    setEditor({ mode: "draw", shotId: shot.id, isNew: true });
+    setStatusLine(
+      `Draw first · ${pickOrientation} ${shot.plateW}×${shot.plateH} · ${pickBg}`,
+    );
+  }, [sequence.shots.length, pickBg, pickOrientation]);
 
   const openDrawShot = useCallback((id: number) => {
     setSelectedShotId(id);
@@ -299,10 +241,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     setStatusLine("Shot plate editor");
   }, []);
 
-  /**
-   * Hand the plate to the modular Sprite Editor (full freehand + layers).
-   * RETURN TO SHOTLIST writes the mono plate back onto this shot.
-   */
+  const openDrawSelected = useCallback(() => {
+    if (selectedShotId == null) return;
+    openDrawShot(selectedShotId);
+  }, [selectedShotId, openDrawShot]);
+
   const openInSpriteEditor = useCallback(
     (shotId: number, plateDataUrl?: string | null) => {
       const shot = sequence.shots.find((s) => s.id === shotId);
@@ -331,9 +274,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         bg: shot.bg,
         ref: { shotId: shot.id },
       });
-      setStatusLine(
-        `Opened ${shot.title} (${shot.plateW}×${shot.plateH}) in SPRITE EDITOR`,
-      );
+      setStatusLine(`→ SPRITE EDITOR ${shot.plateW}×${shot.plateH}`);
     },
     [sequence.shots, workflow],
   );
@@ -356,42 +297,53 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         ),
       }));
       const shot = sequence.shots.find((s) => s.id === id);
-      setEditor({ mode: "closed" });
-      setStatusLine(
-        `Plate saved · ${shot?.plateW ?? SHOT_W}×${shot?.plateH ?? SHOT_H} mono · HD/4K unlock available`,
-      );
+      // Stay on draw with metadata if new; close only on explicit done from meta DONE
+      if (editor.isNew) {
+        setStatusLine(
+          `Thumbnail saved · fill metadata · unlock HD/4K (${shot?.plateW}×${shot?.plateH})`,
+        );
+        // Keep draw mode open so metadata dialog remains
+      } else {
+        setEditor({ mode: "closed" });
+        setStatusLine(`Plate saved · ${shot?.plateW}×${shot?.plateH}`);
+      }
     },
     [editor, sequence.shots],
   );
 
-  /** Open size picker — only after first committed thumbnail. */
-  const beginUpgrade = useCallback((shotId: number) => {
-    const shot = sequence.shots.find((s) => s.id === shotId);
-    if (!shot?.hasCommittedThumbnail) {
-      setStatusLine("Save a first thumbnail drawing before HD/4K upgrade");
-      return;
-    }
-    const opts = availableUpgrades(
-      shot.hasCommittedThumbnail,
-      shot.plateW,
-      shot.plateH,
-    );
-    if (opts.length === 0) {
-      setStatusLine("Already at maximum plate size (4K) or no upgrades");
-      return;
-    }
-    setSelectedShotId(shotId);
-    setEditor({ mode: "pick-upgrade", shotId });
-    setStatusLine("Choose plate upgrade: HD 1920×1080 or 4K 3840×2160");
-  }, [sequence.shots]);
+  const finishDrawSession = useCallback(() => {
+    setEditor({ mode: "closed" });
+    setStatusLine("Shot session closed");
+  }, []);
+
+  const beginUpgrade = useCallback(
+    (shotId: number) => {
+      const shot = sequence.shots.find((s) => s.id === shotId);
+      if (!shot?.hasCommittedThumbnail) {
+        setStatusLine("Save a first thumbnail drawing before HD/4K");
+        return;
+      }
+      const opts = availableUpgrades(
+        shot.hasCommittedThumbnail,
+        shot.plateW,
+        shot.plateH,
+      );
+      if (opts.length === 0) {
+        setStatusLine("No upgrades available (already max)");
+        return;
+      }
+      setSelectedShotId(shotId);
+      setEditor({ mode: "pick-upgrade", shotId });
+    },
+    [sequence.shots],
+  );
 
   const confirmUpgrade = useCallback(
     async (size: PlateSize) => {
       if (editor.mode !== "pick-upgrade") return;
       const shotId = editor.shotId;
       const shot = sequence.shots.find((s) => s.id === shotId);
-      if (!shot || !shot.hasCommittedThumbnail) return;
-
+      if (!shot?.hasCommittedThumbnail) return;
       setStatusLine(`Upgrading to ${size.short}…`);
       const nextUrl = await upgradePlateDataUrl(
         shot.thumbnail,
@@ -415,21 +367,17 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         ),
       }));
       setEditor({ mode: "draw", shotId, isNew: false });
-      setStatusLine(`Upgraded to ${size.short} · drawing at full plate size`);
+      setStatusLine(`Upgraded to ${size.short}`);
     },
     [editor, sequence.shots],
   );
 
   const cancelEditor = useCallback(() => {
-    if (editor.mode === "pick-bg") {
-      setStatusLine("Add shot cancelled");
-    } else if (editor.mode === "pick-upgrade") {
-      setStatusLine("Upgrade cancelled");
-    } else if (editor.mode === "draw" && editor.isNew) {
+    if (editor.mode === "pick-start") setStatusLine("Add shot cancelled");
+    else if (editor.mode === "pick-upgrade") setStatusLine("Upgrade cancelled");
+    else if (editor.mode === "draw" && editor.isNew)
       setStatusLine("Editor closed · blank plate kept");
-    } else {
-      setStatusLine("Editor closed");
-    }
+    else setStatusLine("Editor closed");
     setEditor({ mode: "closed" });
   }, [editor]);
 
@@ -449,26 +397,19 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     setSelectedShotId(id);
   }, []);
 
-  const updateShotField = useCallback(
-    (id: number, patch: Partial<Shot>) => {
-      setSequence((prev) => ({
-        ...prev,
-        shots: prev.shots.map((s) => (s.id === id ? { ...s, ...patch } : s)),
-      }));
-    },
-    [],
-  );
-
-  /* ---- Keyboard (Datamoshpit-style shell) ---- */
+  const updateShotField = useCallback((id: number, patch: Partial<Shot>) => {
+    setSequence((prev) => ({
+      ...prev,
+      shots: prev.shots.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    }));
+  }, []);
 
   useEffect(() => {
     if (!isFocused) return;
-    // Drawing editor owns the keyboard while open.
     if (editor.mode !== "closed") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
         return;
-      }
       switch (e.key.toLowerCase()) {
         case "n":
           e.preventDefault();
@@ -519,7 +460,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
               : idx < 0 || idx >= list.length - 1
                 ? 0
                 : idx + 1;
-          setSelectedShotId(list[next].id);
+          setSelectedShotId(list[next]!.id);
           break;
         }
       }
@@ -539,115 +480,101 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     sequence.shots,
   ]);
 
-  /* ---- Styles (pixel rules) ---- */
-
-  const rootStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#000000",
-    color: "#ffffff",
-    fontFamily: "var(--dm-font-primary), monospace",
-    imageRendering: "pixelated",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    userSelect: "none",
-  };
-
-  const headerStyle: React.CSSProperties = {
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: "6px 12px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottom: "2px solid #ffffff",
-    fontSize: 11,
-    letterSpacing: 2,
-    flexShrink: 0,
-  };
-
-  const btn = (active = false): React.CSSProperties => ({
-    padding: "4px 10px",
-    background: active ? "#ffffff" : "#000000",
-    color: active ? "#000000" : "#cccccc",
-    border: active ? "1px solid #ffffff" : "1px solid #555555",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: 10,
-    letterSpacing: 1,
-  });
-
-  /* ---- Always-visible header (never covered by CornerPanels) ---- */
-
-  const alwaysVisibleHeader = (
-    <div style={{
-      ...headerStyle,
-      // tighter padding on mobile so it doesn't eat too much vertical space
-      padding: collapse ? "5px 10px" : "6px 12px",
-    }}>
-      <span style={{ color: "#ffff00" }}>☦ SHOTLIST</span>
-      <span style={{ color: "#888", fontSize: 9, letterSpacing: 1 }}>
-        {sequence.name} · {sequence.shots.length} SHOTS · {sequence.fps} FPS
-      </span>
-      {/* Only show action buttons in header when we have room (desktop) */}
-      {!collapse && (
-        <div style={{ display: "flex", gap: 6 }}>
-          <button type="button" style={btn()} onClick={beginAddShot} title="New Shot (N)">
-            + SHOT
-          </button>
-          <button
-            type="button"
-            style={btn()}
-            onClick={openDrawSelected}
-            disabled={selectedShotId == null}
-            title="Draw plate (E)"
-          >
-            DRAW
-          </button>
-          <button
-            type="button"
-            style={btn()}
-            onClick={openSelectedInSprite}
-            disabled={selectedShotId == null}
-            title="Open plate in Sprite Editor (S)"
-          >
-            SPRITE
-          </button>
-          <button
-            type="button"
-            style={btn()}
-            onClick={() => selectedShotId != null && beginUpgrade(selectedShotId)}
-            disabled={
-              selectedShotId == null || !selectedShot?.hasCommittedThumbnail
-            }
-            title="Upgrade to HD/4K after first thumbnail (U)"
-          >
-            HD/4K
-          </button>
-          <button
-            type="button"
-            style={btn()}
-            onClick={deleteSelectedShot}
-            disabled={selectedShotId == null}
-            title="Delete selected (Del)"
-          >
-            DEL
-          </button>
-        </div>
-      )}
+  /* ---- Metadata form (used beside / below canvas) ---- */
+  const metadataForm = (shot: Shot) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 10,
+        height: "100%",
+        overflowY: "auto",
+        background: "#050505",
+        border: "1px solid #222",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ color: "#ffff00", fontSize: 9, letterSpacing: 2 }}>
+        SHOT METADATA
+      </div>
+      <div style={{ fontSize: 8, color: "#555", letterSpacing: 1 }}>
+        {shot.orientation.toUpperCase()} · {shot.plateW}×{shot.plateH} ·{" "}
+        {shot.bg.toUpperCase()}
+        {shot.hasCommittedThumbnail ? " · THUMB OK" : " · DRAW & SAVE FIRST"}
+      </div>
+      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+        TITLE
+        <input
+          value={shot.title}
+          onChange={(e) => updateShotField(shot.id, { title: e.target.value })}
+          style={fieldStyle}
+        />
+      </label>
+      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+        DESCRIPTION
+        <textarea
+          value={shot.description}
+          onChange={(e) => updateShotField(shot.id, { description: e.target.value })}
+          rows={3}
+          style={{ ...fieldStyle, resize: "vertical" }}
+        />
+      </label>
+      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+        DURATION (FRAMES @ 24 FPS)
+        <input
+          type="number"
+          min={1}
+          max={24000}
+          value={shot.durationFrames}
+          onChange={(e) =>
+            updateShotField(shot.id, {
+              durationFrames: Math.max(1, Number(e.target.value) || 1),
+            })
+          }
+          style={{ ...fieldStyle, width: 120 }}
+        />
+      </label>
+      <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
+        AUDIO TIMING NOTES
+        <textarea
+          value={shot.audioNotes}
+          onChange={(e) => updateShotField(shot.id, { audioNotes: e.target.value })}
+          rows={2}
+          placeholder="e.g. hit on beat 3 of bar 12…"
+          style={{ ...fieldStyle, resize: "vertical" }}
+        />
+      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+        {shot.hasCommittedThumbnail &&
+          availableUpgrades(true, shot.plateW, shot.plateH).length > 0 && (
+            <button type="button" style={btn()} onClick={() => beginUpgrade(shot.id)}>
+              UPGRADE HD/4K
+            </button>
+          )}
+        <button
+          type="button"
+          style={btn()}
+          onClick={() => openInSpriteEditor(shot.id, shot.thumbnail)}
+        >
+          → SPRITE
+        </button>
+        <button type="button" style={btn(true)} onClick={finishDrawSession}>
+          DONE
+        </button>
+      </div>
     </div>
   );
 
-  /* ---- Shot list (Sequence view) ---- */
-
+  /* ---- Shot list ---- */
   const shotList = (
-    <div style={{
-      flex: 1,
-      overflowY: "auto",
-      // extra top padding on mobile so first shot isn't hidden under corner chrome
-      padding: collapse ? "52px 10px 8px 10px" : "8px 10px",
-    }}>
+    <div
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: isNarrow ? "48px 10px 48px 10px" : "40px 10px 8px 10px",
+      }}
+    >
       {sequence.shots.length === 0 ? (
         <div
           style={{
@@ -660,21 +587,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           }}
         >
           <div style={{ color: "#ffff00", marginBottom: 8 }}>NO SHOTS YET</div>
-          <div>Press N or click + SHOT — pick BLACK or WHITE plate.</div>
+          <div>Tap + SHOT (or N) — choose portrait/landscape + B/W, then draw.</div>
           <div style={{ marginTop: 8, color: "#555", fontSize: 9 }}>
-            First drawing: {SHOT_W}×{SHOT_H} thumbnail plate.
-            <br />
-            After save: optional upgrade to 1920×1080 or 3840×2160.
-            <br />
-            HARSH · PEN (pressure size) · DITHER pencil
-          </div>
-          <div style={{ marginTop: 12, color: "#444", fontSize: 9 }}>
-            Hierarchy: Sequence → Shot → 24 fps X-Sheet
-            <br />
-            (mirrors Datamoshpit Song → Chain → Phrase)
-          </div>
-          <div style={{ marginTop: 16, color: "#333", fontSize: 8 }}>
-            Saint Luke, guide the storyboard.
+            Metadata fills in beside the plate (desktop) or below (mobile).
           </div>
         </div>
       ) : (
@@ -690,10 +605,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                 background: isSelected ? "#111100" : "#0a0a0a",
               }}
             >
-              {/* Shot row */}
               <div
                 onClick={() => setSelectedShotId(shot.id)}
-                onDoubleClick={() => toggleExpand(shot.id)}
+                onDoubleClick={() => openDrawShot(shot.id)}
                 style={{
                   display: "flex",
                   alignItems: "stretch",
@@ -701,31 +615,24 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                   minHeight: 56,
                 }}
               >
-                {/* 480×853 mono plate thumbnail (portrait strip) */}
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     openDrawShot(shot.id);
                   }}
-                  title="Draw / edit plate (E)"
                   style={{
-                    width: 48,
-                    minHeight: 72,
+                    width: shot.orientation === "landscape" ? 72 : 48,
+                    minHeight: 56,
                     padding: 0,
                     background: shot.bg === "white" ? "#fff" : "#000",
                     border: "none",
                     borderRight: "1px solid #222",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#444",
-                    fontSize: 8,
-                    letterSpacing: 1,
                     flexShrink: 0,
                     cursor: "pointer",
                     overflow: "hidden",
                   }}
+                  title="Draw plate"
                 >
                   {shot.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -740,18 +647,16 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                       }}
                     />
                   ) : (
-                    "DRAW"
+                    <span style={{ color: "#444", fontSize: 8 }}>DRAW</span>
                   )}
                 </button>
-
-                {/* Text */}
                 <div style={{ flex: 1, padding: "6px 10px", minWidth: 0 }}>
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "baseline",
                       gap: 8,
+                      alignItems: "baseline",
                     }}
                   >
                     <span
@@ -761,13 +666,12 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                         fontSize: 11,
                       }}
                     >
-                      {String(index + 1).padStart(2, "00")} · {shot.title}
+                      {String(index + 1).padStart(2, "0")} · {shot.title}
                     </span>
                     <span style={{ color: "#666", fontSize: 9 }}>
-                      {shot.plateW}×{shot.plateH}
+                      {shot.orientation === "portrait" ? "P" : "L"} · {shot.plateW}×
+                      {shot.plateH}
                       {shot.hasCommittedThumbnail ? "" : " · draft"}
-                      {" · "}
-                      {shot.durationFrames}f · {(shot.durationFrames / 24).toFixed(2)}s
                     </span>
                   </div>
                   <div
@@ -783,8 +687,6 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                     {shot.description || "(no description)"}
                   </div>
                 </div>
-
-                {/* Expand affordance */}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -801,183 +703,49 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                     fontFamily: "inherit",
                     fontSize: 14,
                   }}
-                  title="Expand X-Sheet (Enter)"
                 >
                   {isExpanded ? "▼" : "▶"}
                 </button>
               </div>
-
-              {/* Expanded X-Sheet (collapsible like a Phrase) */}
               {isExpanded && (
                 <div
                   style={{
                     borderTop: "1px solid #333",
                     padding: "10px 12px",
                     background: "#050505",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 9,
-                      color: "#ffff00",
-                      letterSpacing: 2,
-                      marginBottom: 8,
-                    }}
-                  >
-                    X-SHEET · 24 FPS · {shot.xsheet.length} FRAME
-                    {shot.xsheet.length === 1 ? "" : "S"}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <button
+                      type="button"
+                      style={btn(true)}
+                      onClick={() => openDrawShot(shot.id)}
+                    >
+                      DRAW · {shot.plateW}×{shot.plateH}
+                    </button>
+                    <button
+                      type="button"
+                      style={btn()}
+                      onClick={() => openInSpriteEditor(shot.id)}
+                    >
+                      → SPRITE
+                    </button>
+                    {shot.hasCommittedThumbnail &&
+                      availableUpgrades(true, shot.plateW, shot.plateH).length >
+                        0 && (
+                        <button
+                          type="button"
+                          style={btn()}
+                          onClick={() => beginUpgrade(shot.id)}
+                        >
+                          HD/4K
+                        </button>
+                      )}
                   </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      <button
-                        type="button"
-                        style={btn(true)}
-                        onClick={() => openDrawShot(shot.id)}
-                      >
-                        DRAW PLATE · {shot.plateW}×{shot.plateH}
-                      </button>
-                      <button
-                        type="button"
-                        style={btn()}
-                        onClick={() => openInSpriteEditor(shot.id)}
-                        title="Open in Sprite Editor (S)"
-                      >
-                        → SPRITE EDITOR
-                      </button>
-                      {shot.hasCommittedThumbnail &&
-                        availableUpgrades(
-                          shot.hasCommittedThumbnail,
-                          shot.plateW,
-                          shot.plateH,
-                        ).length > 0 && (
-                          <button
-                            type="button"
-                            style={btn()}
-                            onClick={() => beginUpgrade(shot.id)}
-                            title="Upgrade plate to HD or 4K (U) — after first thumbnail"
-                          >
-                            UPGRADE HD/4K
-                          </button>
-                        )}
-                    </div>
-                    {!shot.hasCommittedThumbnail && (
-                      <div style={{ fontSize: 8, color: "#555", letterSpacing: 1 }}>
-                        Save a first thumbnail drawing to unlock 1920×1080 / 3840×2160.
-                      </div>
-                    )}
-                    <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
-                      TITLE
-                      <input
-                        value={shot.title}
-                        onChange={(e) =>
-                          updateShotField(shot.id, { title: e.target.value })
-                        }
-                        style={{
-                          display: "block",
-                          width: "100%",
-                          marginTop: 2,
-                          background: "#111",
-                          color: "#eee",
-                          border: "1px solid #333",
-                          padding: "4px 6px",
-                          fontFamily: "inherit",
-                          fontSize: 11,
-                        }}
-                      />
-                    </label>
-                    <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
-                      DESCRIPTION
-                      <textarea
-                        value={shot.description}
-                        onChange={(e) =>
-                          updateShotField(shot.id, { description: e.target.value })
-                        }
-                        rows={2}
-                        style={{
-                          display: "block",
-                          width: "100%",
-                          marginTop: 2,
-                          background: "#111",
-                          color: "#eee",
-                          border: "1px solid #333",
-                          padding: "4px 6px",
-                          fontFamily: "inherit",
-                          fontSize: 11,
-                          resize: "vertical",
-                        }}
-                      />
-                    </label>
-                    <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
-                      DURATION (FRAMES @ 24 FPS)
-                      <input
-                        type="number"
-                        min={1}
-                        max={24000}
-                        value={shot.durationFrames}
-                        onChange={(e) =>
-                          updateShotField(shot.id, {
-                            durationFrames: Math.max(1, Number(e.target.value) || 1),
-                          })
-                        }
-                        style={{
-                          display: "block",
-                          width: 120,
-                          marginTop: 2,
-                          background: "#111",
-                          color: "#eee",
-                          border: "1px solid #333",
-                          padding: "4px 6px",
-                          fontFamily: "inherit",
-                          fontSize: 11,
-                        }}
-                      />
-                    </label>
-                    <label style={{ fontSize: 9, color: "#888", letterSpacing: 1 }}>
-                      AUDIO TIMING NOTES
-                      <textarea
-                        value={shot.audioNotes}
-                        onChange={(e) =>
-                          updateShotField(shot.id, { audioNotes: e.target.value })
-                        }
-                        rows={2}
-                        placeholder="e.g. hit on beat 3 of bar 12…"
-                        style={{
-                          display: "block",
-                          width: "100%",
-                          marginTop: 2,
-                          background: "#111",
-                          color: "#eee",
-                          border: "1px solid #333",
-                          padding: "4px 6px",
-                          fontFamily: "inherit",
-                          fontSize: 11,
-                          resize: "vertical",
-                        }}
-                      />
-                    </label>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      padding: 8,
-                      border: "1px dashed #333",
-                      color: "#555",
-                      fontSize: 9,
-                      letterSpacing: 1,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    FULL FRAME-BY-FRAME X-SHEET GRID LANDS IN PHASE 1.
-                    <br />
-                    Each frame will hold exposure, action, dialogue, camera,
-                    audio cue, sprite ref, and notes.
-                    <br />
-                    <span style={{ color: "#333" }}>
-                      Saint Gabriel, carry the timing true.
-                    </span>
-                  </div>
+                  {metadataForm(shot)}
                 </div>
               )}
             </div>
@@ -987,65 +755,204 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     </div>
   );
 
-  /* ---- Status / help ---- */
-
-  const statusBar = (
-    <div
-      style={{
-        borderTop: "1px solid #222",
-        padding: "4px 10px",
-        fontSize: 9,
-        color: "#666",
-        letterSpacing: 1,
-        display: "flex",
-        justifyContent: "space-between",
-        flexShrink: 0,
-      }}
-    >
-      <span>{statusLine}</span>
-      <span>
-        N:NEW · E:DRAW · S:SPRITE · U:UPGRADE · ENTER:EXPAND · ↑↓ · DEL · H:ZEN · ☦
-      </span>
+  const actionsPanel = (
+    <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+      <button type="button" style={btn(true)} onClick={beginAddShot}>
+        + SHOT
+      </button>
+      <button
+        type="button"
+        style={btn()}
+        onClick={openDrawSelected}
+        disabled={selectedShotId == null}
+      >
+        DRAW
+      </button>
+      <button
+        type="button"
+        style={btn()}
+        onClick={openSelectedInSprite}
+        disabled={selectedShotId == null}
+      >
+        SPRITE
+      </button>
+      <button
+        type="button"
+        style={btn()}
+        onClick={() => selectedShotId != null && beginUpgrade(selectedShotId)}
+        disabled={selectedShotId == null || !selectedShot?.hasCommittedThumbnail}
+      >
+        HD/4K
+      </button>
+      <button
+        type="button"
+        style={btn()}
+        onClick={deleteSelectedShot}
+        disabled={selectedShotId == null}
+      >
+        DEL
+      </button>
+      {selectedShot && (
+        <button type="button" style={btn()} onClick={() => toggleExpand(selectedShot.id)}>
+          {expandedShotId === selectedShot.id ? "COLLAPSE" : "EXPAND"}
+        </button>
+      )}
     </div>
   );
 
-  /* ---- Help panel content (for corner on mobile) ---- */
-
-  const helpContent = (
+  const helpPanel = (
     <div style={{ padding: 8, fontSize: 9, color: "#888", letterSpacing: 1, lineHeight: 1.7 }}>
       <div style={{ color: "#ffff00", marginBottom: 6 }}>SHOTLIST</div>
-      <div>N — new shot (pick B/W plate)</div>
-      <div>E — draw mono plate (starts {SHOT_W}×{SHOT_H})</div>
-      <div>S — open plate in Sprite Editor</div>
-      <div>U — upgrade to HD/4K (after first thumb)</div>
-      <div>Enter — expand / collapse X-sheet</div>
-      <div>↑ ↓ — select shot</div>
-      <div>Del — delete selected</div>
-      <div>H — zen / hide chrome</div>
+      <div>N — new shot (orient + B/W → draw → meta)</div>
+      <div>E — draw plate</div>
+      <div>S — sprite editor</div>
+      <div>U — upgrade HD/4K (after thumb)</div>
+      <div>↑↓ Enter Del · H zen</div>
       <div style={{ marginTop: 8, color: "#555" }}>
-        Thumb {SHOT_W}×{SHOT_H} → HD / 4K · HARSH / PEN / DITHER
-      </div>
-      <div style={{ marginTop: 10, color: "#444" }}>
-        Offline MVP. Wallet approvals later.
-      </div>
-      <div style={{ marginTop: 8, color: "#333" }}>
-        Non nobis, Domine.
+        Draw: SPACE pan · SHIFT/CTRL rotate · pinch · 2-finger undo
       </div>
     </div>
   );
 
-  /* ---- BG picker overlay ---- */
+  const infoPanel = (
+    <div style={{ padding: 6, fontSize: 9, color: "#888" }}>
+      <div>{sequence.name}</div>
+      <div>
+        {sequence.shots.length} shots · {sequence.fps} fps
+      </div>
+      <div style={{ marginTop: 4 }}>{statusLine}</div>
+    </div>
+  );
+
+  /* Start picker: orientation + bg */
+  const startPicker =
+    editor.mode === "pick-start" ? (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 40,
+          background: "rgba(0,0,0,0.94)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+        }}
+        onClick={cancelEditor}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            border: "2px solid #fff",
+            background: "#000",
+            padding: 20,
+            maxWidth: 420,
+            width: "100%",
+          }}
+        >
+          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 12 }}>
+            NEW SHOT · FRAME SETUP
+          </div>
+          <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
+            ORIENTATION
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={() => setPickOrientation("portrait")}
+              style={{
+                flex: 1,
+                height: 88,
+                background: pickOrientation === "portrait" ? "#fff" : "#000",
+                color: pickOrientation === "portrait" ? "#000" : "#ccc",
+                border: "2px solid #fff",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: 1,
+                fontSize: 11,
+              }}
+            >
+              PORTRAIT
+              <div style={{ fontSize: 9, marginTop: 6, opacity: 0.7 }}>480×853</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickOrientation("landscape")}
+              style={{
+                flex: 1,
+                height: 88,
+                background: pickOrientation === "landscape" ? "#fff" : "#000",
+                color: pickOrientation === "landscape" ? "#000" : "#ccc",
+                border: "2px solid #fff",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: 1,
+                fontSize: 11,
+              }}
+            >
+              LANDSCAPE
+              <div style={{ fontSize: 9, marginTop: 6, opacity: 0.7 }}>853×480</div>
+            </button>
+          </div>
+          <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
+            PLATE COLOR
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={() => setPickBg("black")}
+              style={{
+                flex: 1,
+                height: 64,
+                background: "#000",
+                color: "#fff",
+                border:
+                  pickBg === "black" ? "2px solid #ffff00" : "2px solid #555",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: 2,
+              }}
+            >
+              BLACK
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickBg("white")}
+              style={{
+                flex: 1,
+                height: 64,
+                background: "#fff",
+                color: "#000",
+                border:
+                  pickBg === "white" ? "2px solid #ffff00" : "2px solid #555",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: 2,
+              }}
+            >
+              WHITE
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={confirmAddShot}
+            style={{ ...btn(true), width: "100%", padding: "10px", marginBottom: 8 }}
+          >
+            START DRAWING
+          </button>
+          <button type="button" onClick={cancelEditor} style={{ ...btn(), width: "100%" }}>
+            CANCEL
+          </button>
+        </div>
+      </div>
+    ) : null;
 
   const upgradeShot =
     editor.mode === "pick-upgrade"
       ? sequence.shots.find((s) => s.id === editor.shotId) ?? null
       : null;
   const upgradeOptions = upgradeShot
-    ? availableUpgrades(
-        upgradeShot.hasCommittedThumbnail,
-        upgradeShot.plateW,
-        upgradeShot.plateH,
-      )
+    ? availableUpgrades(true, upgradeShot.plateW, upgradeShot.plateH)
     : [];
 
   const upgradePicker =
@@ -1065,268 +972,162 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          style={{
-            border: "2px solid #fff",
-            background: "#000",
-            padding: 20,
-            maxWidth: 400,
-            width: "100%",
-          }}
+          style={{ border: "2px solid #fff", background: "#000", padding: 20, maxWidth: 400, width: "100%" }}
         >
-          <div
-            style={{
-              color: "#ffff00",
-              letterSpacing: 2,
-              fontSize: 11,
-              marginBottom: 8,
-            }}
-          >
-            UPGRADE PLATE · {upgradeShot.title}
+          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 8 }}>
+            UPGRADE · {upgradeShot.title}
           </div>
-          <div
-            style={{
-              color: "#888",
-              fontSize: 9,
-              letterSpacing: 1,
-              marginBottom: 12,
-              lineHeight: 1.6,
-            }}
-          >
-            First thumbnail is locked in at {SHOT_W}×{SHOT_H}.
-            <br />
-            Current working size: {upgradeShot.plateW}×{upgradeShot.plateH}.
-            <br />
-            Upgrade letterboxes your drawing onto HD or 4K (nearest-neighbor mono).
+          <div style={{ color: "#888", fontSize: 9, marginBottom: 12, lineHeight: 1.6 }}>
+            Current {upgradeShot.plateW}×{upgradeShot.plateH}. Letterbox mono upscale.
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {upgradeOptions.map((size) => (
-              <button
-                key={size.id}
-                type="button"
-                onClick={() => void confirmUpgrade(size)}
-                style={{
-                  ...btn(),
-                  padding: "12px 10px",
-                  textAlign: "left",
-                  letterSpacing: 1,
-                }}
-              >
-                {size.label}
-                <span style={{ color: "#666", marginLeft: 8 }}>
-                  {size.id === "hd" ? "16:9 production" : "16:9 print / finish"}
-                </span>
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={cancelEditor}
-            style={{ ...btn(), width: "100%", marginTop: 12 }}
-          >
+          {upgradeOptions.map((size) => (
+            <button
+              key={size.id}
+              type="button"
+              onClick={() => void confirmUpgrade(size)}
+              style={{ ...btn(), width: "100%", marginBottom: 8, padding: "12px 10px", textAlign: "left" }}
+            >
+              {size.label}
+            </button>
+          ))}
+          <button type="button" onClick={cancelEditor} style={{ ...btn(), width: "100%" }}>
             CANCEL
           </button>
         </div>
       </div>
     ) : null;
 
-  const bgPicker =
-    editor.mode === "pick-bg" ? (
+  /* Draw + metadata split */
+  const drawWorkspace =
+    editor.mode === "draw" && editingShot ? (
       <div
         style={{
           position: "absolute",
           inset: 0,
-          zIndex: 40,
-          background: "rgba(0,0,0,0.92)",
+          zIndex: 50,
+          background: "#000",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
+          flexDirection: isNarrow ? "column" : "row",
+          minHeight: 0,
         }}
-        onClick={cancelEditor}
       >
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            border: "2px solid #fff",
-            background: "#000",
-            padding: 20,
-            maxWidth: 360,
-            width: "100%",
-          }}
-        >
-          <div
-            style={{
-              color: "#ffff00",
-              letterSpacing: 2,
-              fontSize: 11,
-              marginBottom: 8,
-            }}
-          >
-            NEW SHOT · STARTING PLATE
-          </div>
-          <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 16, lineHeight: 1.6 }}>
-            Start with a {SHOT_W}×{SHOT_H} monochrome thumbnail plate.
-            After you save the first drawing, you may upgrade to 1920×1080 or
-            3840×2160. Choose white or black to begin.
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              type="button"
-              onClick={() => confirmAddShot("black")}
-              style={{
-                flex: 1,
-                height: 96,
-                background: "#000",
-                color: "#fff",
-                border: "2px solid #fff",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                letterSpacing: 2,
-                fontSize: 12,
-              }}
-            >
-              BLACK
-            </button>
-            <button
-              type="button"
-              onClick={() => confirmAddShot("white")}
-              style={{
-                flex: 1,
-                height: 96,
-                background: "#fff",
-                color: "#000",
-                border: "2px solid #fff",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                letterSpacing: 2,
-                fontSize: 12,
-              }}
-            >
-              WHITE
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={cancelEditor}
-            style={{
-              ...btn(),
-              width: "100%",
-              marginTop: 12,
-            }}
-          >
-            CANCEL
-          </button>
-        </div>
-      </div>
-    ) : null;
-
-  return (
-    <div style={rootStyle}>
-      {/* Always-visible header — never covered by CornerPanels on mobile */}
-      {alwaysVisibleHeader}
-
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
-        {shotList}
-        <CornerDismissLayer />
-
-        {collapse && editor.mode === "closed" && (
-          <>
-            <CornerPanel id="actions" corner="top-left" label="ACT">
-              <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                <button type="button" style={btn()} onClick={beginAddShot}>
-                  + SHOT
-                </button>
-                <button
-                  type="button"
-                  style={btn()}
-                  onClick={openDrawSelected}
-                  disabled={selectedShotId == null}
-                >
-                  DRAW
-                </button>
-                <button
-                  type="button"
-                  style={btn()}
-                  onClick={openSelectedInSprite}
-                  disabled={selectedShotId == null}
-                >
-                  SPRITE
-                </button>
-                <button
-                  type="button"
-                  style={btn()}
-                  onClick={() =>
-                    selectedShotId != null && beginUpgrade(selectedShotId)
-                  }
-                  disabled={
-                    selectedShotId == null ||
-                    !selectedShot?.hasCommittedThumbnail
-                  }
-                >
-                  HD/4K
-                </button>
-                <button
-                  type="button"
-                  style={btn()}
-                  onClick={deleteSelectedShot}
-                  disabled={selectedShotId == null}
-                >
-                  DEL
-                </button>
-                {selectedShot && (
-                  <button
-                    type="button"
-                    style={btn()}
-                    onClick={() => toggleExpand(selectedShot.id)}
-                  >
-                    {expandedShotId === selectedShot.id ? "COLLAPSE" : "EXPAND"}
-                  </button>
-                )}
-              </div>
-            </CornerPanel>
-            <CornerPanel id="help" corner="top-right" label="?">
-              {helpContent}
-            </CornerPanel>
-            <CornerPanel id="info" corner="bottom-left" label="INFO">
-              <div style={{ padding: 6, fontSize: 9, color: "#888" }}>
-                <div>{sequence.name}</div>
-                <div>
-                  {sequence.shots.length} shots · {sequence.fps} fps
-                </div>
-                <div style={{ marginTop: 4 }}>
-                  {selectedShot
-                    ? `Plate ${selectedShot.plateW}×${selectedShot.plateH}`
-                    : `Thumb ${SHOT_W}×${SHOT_H}`}
-                </div>
-                <div style={{ marginTop: 4 }}>{statusLine}</div>
-              </div>
-            </CornerPanel>
-          </>
-        )}
-
-        {editor.mode === "closed" && <VerticalChromeToggle corner="bottom-right" />}
-
-        {bgPicker}
-        {upgradePicker}
-
-        {editor.mode === "draw" && editingShot && (
+        <div style={{ flex: isNarrow ? "1 1 58%" : "1 1 62%", minHeight: 0, minWidth: 0 }}>
           <ShotCanvas
             key={`${editingShot.id}-${editingShot.plateW}x${editingShot.plateH}`}
+            embedded
             initialDataUrl={editingShot.thumbnail}
-            bg={editingShot.bg ?? "black"}
+            bg={editingShot.bg}
             width={editingShot.plateW}
             height={editingShot.plateH}
             title={editingShot.title}
             onSave={savePlate}
             onCancel={cancelEditor}
-            onOpenInSpriteEditor={(livePlate) =>
-              openInSpriteEditor(editingShot.id, livePlate)
-            }
+            onOpenInSpriteEditor={(live) => openInSpriteEditor(editingShot.id, live)}
           />
-        )}
+        </div>
+        <div
+          style={{
+            flex: isNarrow ? "0 0 42%" : "0 0 320px",
+            minHeight: isNarrow ? 160 : 0,
+            maxHeight: isNarrow ? "42%" : "none",
+            borderLeft: isNarrow ? "none" : "1px solid #333",
+            borderTop: isNarrow ? "1px solid #333" : "none",
+            minWidth: 0,
+          }}
+        >
+          {metadataForm(editingShot)}
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#000",
+        color: "#fff",
+        fontFamily: "var(--dm-font-primary), monospace",
+        imageRendering: "pixelated",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        userSelect: "none",
+        position: "relative",
+      }}
+    >
+      {/* Always-visible thin header with NEW shortcut */}
+      <div
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "5px 10px",
+          borderBottom: "2px solid #fff",
+          background: "#000",
+          zIndex: 30,
+        }}
+      >
+        <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>☦ SHOTLIST</span>
+        <span style={{ color: "#666", fontSize: 9, letterSpacing: 1, flex: 1, textAlign: "center" }}>
+          {sequence.shots.length} SHOTS · {sequence.fps} FPS
+        </span>
+        <button
+          type="button"
+          style={btn(true)}
+          onClick={beginAddShot}
+          title="New shot (N) — draw first, then metadata"
+        >
+          + SHOT
+        </button>
       </div>
 
-      {!collapse && editor.mode === "closed" && statusBar}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {editor.mode === "closed" && shotList}
+
+        <CornerDismissLayer />
+
+        {editor.mode === "closed" && (
+          <>
+            <CornerPanel id="actions" corner="top-left" label="ACT" forceCorner>
+              {actionsPanel}
+            </CornerPanel>
+            <CornerPanel id="help" corner="top-right" label="?" forceCorner>
+              {helpPanel}
+            </CornerPanel>
+            <CornerPanel id="info" corner="bottom-left" label="INFO" forceCorner>
+              {infoPanel}
+            </CornerPanel>
+            <VerticalChromeToggle corner="bottom-right" />
+          </>
+        )}
+
+        {startPicker}
+        {upgradePicker}
+        {drawWorkspace}
+      </div>
+
+      {editor.mode === "closed" && (
+        <div
+          style={{
+            borderTop: "1px solid #222",
+            padding: "4px 10px",
+            fontSize: 8,
+            color: "#666",
+            letterSpacing: 1,
+            display: "flex",
+            justifyContent: "space-between",
+            flexShrink: 0,
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span>{statusLine}</span>
+          <span>N +SHOT · E DRAW · S SPRITE · U HD/4K · corners ACT/?/INFO/ZEN</span>
+        </div>
+      )}
     </div>
   );
 }

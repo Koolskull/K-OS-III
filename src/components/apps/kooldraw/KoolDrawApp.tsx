@@ -349,7 +349,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         return;
       }
       if ((e.key === "o" || e.key === "O") && !e.ctrlKey && !e.metaKey && !e.altKey) setOnionEnabled((v) => !v);
-      if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); togglePlayback(); }
+      // Space is reserved for canvas pan (hold + drag). Play uses P.
+      if ((e.key === "p" || e.key === "P") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        togglePlayback();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -515,7 +519,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
         <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
         <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
-        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (Space)">{playing ? "||" : ">"}</button>
+        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (P)">{playing ? "||" : ">"}</button>
       </div>
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
@@ -694,7 +698,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <button type="button" style={headerBtn(showOnionOptions)} onClick={() => setShowOnionOptions((v) => !v)} title="Onion Options">
               OPT
             </button>
-            <button type="button" style={headerBtn(playing)} onClick={togglePlayback} title="Play / Pause (Space)">
+            <button type="button" style={headerBtn(playing)} onClick={togglePlayback} title="Play / Pause (P)">
               {playing ? "||" : ">"}
             </button>
           </div>
@@ -723,6 +727,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             onPixelsChanged={handlePixelsChanged}
             onStrokeBegin={handleStrokeBegin}
             onStrokeEnd={handleStrokeEnd}
+            onUndo={undo}
             onColorPicked={handleColorPicked}
             onionSkin={onionSkin}
           />
@@ -786,7 +791,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       {!collapse && (
         <div className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 18 }}>
           <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-            B:PEN(pressure) K:HARSH D:DITHER E:ERA G:FIL I:PKR L:LIN R:RCT [/]:SIZE Shift+[/].,:DITHER-Φ O:ONION SPACE:PLAY ⌘Z · H:ZEN
+            B/K/D freehand · SPACE+DRAG pan · SHIFT/CTRL+DRAG rot · PINCH · 2-FINGER TAP undo · P play · H:ZEN
           </span>
           <span style={{ fontSize: 7, color: "#555" }}>☦</span>
         </div>

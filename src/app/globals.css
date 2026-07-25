@@ -415,17 +415,19 @@
    */
   --dm-scale: 1;
 
-  /* Compact chrome density (prefer these over hard-coded font sizes) */
-  --dm-ui-font: 10px;
-  --dm-ui-font-sm: 8px;
-  --dm-ui-font-xs: 7px;
-  --dm-ui-pad: 4px;
-  --dm-ui-pad-sm: 2px;
-  --dm-ui-gap: 4px;
-  --dm-ui-btn-h: 22px;
-  --dm-ui-chrome-h: 24px;
-  --dm-ui-rail: 108px;
-  --dm-taskbar-h: 32px;
+  /* Chrome density (prefer these over hard-coded font sizes) */
+  --dm-ui-font: 12px;
+  --dm-ui-font-sm: 10px;
+  --dm-ui-font-xs: 9px;
+  --dm-ui-pad: 5px;
+  --dm-ui-pad-sm: 3px;
+  --dm-ui-gap: 5px;
+  --dm-ui-btn-h: 28px;
+  --dm-ui-chrome-h: 30px;
+  --dm-ui-rail: 128px;
+  --dm-taskbar-h: 40px;
+  /* Multiplies entire UI incl. hard-coded px (1 = no boost) */
+  --dm-ui-zoom: 1;
 }
 
 /* ══════════════════════════════════════
@@ -455,6 +457,7 @@ html, body {
   -webkit-user-select: none;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  zoom: var(--dm-ui-zoom, 1);
 }
 
 /* Kill all rounded corners aggressively */
@@ -534,110 +537,38 @@ button, input, select, textarea, div, span, a {
   }
 }
 
-/* -- PHONE / small tablet -- */
+/* -- PHONE / small tablet — +40% vs prior compact -- */
 @media (min-width: 481px) and (max-width: 900px) {
   :root {
-    --dm-ui-font: 9px;
-    --dm-ui-font-sm: 7px;
-    --dm-ui-font-xs: 6px;
-    --dm-ui-pad: 3px;
-    --dm-ui-btn-h: 22px;
-    --dm-ui-chrome-h: 22px;
-    --dm-taskbar-h: 30px;
-  }
-}
-
-/* -- TABLET / iPad / laptop (compact, no upscale) -- */
-@media (min-width: 901px) and (max-width: 1599px) {
-  :root {
-    --dm-slime-size: 14px;
-    --dm-scale: 1;
-    --dm-ui-font: 10px;
-    --dm-ui-font-sm: 8px;
-    --dm-ui-font-xs: 7px;
-    --dm-ui-pad: 3px;
-    --dm-ui-gap: 3px;
-    --dm-ui-btn-h: 22px;
-    --dm-ui-chrome-h: 24px;
-    --dm-ui-rail: 104px;
-    --dm-taskbar-h: 30px;
-  }
-
-  body {
-    width: 100%;
-    height: 100%;
-    transform: none;
-    font-size: var(--dm-ui-font);
-  }
-}
-
-/* -- DESKTOP / large laptop / iPad Pro landscape -- */
-@media (min-width: 1600px) and (max-width: 2559px) {
-  :root {
-    --dm-slime-size: 14px;
-    --dm-scale: 1;
-    --dm-ui-font: 10px;
-    --dm-ui-font-sm: 8px;
-    --dm-ui-font-xs: 7px;
-    --dm-ui-pad: 3px;
-    --dm-ui-gap: 3px;
-    --dm-ui-btn-h: 22px;
-    --dm-ui-chrome-h: 24px;
-    --dm-ui-rail: 104px;
-    --dm-taskbar-h: 30px;
-  }
-
-  body {
-    width: 100%;
-    height: 100%;
-    transform: none;
-    font-size: var(--dm-ui-font);
-  }
-}
-
-/* -- ULTRAWIDE / 1440p+ : readable chrome (not micro) -- */
-@media (min-width: 2560px) and (max-width: 3839px) {
-  :root {
-    --dm-slime-size: 14px;
-    --dm-scale: 1;
-    --dm-ui-font: 11px;
-    --dm-ui-font-sm: 9px;
-    --dm-ui-font-xs: 8px;
-    --dm-ui-pad: 3px;
-    --dm-ui-gap: 3px;
-    --dm-ui-btn-h: 22px;
-    --dm-ui-chrome-h: 24px;
-    --dm-ui-rail: 108px;
-    --dm-taskbar-h: 30px;
-  }
-
-  body {
-    width: 100%;
-    height: 100%;
-    transform: none;
-    font-size: var(--dm-ui-font);
-    /* ~12% lift so hard-coded 7–9px labels stay readable */
-    zoom: 1.12;
+    --dm-ui-font: 12px;
+    --dm-ui-font-sm: 10px;
+    --dm-ui-font-xs: 9px;
+    --dm-ui-pad: 4px;
+    --dm-ui-btn-h: 28px;
+    --dm-ui-chrome-h: 28px;
+    --dm-taskbar-h: 36px;
+    --dm-ui-zoom: 1.4;
   }
 }
 
 /*
- * -- 4K : still 1× layout (no giant 2–4× pixel upscale), but type must be
- * readable. ~20% zoom lifts hard-coded micro fontSize styles app-wide.
+ * Tablet → 4K: layout stays 1× (no 2–4× pixel OS upscale).
+ * --dm-ui-zoom: 1.4 scales the whole UI ~40% (incl. hard-coded px labels).
  */
-@media (min-width: 3840px) {
+@media (min-width: 901px) and (max-width: 1599px) {
   :root {
     --dm-slime-size: 16px;
     --dm-scale: 1;
     --dm-ui-font: 12px;
     --dm-ui-font-sm: 10px;
     --dm-ui-font-xs: 9px;
-    --dm-ui-pad: 4px;
-    --dm-ui-gap: 4px;
-    --dm-ui-btn-h: 24px;
-    --dm-ui-chrome-h: 26px;
-    --dm-ui-rail: 112px;
-    --dm-taskbar-h: 32px;
+    --dm-ui-pad: 5px;
+    --dm-ui-gap: 5px;
+    --dm-ui-btn-h: 28px;
+    --dm-ui-chrome-h: 30px;
+    --dm-ui-rail: 128px;
+    --dm-taskbar-h: 40px;
+    --dm-ui-zoom: 1.4;
   }
 
   body {
@@ -645,7 +576,80 @@ button, input, select, textarea, div, span, a {
     height: 100%;
     transform: none;
     font-size: var(--dm-ui-font);
-    zoom: 1.2;
+  }
+}
+
+@media (min-width: 1600px) and (max-width: 2559px) {
+  :root {
+    --dm-slime-size: 16px;
+    --dm-scale: 1;
+    --dm-ui-font: 12px;
+    --dm-ui-font-sm: 10px;
+    --dm-ui-font-xs: 9px;
+    --dm-ui-pad: 5px;
+    --dm-ui-gap: 5px;
+    --dm-ui-btn-h: 28px;
+    --dm-ui-chrome-h: 30px;
+    --dm-ui-rail: 128px;
+    --dm-taskbar-h: 40px;
+    --dm-ui-zoom: 1.4;
+  }
+
+  body {
+    width: 100%;
+    height: 100%;
+    transform: none;
+    font-size: var(--dm-ui-font);
+  }
+}
+
+@media (min-width: 2560px) and (max-width: 3839px) {
+  :root {
+    --dm-slime-size: 16px;
+    --dm-scale: 1;
+    --dm-ui-font: 13px;
+    --dm-ui-font-sm: 11px;
+    --dm-ui-font-xs: 10px;
+    --dm-ui-pad: 5px;
+    --dm-ui-gap: 5px;
+    --dm-ui-btn-h: 28px;
+    --dm-ui-chrome-h: 30px;
+    --dm-ui-rail: 132px;
+    --dm-taskbar-h: 40px;
+    /* prior 1.12 × 1.4 ≈ 40% over previous ultrawide */
+    --dm-ui-zoom: 1.55;
+  }
+
+  body {
+    width: 100%;
+    height: 100%;
+    transform: none;
+    font-size: var(--dm-ui-font);
+  }
+}
+
+/* 4K: prior 1.2 × 1.4 ≈ +40% from last revision */
+@media (min-width: 3840px) {
+  :root {
+    --dm-slime-size: 18px;
+    --dm-scale: 1;
+    --dm-ui-font: 14px;
+    --dm-ui-font-sm: 12px;
+    --dm-ui-font-xs: 11px;
+    --dm-ui-pad: 6px;
+    --dm-ui-gap: 6px;
+    --dm-ui-btn-h: 30px;
+    --dm-ui-chrome-h: 32px;
+    --dm-ui-rail: 140px;
+    --dm-taskbar-h: 44px;
+    --dm-ui-zoom: 1.7;
+  }
+
+  body {
+    width: 100%;
+    height: 100%;
+    transform: none;
+    font-size: var(--dm-ui-font);
   }
 }
 

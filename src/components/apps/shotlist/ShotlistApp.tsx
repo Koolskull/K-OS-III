@@ -87,8 +87,8 @@ function createEmptyXFrame(): XFrame {
 
 function createEmptyShot(
   title = "SHOT",
-  bg: ShotBg = "black",
-  orientation: PlateOrientation = "portrait",
+  bg: ShotBg = "white",
+  orientation: PlateOrientation = "landscape",
 ): Shot {
   const { width, height } = thumbSize(orientation);
   const plate = bitmapToDataURL(createBlankBitmap(bg, width, height), width, height);
@@ -167,8 +167,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     `SHOTLIST · offline · thumb ${SHOT_W}×${SHOT_H} / landscape · 24 fps`,
   );
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
-  const [pickOrientation, setPickOrientation] = useState<PlateOrientation>("portrait");
-  const [pickBg, setPickBg] = useState<ShotBg>("black");
+  /** Defaults: landscape + white (incl. mobile browsers) */
+  const [pickOrientation, setPickOrientation] = useState<PlateOrientation>("landscape");
+  const [pickBg, setPickBg] = useState<ShotBg>("white");
   /** Shot info dialog while drawing (lower-right toggle) */
   const [shotInfoOpen, setShotInfoOpen] = useState(false);
 
@@ -217,10 +218,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       : null;
 
   const beginAddShot = useCallback(() => {
-    setPickOrientation("portrait");
-    setPickBg("black");
+    // Always re-seed defaults so mobile/desktop get the same start state
+    setPickOrientation("landscape");
+    setPickBg("white");
     setEditor({ mode: "pick-start" });
-    setStatusLine("New shot — orientation + plate color, then draw");
+    setStatusLine("New shot — landscape · white (change if needed), then draw");
   }, []);
 
   const confirmAddShot = useCallback(() => {
@@ -581,7 +583,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           }}
         >
           <div style={{ color: "#ffff00", marginBottom: 8 }}>NO SHOTS YET</div>
-          <div>Tap + SHOT (or N) — choose portrait/landscape + B/W, then draw.</div>
+          <div>Tap + SHOT (or N) — defaults landscape + white; change if needed, then draw.</div>
           <div style={{ marginTop: 8, color: "#555", fontSize: 9 }}>
             Metadata fills in beside the plate (desktop) or below (mobile).
           </div>
@@ -848,73 +850,63 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             NEW SHOT · FRAME SETUP
           </div>
           <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
-            ORIENTATION
+            ORIENTATION · default landscape
           </div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => setPickOrientation("portrait")}
-              style={{
-                flex: 1,
-                height: 88,
-                background: pickOrientation === "portrait" ? "#fff" : "#000",
-                color: pickOrientation === "portrait" ? "#000" : "#ccc",
-                border: "2px solid #fff",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                letterSpacing: 1,
-                fontSize: 11,
-              }}
-            >
-              PORTRAIT
-              <div style={{ fontSize: 9, marginTop: 6, opacity: 0.7 }}>480×853</div>
-            </button>
             <button
               type="button"
               onClick={() => setPickOrientation("landscape")}
               style={{
                 flex: 1,
                 height: 88,
+                minHeight: 88,
                 background: pickOrientation === "landscape" ? "#fff" : "#000",
                 color: pickOrientation === "landscape" ? "#000" : "#ccc",
-                border: "2px solid #fff",
+                border:
+                  pickOrientation === "landscape" ? "2px solid #ffff00" : "2px solid #fff",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 1,
                 fontSize: 11,
+                touchAction: "manipulation",
               }}
             >
               LANDSCAPE
               <div style={{ fontSize: 9, marginTop: 6, opacity: 0.7 }}>853×480</div>
             </button>
-          </div>
-          <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
-            PLATE COLOR
-          </div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button
               type="button"
-              onClick={() => setPickBg("black")}
+              onClick={() => setPickOrientation("portrait")}
               style={{
                 flex: 1,
-                height: 64,
-                background: "#000",
-                color: "#fff",
+                height: 88,
+                minHeight: 88,
+                background: pickOrientation === "portrait" ? "#fff" : "#000",
+                color: pickOrientation === "portrait" ? "#000" : "#ccc",
                 border:
-                  pickBg === "black" ? "2px solid #ffff00" : "2px solid #555",
+                  pickOrientation === "portrait" ? "2px solid #ffff00" : "2px solid #fff",
                 cursor: "pointer",
                 fontFamily: "inherit",
-                letterSpacing: 2,
+                letterSpacing: 1,
+                fontSize: 11,
+                touchAction: "manipulation",
               }}
             >
-              BLACK
+              PORTRAIT
+              <div style={{ fontSize: 9, marginTop: 6, opacity: 0.7 }}>480×853</div>
             </button>
+          </div>
+          <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
+            PLATE COLOR · default white
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button
               type="button"
               onClick={() => setPickBg("white")}
               style={{
                 flex: 1,
                 height: 64,
+                minHeight: 64,
                 background: "#fff",
                 color: "#000",
                 border:
@@ -922,9 +914,29 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 2,
+                touchAction: "manipulation",
               }}
             >
               WHITE
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickBg("black")}
+              style={{
+                flex: 1,
+                height: 64,
+                minHeight: 64,
+                background: "#000",
+                color: "#fff",
+                border:
+                  pickBg === "black" ? "2px solid #ffff00" : "2px solid #555",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: 2,
+                touchAction: "manipulation",
+              }}
+            >
+              BLACK
             </button>
           </div>
           <button

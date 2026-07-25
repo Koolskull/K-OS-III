@@ -32,6 +32,7 @@ const ICONS: DesktopIcon[] = [
   { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
   { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
   { id: "tilemap", label: "TILEMAP", glyph: "▤" },
+  { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },

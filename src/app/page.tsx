@@ -40,6 +40,7 @@ import { ManualApp } from "@/components/apps/manual/ManualApp";
 import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWikiApp";
 import TilemapApp from "@/components/apps/tilemap/TilemapApp";
 import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
+import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
@@ -53,7 +54,8 @@ type AppId =
   | "manual"
   | "stardrain-wiki"
   | "tilemap"
-  | "shotlist";
+  | "shotlist"
+  | "skulltext";
 
 interface OpenWindow {
   id: string;
@@ -72,6 +74,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
   shotlist: { title: "SHOTLIST", width: 900, height: 640 },
+  skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -216,6 +219,9 @@ export default function KoolskullOS() {
             )}
             {win.appId === "shotlist" && (
               <ShotlistApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "skulltext" && (
+              <SkullTextApp isFocused={win.id === focusedWindowId} />
             )}
           </AppWindow>
         ))}

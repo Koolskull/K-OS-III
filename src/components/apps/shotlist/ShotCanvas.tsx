@@ -65,9 +65,6 @@ function maxUndoForSize(w: number, h: number): number {
   return 24;
 }
 
-/** Discrete coverage stops for the vertical density rail (Bayer gradient) */
-const COVERAGE_STOPS = [0, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 1] as const;
-
 export function ShotCanvas({
   initialDataUrl,
   bg,
@@ -182,22 +179,23 @@ export function ShotCanvas({
     };
   }, [initialDataUrl, bg, plateW, plateH, paintView, resetViewport]);
 
-  // Ordered-dither gradient strip preview (vertical Bayer ramp)
+  // Ordered-dither gradient strip — true 1:1 pixels (no CSS stretch)
+  const GRAD_W = 20;
+  const GRAD_H = 128;
   useEffect(() => {
     const c = gradientRef.current;
-    if (!c) return;
+    if (!c || !toolsOpen) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
-    const w = 28;
-    const h = 160;
-    c.width = w;
-    c.height = h;
+    c.width = GRAD_W;
+    c.height = GRAD_H;
     const inkV = ink;
     const bgV: 0 | 255 = ink === 0 ? 255 : 0;
-    renderDitherGradientStrip(ctx, w, h, ditherPattern, inkV, bgV, {
+    // Top = solid (100%), bottom = empty (0%) — matches native vertical range (high at top)
+    renderDitherGradientStrip(ctx, GRAD_W, GRAD_H, ditherPattern, inkV, bgV, {
       ox: ditherOx,
       oy: ditherOy,
-      invertCoverage: false,
+      invertCoverage: true,
     });
   }, [ditherPattern, ditherOx, ditherOy, ink, toolsOpen]);
 
@@ -426,10 +424,11 @@ export function ShotCanvas({
         userSelect: "none",
       };
 
+  /** Top of strip = 100% tone, bottom = 0% (matches yellow thumb + invertCoverage) */
   const setCoverageFromClientY = (clientY: number, el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
     const t = (clientY - rect.top) / Math.max(1, rect.height);
-    setCoverage(Math.min(1, Math.max(0, t)));
+    setCoverage(Math.min(1, Math.max(0, 1 - t)));
   };
 
   return (
@@ -509,73 +508,52 @@ export function ShotCanvas({
           {toolsOpen && (
             <div
               style={{
-                width: 168,
+                width: 92,
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
-                padding: 8,
+                padding: 4,
                 display: "flex",
                 flexDirection: "column",
-                gap: 8,
+                gap: 6,
+                alignItems: "center",
               }}
             >
-              <div style={{ display: "flex", gap: 4 }}>
-                <button type="button" style={{ ...miniBtn(ink === 0), flex: 1 }} onClick={() => setInk(0)}>
-                  BLK
+              <div style={{ display: "flex", gap: 3, width: "100%" }}>
+                <button type="button" style={{ ...miniBtn(ink === 0), flex: 1, padding: "2px 0" }} onClick={() => setInk(0)}>
+                  B
                 </button>
-                <button type="button" style={{ ...miniBtn(ink === 255), flex: 1 }} onClick={() => setInk(255)}>
-                  WHT
+                <button type="button" style={{ ...miniBtn(ink === 255), flex: 1, padding: "2px 0" }} onClick={() => setInk(255)}>
+                  W
                 </button>
               </div>
 
-              {/* Vertical density: slider + Bayer gradient strip */}
               <div style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-                TONE · {Math.round(coverage * 100)}%
+                {Math.round(coverage * 100)}%
               </div>
+
+              {/*
+                Vertical tone rail: gradient strip is the control.
+                Top = solid 100%, bottom = empty 0% (yellow line tracks coverage).
+                Canvas pixels are 1:1 with CSS size — no stretch.
+              */}
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
-                  gap: 8,
-                  alignItems: "stretch",
-                  height: 168,
+                  gap: 4,
+                  alignItems: "flex-start",
                 }}
               >
-                {/* Vertical range */}
                 <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    width: 28,
-                  }}
-                >
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(coverage * 100)}
-                    onChange={(e) => setCoverage(Number(e.target.value) / 100)}
-                    style={{
-                      writingMode: "vertical-lr",
-                      direction: "rtl",
-                      width: 24,
-                      height: 160,
-                      accentColor: "#fff",
-                      cursor: "pointer",
-                      flex: 1,
-                    }}
-                    title="Ordered-dither density (Bayer gradient)"
-                  />
-                </div>
-                {/* Gradient preview — click to set coverage */}
-                <div
-                  style={{
-                    flex: 1,
                     position: "relative",
+                    width: GRAD_W,
+                    height: GRAD_H,
                     border: "1px solid #333",
-                    minWidth: 0,
                     cursor: "ns-resize",
+                    flexShrink: 0,
+                    imageRendering: "pixelated",
                   }}
                   onPointerDown={(e) => {
                     const el = e.currentTarget;
@@ -586,98 +564,91 @@ export function ShotCanvas({
                     if (e.buttons !== 1) return;
                     setCoverageFromClientY(e.clientY, e.currentTarget);
                   }}
-                  title="Drag to pick dither density"
+                  title="Drag: top=solid · bottom=empty"
                 >
                   <canvas
                     ref={gradientRef}
+                    width={GRAD_W}
+                    height={GRAD_H}
                     style={{
-                      width: "100%",
-                      height: "100%",
+                      width: GRAD_W,
+                      height: GRAD_H,
                       display: "block",
                       imageRendering: "pixelated",
                       pointerEvents: "none",
                     }}
                   />
-                  {/* Thumb indicator */}
                   <div
                     style={{
                       position: "absolute",
                       left: 0,
                       right: 0,
-                      top: `${coverage * 100}%`,
+                      // top of strip = 100% → line at (1 - coverage)
+                      top: `${(1 - coverage) * 100}%`,
                       height: 2,
                       background: "#ffff00",
                       transform: "translateY(-1px)",
                       pointerEvents: "none",
+                      boxShadow: "0 0 0 1px #000",
                     }}
                   />
                 </div>
+
+                {/* Kernel swatches — fixed 16×16 1:1 px, stacked */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    maxHeight: GRAD_H,
+                    overflowY: "auto",
+                  }}
+                >
+                  {DITHER_PATTERNS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setDitherPattern(p.id)}
+                      title={p.title}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        padding: 0,
+                        border:
+                          ditherPattern === p.id ? "1px solid #ffff00" : "1px solid #333",
+                        background: "#000",
+                        cursor: "pointer",
+                        lineHeight: 0,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ToneSwatch
+                        pattern={p.id}
+                        coverage={coverage}
+                        ink={ink}
+                        ox={ditherOx}
+                        oy={ditherOy}
+                        px={16}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Coverage stop chips (right of concept: under strip as quick picks) */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {COVERAGE_STOPS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCoverage(c)}
-                    style={{
-                      ...miniBtn(Math.abs(coverage - c) < 0.04),
-                      padding: "2px 4px",
-                      fontSize: 7,
-                      minWidth: 28,
-                      height: 20,
-                    }}
-                    title={`${Math.round(c * 100)}% tone`}
-                  >
-                    {Math.round(c * 100)}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>KERNEL</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {DITHER_PATTERNS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setDitherPattern(p.id)}
-                    title={p.title}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      padding: 1,
-                      border:
-                        ditherPattern === p.id ? "1px solid #fff" : "1px solid #333",
-                      background: "#111",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <ToneSwatch
-                      pattern={p.id}
-                      coverage={coverage}
-                      ink={ink}
-                      ox={ditherOx}
-                      oy={ditherOy}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: "flex", gap: 4 }}>
-                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={undo}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, width: "100%" }}>
+                <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8 }} onClick={undo}>
                   UNDO
                 </button>
-                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={clearPlate}>
+                <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8 }} onClick={clearPlate}>
                   CLR
                 </button>
-                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={fillInk}>
+                <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8 }} onClick={fillInk}>
                   FILL
                 </button>
+                <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8 }} onClick={() => setToolsOpen(false)}>
+                  HIDE
+                </button>
               </div>
-              <button type="button" style={miniBtn()} onClick={() => setToolsOpen(false)}>
-                HIDE
-              </button>
             </div>
           )}
         </div>
@@ -782,19 +753,21 @@ export function ShotCanvas({
   );
 }
 
-/** Small swatch of current coverage with a given kernel */
+/** Fixed-size 1:1 pixel swatch of current coverage with a given kernel */
 function ToneSwatch({
   pattern,
   coverage,
   ink,
   ox,
   oy,
+  px = 16,
 }: {
   pattern: DitherPatternId;
   coverage: number;
   ink: MonoInk;
   ox: number;
   oy: number;
+  px?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -802,7 +775,7 @@ function ToneSwatch({
     if (!c) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
-    const n = 12;
+    const n = px;
     c.width = n;
     c.height = n;
     const bg: 0 | 255 = ink === 0 ? 255 : 0;
@@ -811,7 +784,8 @@ function ToneSwatch({
     for (let y = 0; y < n; y++) {
       for (let x = 0; x < n; x++) {
         const rank = sampleDitherRank(pattern, x, y, ox, oy);
-        const v = coverage >= 0.995 ? ink : coverage <= 0.001 ? bg : rank < thr ? ink : bg;
+        const v =
+          coverage >= 0.995 ? ink : coverage <= 0.001 ? bg : rank < thr ? ink : bg;
         const o = (y * n + x) * 4;
         img.data[o] = v;
         img.data[o + 1] = v;
@@ -820,11 +794,18 @@ function ToneSwatch({
       }
     }
     ctx.putImageData(img, 0, 0);
-  }, [pattern, coverage, ink, ox, oy]);
+  }, [pattern, coverage, ink, ox, oy, px]);
   return (
     <canvas
       ref={ref}
-      style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }}
+      width={px}
+      height={px}
+      style={{
+        width: px,
+        height: px,
+        imageRendering: "pixelated",
+        display: "block",
+      }}
     />
   );
 }

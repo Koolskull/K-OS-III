@@ -88,7 +88,7 @@ K-OS III is a desktop environment that runs in your browser. It boots with a ter
 K-OS III is for people who want to make things on their own machine, without a platform sitting in between them and the work. In priority order, the people who get the most out of this project are:
 
 - **Tracker heads and chiptune people** — LSDJ, LGPT, Renoise, Furnace, Polyend Tracker. Datamoshpit is built in this lineage.
-- **Pixel artists and animators** who want a KoolDraw and animation tools that respect 1px-per-pixel rendering.
+- **Pixel artists and animators** who want KoolDraw animation tools that respect 1px-per-pixel rendering.
 - **Handheld gamers and Linux tinkerers** — Miyoo Mini, Anbernic, Steam Deck, anything with a small screen and arrow keys.
 - **Christian creatives** who appreciate that the project is openly devotional in its identity, and who don't have to apologize for being so themselves.
 - **Ethereum / EVM developers** — see [`VISION.md`](./VISION.md) for the priority builder audience and what the contribution surface looks like for you specifically.
@@ -165,7 +165,7 @@ A bare-bones but capable tilemap editor aimed at Sega Genesis / Mega Drive style
 
 Keyboard: `A` / `S` / `Tab` switch plane · `B` paint · `E` erase · `I` pick · `1-4` palette · `[` `]` zoom
 
-Same mobile corner-collapse + vertical hide pattern as the KoolDraw (documented in [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md)).
+Same mobile corner-collapse + vertical hide pattern as KoolDraw (documented in [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md)).
 
 ### HOLY BIBLE — King James Version
 

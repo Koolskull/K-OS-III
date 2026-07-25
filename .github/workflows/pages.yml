@@ -33,8 +33,7 @@ env:
   # assets from the same Pages deploy at <BASE_PATH>/.
   # Example: https://koolskull.github.io/k-os-assets
   NEXT_PUBLIC_ASSET_BASE: ""
-  # Optional: absolute URL where game WASM bundles live (often a GitHub
-  # Releases artifact since SuperTux's data file is too big for repos).
+  # Optional: absolute URL where game WASM bundles live (often a GitHub Releases artifact since SuperTux's data file is too big for repos).
   # Example: https://github.com/Koolskull/K-OS-III/releases/download/v0.2.0-beta.1
   NEXT_PUBLIC_GAMES_BASE: ""
 
@@ -48,7 +47,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies

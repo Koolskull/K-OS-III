@@ -12,6 +12,7 @@ import {
   DITHER_PATTERNS,
   forEachStrokePoint,
   normalizePressure,
+  renderDitherGradientStrip,
   sampleDitherRank,
   stampDitherDisk,
   stampHarshDisk,
@@ -25,6 +26,7 @@ export {
   DITHER_PATTERNS,
   forEachStrokePoint,
   normalizePressure,
+  renderDitherGradientStrip,
   sampleDitherRank,
   type DitherPatternId,
 };
@@ -159,7 +161,7 @@ export function inBounds(
 
 export interface StampOpts {
   ink: MonoInk;
-  /** 0..1 */
+  /** 0..1 — brush size via pressure */
   pressure: number;
   ditherOx: number;
   ditherOy: number;
@@ -167,6 +169,8 @@ export interface StampOpts {
   height: number;
   /** Ordered / hatch / sparse pattern for dither tool */
   ditherPattern?: DitherPatternId;
+  /** Gray coverage 0..1 for ordered dither (Bayer gradient stop) */
+  coverage?: number;
 }
 
 function writeMono(
@@ -226,6 +230,7 @@ export function stampDither(
       ditherOx: opts.ditherOx,
       ditherOy: opts.ditherOy,
       pattern: opts.ditherPattern ?? DEFAULT_DITHER_PATTERN,
+      coverage: opts.coverage ?? opts.pressure,
     },
     writeMono(bmp, opts.ink, opts.width, opts.height),
   );

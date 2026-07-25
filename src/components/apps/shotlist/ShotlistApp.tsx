@@ -1127,33 +1127,36 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         position: "relative",
       }}
     >
-      {/* Always-visible thin header with NEW shortcut */}
-      <div
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          padding: "5px 10px",
-          borderBottom: "2px solid #fff",
-          background: "#000",
-          zIndex: 30,
-        }}
-      >
-        <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>☦ SHOTLIST</span>
-        <span style={{ color: "#666", fontSize: 9, letterSpacing: 1, flex: 1, textAlign: "center" }}>
-          {sequence.shots.length} SHOTS · {sequence.fps} FPS
-        </span>
-        <button
-          type="button"
-          style={btn(true)}
-          onClick={beginAddShot}
-          title="New shot (N) — draw first, then metadata"
+      {/* List-mode header only — hidden while drawing so the plate has one chrome bar */}
+      {editor.mode === "closed" && (
+        <div
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            padding: "5px 10px",
+            borderBottom: "1px solid #333",
+            background: "#000",
+            zIndex: 30,
+            minHeight: 32,
+          }}
         >
-          + SHOT
-        </button>
-      </div>
+          <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>☦ SHOTLIST</span>
+          <span style={{ color: "#666", fontSize: 9, letterSpacing: 1, flex: 1, textAlign: "center" }}>
+            {sequence.shots.length} SHOTS · {sequence.fps} FPS
+          </span>
+          <button
+            type="button"
+            style={btn(true)}
+            onClick={beginAddShot}
+            title="New shot (N)"
+          >
+            + SHOT
+          </button>
+        </div>
+      )}
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
         {editor.mode === "closed" && shotList}
@@ -1196,7 +1199,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           }}
         >
           <span>{statusLine}</span>
-          <span>N +SHOT · E DRAW · S SPRITE · U HD/4K · corners ACT/?/INFO/ZEN</span>
+          <span>N +SHOT · E DRAW · S SPRITE · U HD/4K</span>
         </div>
       )}
     </div>

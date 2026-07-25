@@ -1,6 +1,7 @@
 /*
- * SHOTLIST — mono shot plate editor
- * Single top bar · left pen panel · unified pen + dither slider
+ * SHOTLIST — mono plate editor
+ * One compact header · left pen panel with vertical ordered-dither density
+ * Bayer-style continuous tone (see https://jdobr.es/blog/dithering/)
  */
 
 "use client";
@@ -19,6 +20,7 @@ import {
   dataURLToBitmap,
   forEachStrokePoint,
   normalizePressure,
+  renderDitherGradientStrip,
   sampleDitherRank,
   stampDither,
   stampPen,
@@ -33,7 +35,6 @@ export interface ShotCanvasProps {
   width?: number;
   height?: number;
   onSave: (dataUrl: string) => void;
-  /** Optional close — Escape still works if provided */
   onCancel?: () => void;
   title?: string;
   onOpenInSpriteEditor?: (liveDataUrl: string) => void;
@@ -42,15 +43,19 @@ export interface ShotCanvasProps {
 }
 
 const miniBtn = (active = false): React.CSSProperties => ({
-  padding: "4px 10px",
+  padding: "3px 8px",
+  height: 26,
   background: active ? "#ffffff" : "#000000",
   color: active ? "#000000" : "#cccccc",
   border: active ? "1px solid #ffffff" : "1px solid #555555",
   cursor: "pointer",
   fontFamily: "inherit",
-  fontSize: 10,
+  fontSize: 9,
   letterSpacing: 1,
   touchAction: "manipulation",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 function maxUndoForSize(w: number, h: number): number {
@@ -60,6 +65,9 @@ function maxUndoForSize(w: number, h: number): number {
   return 24;
 }
 
+/** Discrete coverage stops for the vertical density rail (Bayer gradient) */
+const COVERAGE_STOPS = [0, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 1] as const;
+
 export function ShotCanvas({
   initialDataUrl,
   bg,
@@ -67,7 +75,7 @@ export function ShotCanvas({
   height = SHOT_H,
   onSave,
   onCancel,
-  title = "SHOT PLATE",
+  title = "SHOT",
   onOpenInSpriteEditor,
   embedded = false,
 }: ShotCanvasProps) {
@@ -75,6 +83,7 @@ export function ShotCanvas({
   const plateH = height;
   const viewRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const gradientRef = useRef<HTMLCanvasElement>(null);
   const bmpRef = useRef<Uint8ClampedArray>(createBlankBitmap(bg, plateW, plateH));
   const sizeRef = useRef({ w: plateW, h: plateH });
   sizeRef.current = { w: plateW, h: plateH };
@@ -86,7 +95,7 @@ export function ShotCanvas({
   const ditherOxRef = useRef(0);
   const ditherOyRef = useRef(0);
   const ditherPatternRef = useRef<DitherPatternId>(DEFAULT_DITHER_PATTERN);
-  const ditherAmountRef = useRef(0.45);
+  const coverageRef = useRef(0.5);
 
   const [ink, setInk] = useState<MonoInk>(bg === "white" ? 0 : 255);
   const [ditherOx, setDitherOx] = useState(0);
@@ -94,19 +103,19 @@ export function ShotCanvas({
   const [ditherPattern, setDitherPattern] = useState<DitherPatternId>(
     DEFAULT_DITHER_PATTERN,
   );
-  /** 0 = solid pen · 1 = full dither density */
-  const [ditherAmount, setDitherAmount] = useState(0.45);
+  /** Ordered-dither gray coverage 0..1 (Bayer gradient stop) */
+  const [coverage, setCoverage] = useState(0.5);
   const [toolsOpen, setToolsOpen] = useState(true);
   const [helpOpen, setHelpOpen] = useState(false);
   const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState("Loading plate…");
+  const [status, setStatus] = useState("Loading…");
   const [baseScale, setBaseScale] = useState(0.5);
 
   inkRef.current = ink;
   ditherOxRef.current = ditherOx;
   ditherOyRef.current = ditherOy;
   ditherPatternRef.current = ditherPattern;
-  ditherAmountRef.current = ditherAmount;
+  coverageRef.current = coverage;
 
   const paintView = useCallback(() => {
     const canvas = viewRef.current;
@@ -131,10 +140,7 @@ export function ShotCanvas({
 
   const undo = useCallback(() => {
     const prev = undoRef.current.pop();
-    if (!prev) {
-      setStatus("Nothing to undo");
-      return;
-    }
+    if (!prev) return;
     bmpRef.current = prev;
     paintView();
     setStatus("Undo");
@@ -168,7 +174,7 @@ export function ShotCanvas({
       undoRef.current = [];
       resetViewport();
       setReady(true);
-      setStatus(`${plateW}×${plateH} · mono`);
+      setStatus("ready");
       requestAnimationFrame(() => paintView());
     })();
     return () => {
@@ -176,12 +182,31 @@ export function ShotCanvas({
     };
   }, [initialDataUrl, bg, plateW, plateH, paintView, resetViewport]);
 
+  // Ordered-dither gradient strip preview (vertical Bayer ramp)
+  useEffect(() => {
+    const c = gradientRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    const w = 28;
+    const h = 160;
+    c.width = w;
+    c.height = h;
+    const inkV = ink;
+    const bgV: 0 | 255 = ink === 0 ? 255 : 0;
+    renderDitherGradientStrip(ctx, w, h, ditherPattern, inkV, bgV, {
+      ox: ditherOx,
+      oy: ditherOy,
+      invertCoverage: false,
+    });
+  }, [ditherPattern, ditherOx, ditherOy, ink, toolsOpen]);
+
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const fit = () => {
       const rect = el.getBoundingClientRect();
-      const pad = 16;
+      const pad = 12;
       const sx = (rect.width - pad) / plateW;
       const sy = (rect.height - pad) / plateH;
       const cap = plateW >= 3000 ? 0.4 : plateW >= 1500 ? 0.7 : 1.2;
@@ -206,12 +231,7 @@ export function ShotCanvas({
       const canvas = viewRef.current;
       if (!canvas) return null;
       const { w, h } = sizeRef.current;
-      const { x, y } = clientToCanvasBitmap(
-        canvas,
-        clientX,
-        clientY,
-        viewport.rotation,
-      );
+      const { x, y } = clientToCanvasBitmap(canvas, clientX, clientY, viewport.rotation);
       if (x < -2 || y < -2 || x > w + 2 || y > h + 2) return null;
       return {
         x: Math.max(0, Math.min(w - 0.01, x)),
@@ -221,38 +241,33 @@ export function ShotCanvas({
     [viewport.rotation],
   );
 
-  const stampAt = useCallback(
-    (x: number, y: number, pressure: number) => {
-      const { w, h } = sizeRef.current;
-      const amount = ditherAmountRef.current;
-      const base = {
-        ink: inkRef.current,
-        pressure,
-        ditherOx: ditherOxRef.current,
-        ditherOy: ditherOyRef.current,
-        width: w,
-        height: h,
-        ditherPattern: ditherPatternRef.current,
-      };
-      // Unified pen: slider 0 → solid; >0 → dither density × pressure
-      if (amount < 0.03) {
-        stampPen(bmpRef.current, x, y, base);
-      } else {
-        stampDither(bmpRef.current, x, y, {
-          ...base,
-          pressure: Math.min(1, pressure * (0.15 + 0.85 * amount)),
-        });
-      }
-    },
-    [],
-  );
+  const stampAt = useCallback((x: number, y: number, pressure: number) => {
+    const { w, h } = sizeRef.current;
+    const cov = coverageRef.current;
+    const base = {
+      ink: inkRef.current,
+      pressure,
+      ditherOx: ditherOxRef.current,
+      ditherOy: ditherOyRef.current,
+      width: w,
+      height: h,
+      ditherPattern: ditherPatternRef.current,
+      coverage: cov,
+    };
+    // Solid at full coverage; ordered dither otherwise (true Bayer tone)
+    if (cov >= 0.995) {
+      stampPen(bmpRef.current, x, y, base);
+    } else if (cov > 0.001) {
+      stampDither(bmpRef.current, x, y, base);
+    }
+    // cov ≈ 0 → no ink (empty end of gradient)
+  }, []);
 
   const strokeTo = useCallback(
     (x: number, y: number, pressure: number) => {
       const last = lastPtRef.current;
-      if (!last) {
-        stampAt(x, y, pressure);
-      } else {
+      if (!last) stampAt(x, y, pressure);
+      else {
         forEachStrokePoint(last.x, last.y, x, y, (px, py) => {
           stampAt(px, py, pressure);
         });
@@ -285,9 +300,6 @@ export function ShotCanvas({
       lastPtRef.current = null;
       const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
       strokeTo(pt.x, pt.y, p);
-      setStatus(
-        `PEN · ${inkRef.current === 0 ? "BLK" : "WHT"} · dither ${Math.round(ditherAmountRef.current * 100)}% · p${p.toFixed(2)}`,
-      );
     },
     [ready, vpDown, clientToPlate, pushUndo, strokeTo],
   );
@@ -299,8 +311,7 @@ export function ShotCanvas({
       e.preventDefault();
       const pt = clientToPlate(e.clientX, e.clientY);
       if (!pt) return;
-      const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
-      strokeTo(pt.x, pt.y, p);
+      strokeTo(pt.x, pt.y, normalizePressure(e.pressure, e.pointerType, e.buttons));
     },
     [vpMove, clientToPlate, strokeTo],
   );
@@ -326,14 +337,12 @@ export function ShotCanvas({
     pushUndo();
     bmpRef.current = createBlankBitmap(bg, plateW, plateH);
     paintView();
-    setStatus(`Cleared to ${bg.toUpperCase()}`);
   }, [bg, plateW, plateH, pushUndo, paintView]);
 
   const fillInk = useCallback(() => {
     pushUndo();
     bmpRef.current.fill(ink);
     paintView();
-    setStatus(`Filled ${ink === 0 ? "BLACK" : "WHITE"}`);
   }, [ink, pushUndo, paintView]);
 
   const exportUrl = useCallback(() => {
@@ -341,13 +350,9 @@ export function ShotCanvas({
     return bitmapToDataURL(bmpRef.current, w, h);
   }, []);
 
-  const handleSave = useCallback(() => {
-    onSave(exportUrl());
-  }, [onSave, exportUrl]);
-
+  const handleSave = useCallback(() => onSave(exportUrl()), [onSave, exportUrl]);
   const handleOpenSprite = useCallback(() => {
-    if (!onOpenInSpriteEditor) return;
-    onOpenInSpriteEditor(exportUrl());
+    onOpenInSpriteEditor?.(exportUrl());
   }, [onOpenInSpriteEditor, exportUrl]);
 
   useEffect(() => {
@@ -364,25 +369,20 @@ export function ShotCanvas({
       }
       if (k === "0" && !e.metaKey && !e.ctrlKey) {
         resetViewport();
-        setStatus("View reset · fill");
         return;
       }
       if (k === "t") {
         setToolsOpen((v) => !v);
         return;
       }
-      switch (k) {
-        case "x":
-          setInk((v) => (v === 0 ? 255 : 0));
-          break;
-        case "enter":
-          e.preventDefault();
-          handleSave();
-          break;
-        case "escape":
-          e.preventDefault();
-          onCancel?.();
-          break;
+      if (k === "x") setInk((v) => (v === 0 ? 255 : 0));
+      if (k === "enter") {
+        e.preventDefault();
+        handleSave();
+      }
+      if (k === "escape") {
+        e.preventDefault();
+        onCancel?.();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -396,7 +396,6 @@ export function ShotCanvas({
 
   const zoomFit = useCallback(() => {
     resetViewport();
-    setStatus("View reset · fill");
   }, [resetViewport]);
 
   const rootStyle: React.CSSProperties = embedded
@@ -427,47 +426,58 @@ export function ShotCanvas({
         userSelect: "none",
       };
 
+  const setCoverageFromClientY = (clientY: number, el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    const t = (clientY - rect.top) / Math.max(1, rect.height);
+    setCoverage(Math.min(1, Math.max(0, t)));
+  };
+
   return (
     <div style={rootStyle}>
-      {/* Single top bar: title + FIT / SPRITE / SAVE */}
+      {/* ONE compact header bar */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
           gap: 8,
-          padding: "6px 10px",
-          borderBottom: "2px solid #fff",
+          padding: "4px 8px",
+          borderBottom: "1px solid #333",
           flexShrink: 0,
-          flexWrap: "wrap",
+          minHeight: 32,
+          background: "#000",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>
-            ☦ {title}
-          </span>
-          <span style={{ color: "#555", fontSize: 9, letterSpacing: 1 }}>
-            {plateW}×{plateH}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" style={miniBtn()} onClick={zoomFit} title="Fit view (0)">
-            FIT
+        <span
+          style={{
+            color: "#ffff00",
+            letterSpacing: 1,
+            fontSize: 10,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: 120,
+          }}
+        >
+          {title}
+        </span>
+        <span style={{ color: "#444", fontSize: 8, letterSpacing: 1, flex: 1 }}>
+          {plateW}×{plateH}
+        </span>
+        <button type="button" style={miniBtn()} onClick={zoomFit} title="Fit (0)">
+          FIT
+        </button>
+        {onOpenInSpriteEditor && (
+          <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
+            SPRITE
           </button>
-          {onOpenInSpriteEditor && (
-            <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
-              SPRITE
-            </button>
-          )}
-          <button type="button" style={miniBtn(true)} onClick={handleSave}>
-            SAVE
-          </button>
-        </div>
+        )}
+        <button type="button" style={miniBtn(true)} onClick={handleSave}>
+          SAVE
+        </button>
       </div>
 
-      {/* Stage + left tools */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", position: "relative", overflow: "hidden" }}>
-        {/* Left collapsible pen panel */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
+        {/* Left tools */}
         <div
           style={{
             display: "flex",
@@ -475,16 +485,15 @@ export function ShotCanvas({
             flexShrink: 0,
             borderRight: "1px solid #222",
             background: "#000",
-            zIndex: 5,
           }}
         >
           <button
             type="button"
             onClick={() => setToolsOpen((v) => !v)}
-            title={toolsOpen ? "Hide pen tools (T)" : "Show pen tools (T)"}
+            title="Pen tools (T)"
             style={{
-              width: 40,
-              height: 32,
+              width: 36,
+              height: 28,
               border: "none",
               borderBottom: "1px solid #333",
               background: toolsOpen ? "#fff" : "#000",
@@ -500,17 +509,17 @@ export function ShotCanvas({
           {toolsOpen && (
             <div
               style={{
-                width: 200,
+                width: 168,
                 flex: 1,
+                minHeight: 0,
                 overflowY: "auto",
                 padding: 8,
                 display: "flex",
                 flexDirection: "column",
-                gap: 10,
+                gap: 8,
               }}
             >
-              <div style={{ fontSize: 8, color: "#666", letterSpacing: 1 }}>INK</div>
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 4 }}>
                 <button type="button" style={{ ...miniBtn(ink === 0), flex: 1 }} onClick={() => setInk(0)}>
                   BLK
                 </button>
@@ -519,100 +528,154 @@ export function ShotCanvas({
                 </button>
               </div>
 
-              <div style={{ fontSize: 8, color: "#666", letterSpacing: 1 }}>
-                DITHER · {Math.round(ditherAmount * 100)}%
-                {ditherAmount < 0.03 ? " (SOLID)" : ""}
+              {/* Vertical density: slider + Bayer gradient strip */}
+              <div style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
+                TONE · {Math.round(coverage * 100)}%
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={Math.round(ditherAmount * 100)}
-                  onChange={(e) => setDitherAmount(Number(e.target.value) / 100)}
-                  style={{ flex: 1, accentColor: "#fff", height: 4, cursor: "pointer" }}
-                  title="0 = solid pen · 100 = full dither opacity"
-                />
-              </div>
-
-              <div style={{ fontSize: 8, color: "#666", letterSpacing: 1 }}>PATTERN</div>
               <div
                 style={{
                   display: "flex",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  alignItems: "center",
+                  flexDirection: "row",
+                  gap: 8,
+                  alignItems: "stretch",
+                  height: 168,
                 }}
               >
+                {/* Vertical range */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    width: 28,
+                  }}
+                >
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(coverage * 100)}
+                    onChange={(e) => setCoverage(Number(e.target.value) / 100)}
+                    style={{
+                      writingMode: "vertical-lr",
+                      direction: "rtl",
+                      width: 24,
+                      height: 160,
+                      accentColor: "#fff",
+                      cursor: "pointer",
+                      flex: 1,
+                    }}
+                    title="Ordered-dither density (Bayer gradient)"
+                  />
+                </div>
+                {/* Gradient preview — click to set coverage */}
+                <div
+                  style={{
+                    flex: 1,
+                    position: "relative",
+                    border: "1px solid #333",
+                    minWidth: 0,
+                    cursor: "ns-resize",
+                  }}
+                  onPointerDown={(e) => {
+                    const el = e.currentTarget;
+                    el.setPointerCapture(e.pointerId);
+                    setCoverageFromClientY(e.clientY, el);
+                  }}
+                  onPointerMove={(e) => {
+                    if (e.buttons !== 1) return;
+                    setCoverageFromClientY(e.clientY, e.currentTarget);
+                  }}
+                  title="Drag to pick dither density"
+                >
+                  <canvas
+                    ref={gradientRef}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "block",
+                      imageRendering: "pixelated",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  {/* Thumb indicator */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      top: `${coverage * 100}%`,
+                      height: 2,
+                      background: "#ffff00",
+                      transform: "translateY(-1px)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Coverage stop chips (right of concept: under strip as quick picks) */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {COVERAGE_STOPS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCoverage(c)}
+                    style={{
+                      ...miniBtn(Math.abs(coverage - c) < 0.04),
+                      padding: "2px 4px",
+                      fontSize: 7,
+                      minWidth: 28,
+                      height: 20,
+                    }}
+                    title={`${Math.round(c * 100)}% tone`}
+                  >
+                    {Math.round(c * 100)}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>KERNEL</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {DITHER_PATTERNS.map((p) => (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => {
-                      setDitherPattern(p.id);
-                      if (ditherAmount < 0.05) setDitherAmount(0.45);
-                      setStatus(`Pattern · ${p.title}`);
-                    }}
+                    onClick={() => setDitherPattern(p.id)}
                     title={p.title}
                     style={{
-                      width: 40,
-                      height: 40,
-                      padding: 2,
+                      width: 32,
+                      height: 32,
+                      padding: 1,
                       border:
                         ditherPattern === p.id ? "1px solid #fff" : "1px solid #333",
                       background: "#111",
                       cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
                     }}
                   >
-                    <DitherPreview
+                    <ToneSwatch
                       pattern={p.id}
+                      coverage={coverage}
+                      ink={ink}
                       ox={ditherOx}
                       oy={ditherOy}
-                      ink={ink}
-                      size={28}
                     />
                   </button>
                 ))}
               </div>
 
-              <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  type="button"
-                  style={{ ...miniBtn(), flex: 1, fontSize: 8 }}
-                  onClick={() => setDitherOx((v) => (v + 1) % 8)}
-                >
-                  OX {ditherOx}
-                </button>
-                <button
-                  type="button"
-                  style={{ ...miniBtn(), flex: 1, fontSize: 8 }}
-                  onClick={() => setDitherOy((v) => (v + 1) % 8)}
-                >
-                  OY {ditherOy}
-                </button>
-              </div>
-
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <button type="button" style={miniBtn()} onClick={undo}>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={undo}>
                   UNDO
                 </button>
-                <button type="button" style={miniBtn()} onClick={clearPlate}>
-                  CLEAR
+                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={clearPlate}>
+                  CLR
                 </button>
-                <button type="button" style={miniBtn()} onClick={fillInk}>
+                <button type="button" style={{ ...miniBtn(), flex: 1, fontSize: 8 }} onClick={fillInk}>
                   FILL
                 </button>
               </div>
-              <button
-                type="button"
-                style={{ ...miniBtn(), marginTop: "auto" }}
-                onClick={() => setToolsOpen(false)}
-              >
+              <button type="button" style={miniBtn()} onClick={() => setToolsOpen(false)}>
                 HIDE
               </button>
             </div>
@@ -629,7 +692,7 @@ export function ShotCanvas({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#111",
+            background: "#0a0a0a",
             overflow: "hidden",
             touchAction: "none",
             cursor: grab ? "grab" : "crosshair",
@@ -649,10 +712,8 @@ export function ShotCanvas({
                 width: cssW,
                 height: cssH,
                 imageRendering: "pixelated",
-                outline: "1px solid #444",
+                outline: "1px solid #333",
                 border: "none",
-                padding: 0,
-                margin: 0,
                 display: "block",
                 touchAction: "none",
                 background: bg === "white" ? "#fff" : "#000",
@@ -666,26 +727,24 @@ export function ShotCanvas({
               }}
             />
           ) : (
-            <div style={{ color: "#555", letterSpacing: 2, fontSize: 11 }}>LOADING…</div>
+            <div style={{ color: "#444", fontSize: 10 }}>…</div>
           )}
 
-          {/* Lower-right help only (Shot info is parent) */}
           <button
             type="button"
             onClick={() => setHelpOpen((v) => !v)}
-            title="Help"
             style={{
               position: "absolute",
               bottom: 6,
               right: 6,
               zIndex: 12,
-              width: 32,
-              height: 28,
+              width: 28,
+              height: 26,
               border: helpOpen ? "1px solid #fff" : "1px solid #555",
               background: helpOpen ? "#fff" : "#000",
               color: helpOpen ? "#000" : "#888",
               fontFamily: "inherit",
-              fontSize: 12,
+              fontSize: 11,
               cursor: "pointer",
             }}
           >
@@ -695,30 +754,24 @@ export function ShotCanvas({
             <div
               style={{
                 position: "absolute",
-                bottom: 40,
+                bottom: 36,
                 right: 6,
                 zIndex: 12,
-                maxWidth: 220,
+                maxWidth: 200,
                 padding: 8,
                 background: "#000",
                 border: "1px solid #444",
                 fontSize: 8,
                 color: "#888",
-                letterSpacing: 1,
                 lineHeight: 1.6,
+                letterSpacing: 1,
               }}
             >
-              <div style={{ color: "#aaa", marginBottom: 4 }}>{status}</div>
-              <div>FIT / 0 — fill view</div>
-              <div>T — pen tools</div>
-              <div>SCROLL — zoom · SPACE — pan</div>
-              <div>SHIFT/ALT — rotate</div>
-              <div>Dither slider 0 = solid pen</div>
-              <button
-                type="button"
-                style={{ ...miniBtn(), marginTop: 6, width: "100%" }}
-                onClick={() => setHelpOpen(false)}
-              >
+              <div>Ordered dither (Bayer tone) — vertical slider = gray %</div>
+              <div>0% empty · 50% checker · 100% solid</div>
+              <div>SCROLL zoom · SPACE pan · SHIFT/ALT rotate</div>
+              <div>FIT · T tools · X ink · ⌘Z undo</div>
+              <button type="button" style={{ ...miniBtn(), marginTop: 6 }} onClick={() => setHelpOpen(false)}>
                 CLOSE
               </button>
             </div>
@@ -729,18 +782,19 @@ export function ShotCanvas({
   );
 }
 
-function DitherPreview({
+/** Small swatch of current coverage with a given kernel */
+function ToneSwatch({
   pattern,
+  coverage,
+  ink,
   ox,
   oy,
-  ink,
-  size = 24,
 }: {
   pattern: DitherPatternId;
+  coverage: number;
+  ink: MonoInk;
   ox: number;
   oy: number;
-  ink: MonoInk;
-  size?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -748,31 +802,30 @@ function DitherPreview({
     if (!c) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
-    const cells = 8;
-    const s = Math.max(1, Math.floor(size / cells));
-    c.width = cells * s;
-    c.height = cells * s;
-    for (let y = 0; y < cells; y++) {
-      for (let x = 0; x < cells; x++) {
+    const n = 12;
+    c.width = n;
+    c.height = n;
+    const bg: 0 | 255 = ink === 0 ? 255 : 0;
+    const thr = coverage * 64;
+    const img = ctx.createImageData(n, n);
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
         const rank = sampleDitherRank(pattern, x, y, ox, oy);
-        const on = rank < 32;
-        const v = on ? ink : ink === 0 ? 255 : 0;
-        ctx.fillStyle = v === 0 ? "#000" : "#fff";
-        ctx.fillRect(x * s, y * s, s, s);
+        const v = coverage >= 0.995 ? ink : coverage <= 0.001 ? bg : rank < thr ? ink : bg;
+        const o = (y * n + x) * 4;
+        img.data[o] = v;
+        img.data[o + 1] = v;
+        img.data[o + 2] = v;
+        img.data[o + 3] = 255;
       }
     }
-  }, [pattern, ox, oy, ink, size]);
+    ctx.putImageData(img, 0, 0);
+  }, [pattern, coverage, ink, ox, oy]);
   return (
     <canvas
       ref={ref}
-      width={size}
-      height={size}
-      style={{
-        width: size,
-        height: size,
-        imageRendering: "pixelated",
-        display: "block",
-      }}
+      style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }}
     />
   );
 }
+

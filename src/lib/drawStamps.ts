@@ -191,9 +191,12 @@ export function radiusFromPressure(pressure: number, maxRadius: number): number 
 }
 
 /**
- * Variable-position dither pencil.
- * Pressure controls radius (via maxRadius) and pattern threshold density.
- * ox/oy shift the pattern so repeated strokes layer differently.
+ * Ordered dither pencil (Bayer-style continuous tone).
+ *
+ * `coverage` is the gray level 0..1 to emulate (like a gradient stop on a
+ * Bayer-dithered ramp — see https://jdobr.es/blog/dithering/ bottom strip).
+ * Pixel is inked when rank/64 < coverage. Pressure only drives brush size.
+ * ox/oy phase-shift the matrix so layered strokes carve differently.
  */
 export function stampDitherDisk(
   cx: number,
@@ -202,15 +205,26 @@ export function stampDitherDisk(
     ditherOx: number;
     ditherOy: number;
     pattern?: DitherPatternId;
+    /** Gray coverage 0..1 (ordered-dither density). Defaults to pressure. */
+    coverage?: number;
   },
   write: StampWrite,
 ): void {
   const pattern = opts.pattern ?? DEFAULT_DITHER_PATTERN;
-  const base = radiusFromPressure(opts.pressure, opts.maxRadius);
-  const r = Math.max(1, Math.round(base * 1.15));
-  // Sparse needs higher pressure to reach solid; others 2..64
-  const maxThresh = pattern === "sparse" ? 72 : 64;
-  const threshold = Math.floor(2 + opts.pressure * (maxThresh - 2));
+  const coverage = Math.min(1, Math.max(0, opts.coverage ?? opts.pressure));
+  const r = Math.max(1, radiusFromPressure(opts.pressure, opts.maxRadius));
+
+  // Full solid / empty short-circuit (ends of the ordered-dither gradient)
+  if (coverage >= 0.999) {
+    stampSolidDisk(cx, cy, r, write);
+    return;
+  }
+  if (coverage <= 0.001) {
+    return;
+  }
+
+  // rank is 0..63; ink when rank < coverage*64  (classic ordered dither)
+  const threshold = coverage * 64;
   const r2 = r * r;
   const ox = opts.ditherOx | 0;
   const oy = opts.ditherOy | 0;
@@ -223,14 +237,45 @@ export function stampDitherDisk(
     for (let x = x0; x <= x1; x++) {
       const dx = x + 0.5 - cx;
       const dy = y + 0.5 - cy;
-      const d2 = dx * dx + dy * dy;
-      if (d2 > r2) continue;
-      const edge = Math.sqrt(d2) / r;
-      const localThresh = threshold * (1 - edge * 0.55);
+      if (dx * dx + dy * dy > r2) continue;
       const rank = sampleDitherRank(pattern, x, y, ox, oy);
-      if (rank < localThresh) write(x, y);
+      if (rank < threshold) write(x, y);
     }
   }
+}
+
+/**
+ * Render a vertical ordered-dither gradient strip (coverage 0 at top → 1 at bottom,
+ * or reverse). Used for the density slider preview UI.
+ */
+export function renderDitherGradientStrip(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  pattern: DitherPatternId,
+  ink: 0 | 255,
+  bg: 0 | 255,
+  opts?: { ox?: number; oy?: number; invertCoverage?: boolean },
+): void {
+  const ox = opts?.ox ?? 0;
+  const oy = opts?.oy ?? 0;
+  const inv = opts?.invertCoverage ?? false;
+  const img = ctx.createImageData(width, height);
+  const d = img.data;
+  for (let y = 0; y < height; y++) {
+    const t = inv ? 1 - y / Math.max(1, height - 1) : y / Math.max(1, height - 1);
+    const threshold = t * 64;
+    for (let x = 0; x < width; x++) {
+      const rank = sampleDitherRank(pattern, x, y, ox, oy);
+      const v = rank < threshold ? ink : bg;
+      const o = (y * width + x) * 4;
+      d[o] = v;
+      d[o + 1] = v;
+      d[o + 2] = v;
+      d[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
 }
 
 export function stampSolidDisk(

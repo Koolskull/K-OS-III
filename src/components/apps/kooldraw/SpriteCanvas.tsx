@@ -33,6 +33,7 @@ import {
   stampFrameHarsh,
   stampFrameDither,
   stampFrameEraserDisk,
+  type DitherPatternId,
 } from "@/lib/SpriteUtils";
 
 export interface OnionSkinSettings {
@@ -60,6 +61,8 @@ interface SpriteCanvasProps {
   ditherOx?: number;
   /** Bayer phase Y for dither pencil (0–7) */
   ditherOy?: number;
+  /** Dither pattern id (opacity / texture variety) */
+  ditherPattern?: DitherPatternId;
   zoom: number;
   onZoomChange: (zoom: number) => void;
   /** Called after discrete edits (fill, shape commit) — parent should push undo + re-render chrome. */
@@ -130,6 +133,7 @@ export function SpriteCanvas({
   penSize,
   ditherOx = 0,
   ditherOy = 0,
+  ditherPattern = "bayer8",
   zoom,
   onZoomChange,
   onPixelsChanged,
@@ -173,11 +177,13 @@ export function SpriteCanvas({
   const penSizeRef = useRef(penSize);
   const ditherOxRef = useRef(ditherOx);
   const ditherOyRef = useRef(ditherOy);
+  const ditherPatternRef = useRef(ditherPattern);
   toolRef.current = tool;
   colorRef.current = color;
   penSizeRef.current = penSize;
   ditherOxRef.current = ditherOx;
   ditherOyRef.current = ditherOy;
+  ditherPatternRef.current = ditherPattern;
 
   const viewFrameIndex = displayFrameIndex ?? activeFrameIndex;
   const activeLayer = layers[activeLayerIndex];
@@ -332,6 +338,7 @@ export function SpriteCanvas({
             maxR,
             ditherOxRef.current,
             ditherOyRef.current,
+            ditherPatternRef.current,
           );
           break;
         case "eraser":

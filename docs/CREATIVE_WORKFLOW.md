@@ -96,7 +96,7 @@ Shared by `useCanvasViewport` + `pointerMap`. Used in the storyboard plate edito
 | **Alt + drag** | Rotate canvas (same as Shift) |
 | **Two-finger pinch** | Zoom + rotate |
 | **Two-finger tap** | Undo |
-| **0** (shot plate) | Fit / reset view |
+| **FIT** (header) / **0** (shot plate) | Reset zoom, pan, and rotation to normal fill view |
 
 ### macOS note — no Ctrl for rotate
 
@@ -116,10 +116,27 @@ Import `FREEHAND_TOOLS` from `@/lib/creative` instead of re-listing keys:
 
 - **B** PEN — pressure size  
 - **K** HRS — harsh carve  
-- **D** DTH — dither pencil + phase  
+- **D** DTH — dither pencil + pattern + phase  
 - **E** ERA — pressure eraser  
 
 Shape tools (fill, line, rect, …) stay app-local.
+
+### Dither patterns (8 total — “opacity” / density variety)
+
+Defined in `src/lib/drawStamps.ts` as `DITHER_PATTERNS`. Pressure still drives brush size and fill threshold within each pattern.
+
+| Id | Label | Feel |
+|----|-------|------|
+| `bayer8` | B8 | Fine ordered Bayer (default) |
+| `bayer4` | B4 | Medium ordered |
+| `bayer2` | B2 | Chunky 2×2 |
+| `dots` | DOT | Fine stipple / grain |
+| `sparse` | SPR | Light wash — few dots until hard pressure |
+| `hatch` | HAT | Diagonal lines |
+| `hline` | HLN | Horizontal rules |
+| `cross` | XHS | Cross-hatch grid |
+
+Phase **OX/OY** still shifts the pattern so layered strokes carve differently.
 
 ---
 

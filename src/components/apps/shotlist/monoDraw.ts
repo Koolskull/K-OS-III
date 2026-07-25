@@ -8,14 +8,26 @@
 
 import {
   BAYER8,
+  DEFAULT_DITHER_PATTERN,
+  DITHER_PATTERNS,
   forEachStrokePoint,
   normalizePressure,
+  sampleDitherRank,
   stampDitherDisk,
   stampHarshDisk,
   stampPressureDisk,
+  type DitherPatternId,
 } from "@/lib/drawStamps";
 
-export { BAYER8, forEachStrokePoint, normalizePressure };
+export {
+  BAYER8,
+  DEFAULT_DITHER_PATTERN,
+  DITHER_PATTERNS,
+  forEachStrokePoint,
+  normalizePressure,
+  sampleDitherRank,
+  type DitherPatternId,
+};
 
 /** Default first-drawing thumbnail size (portrait storyboard plate) */
 export const SHOT_W = 480;
@@ -153,6 +165,8 @@ export interface StampOpts {
   ditherOy: number;
   width: number;
   height: number;
+  /** Ordered / hatch / sparse pattern for dither tool */
+  ditherPattern?: DitherPatternId;
 }
 
 function writeMono(
@@ -211,6 +225,7 @@ export function stampDither(
       maxRadius: 28,
       ditherOx: opts.ditherOx,
       ditherOy: opts.ditherOy,
+      pattern: opts.ditherPattern ?? DEFAULT_DITHER_PATTERN,
     },
     writeMono(bmp, opts.ink, opts.width, opts.height),
   );

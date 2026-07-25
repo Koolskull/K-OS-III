@@ -22,6 +22,9 @@ import {
   downloadFramesAsZip,
   loadProjectFromDataUrl,
   dataUrlToMonoDataUrl,
+  DITHER_PATTERNS,
+  DEFAULT_DITHER_PATTERN,
+  type DitherPatternId,
 } from "@/lib/SpriteUtils";
 import { FREEHAND_TOOLS, useCreativeWorkflow } from "@/lib/creative";
 import { SpriteCanvas, type OnionSkinSettings } from "./SpriteCanvas";
@@ -162,6 +165,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   /** Bayer matrix phase for dither pencil (variable-positioned dither) */
   const [ditherOx, setDitherOx] = useState(0);
   const [ditherOy, setDitherOy] = useState(0);
+  const [ditherPattern, setDitherPattern] =
+    useState<DitherPatternId>(DEFAULT_DITHER_PATTERN);
   const [zoom, setZoom] = useState(12);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
@@ -498,6 +503,17 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       ))}
       {activeTool === "dither" && (
         <div style={{ borderTop: "1px solid #1a1a1a", padding: 2 }}>
+          {DITHER_PATTERNS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setDitherPattern(p.id)}
+              style={{ ...toolBtn(ditherPattern === p.id), height: 22, fontSize: 6 }}
+              title={p.title}
+            >
+              {p.label}
+            </button>
+          ))}
           <button
             type="button"
             onClick={() => setDitherOx((v) => (v + 1) % 8)}
@@ -722,6 +738,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             penSize={penSize}
             ditherOx={ditherOx}
             ditherOy={ditherOy}
+            ditherPattern={ditherPattern}
             zoom={zoom}
             onZoomChange={setZoom}
             onPixelsChanged={handlePixelsChanged}

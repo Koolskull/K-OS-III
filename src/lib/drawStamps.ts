@@ -15,6 +15,116 @@ export const BAYER8: number[][] = [
   [63, 31, 55, 23, 61, 29, 53, 21],
 ];
 
+/** 4×4 Bayer (values 0..15), scaled to 0..63 when sampled */
+export const BAYER4: number[][] = [
+  [0, 8, 2, 10],
+  [12, 4, 14, 6],
+  [3, 11, 1, 9],
+  [15, 7, 13, 5],
+];
+
+/** 2×2 Bayer (values 0..3), scaled to 0..63 when sampled */
+export const BAYER2: number[][] = [
+  [0, 2],
+  [3, 1],
+];
+
+/**
+ * Named dither patterns for “opacity” / density variety.
+ * Threshold (from pressure) still controls fill density within each pattern.
+ */
+export type DitherPatternId =
+  | "bayer8" // classic fine ordered (default)
+  | "bayer4" // coarser ordered
+  | "bayer2" // chunky 2×2
+  | "dots" // fine grain / stipple
+  | "sparse" // very light opacity feel
+  | "hatch" // diagonal 45° lines
+  | "hline" // horizontal rules
+  | "cross"; // cross-hatch
+
+export interface DitherPatternDef {
+  id: DitherPatternId;
+  /** Toolbar short label */
+  label: string;
+  /** Longer title */
+  title: string;
+}
+
+/** All patterns in UI order — bayer8 first, then 7 more */
+export const DITHER_PATTERNS: readonly DitherPatternDef[] = [
+  { id: "bayer8", label: "B8", title: "Bayer 8×8 — fine ordered (default)" },
+  { id: "bayer4", label: "B4", title: "Bayer 4×4 — medium ordered" },
+  { id: "bayer2", label: "B2", title: "Bayer 2×2 — chunky" },
+  { id: "dots", label: "DOT", title: "Dots — fine stipple / grain" },
+  { id: "sparse", label: "SPR", title: "Sparse — light opacity wash" },
+  { id: "hatch", label: "HAT", title: "Hatch — diagonal lines" },
+  { id: "hline", label: "HLN", title: "H-Lines — horizontal rules" },
+  { id: "cross", label: "XHS", title: "Cross-hatch — grid opacity" },
+] as const;
+
+export const DEFAULT_DITHER_PATTERN: DitherPatternId = "bayer8";
+
+/** Sample pattern at integer pixel → rank 0..63 (higher = harder to fill). */
+export function sampleDitherRank(
+  pattern: DitherPatternId,
+  x: number,
+  y: number,
+  ox: number,
+  oy: number,
+): number {
+  const px = x + ox;
+  const py = y + oy;
+  switch (pattern) {
+    case "bayer8": {
+      const u = ((px % 8) + 8) % 8;
+      const v = ((py % 8) + 8) % 8;
+      return BAYER8[v]![u]!;
+    }
+    case "bayer4": {
+      const u = ((px % 4) + 4) % 4;
+      const v = ((py % 4) + 4) % 4;
+      return BAYER4[v]![u]! * 4; // 0..60
+    }
+    case "bayer2": {
+      const u = ((px % 2) + 2) % 2;
+      const v = ((py % 2) + 2) % 2;
+      return BAYER2[v]![u]! * 21; // 0..63
+    }
+    case "dots": {
+      // Fine stipple via mixed modular hash → 0..63
+      const h = (px * 7 + py * 13) ^ (px * py * 3);
+      return ((h % 64) + 64) % 64;
+    }
+    case "sparse": {
+      // Mostly high ranks → few dots until pressure is high
+      const cell = ((px & 3) === 0 && (py & 3) === 0) ? 8 : 56;
+      const jitter = ((px * 5 + py * 11) % 8 + 8) % 8;
+      return Math.min(63, cell + jitter);
+    }
+    case "hatch": {
+      // Diagonal: (x+y) period 4 → steps of opacity
+      const d = (((px + py) % 4) + 4) % 4;
+      return d * 16; // 0,16,32,48
+    }
+    case "hline": {
+      // Horizontal lines every other row at mid ranks
+      const row = ((py % 2) + 2) % 2;
+      return row === 0 ? 8 : 56;
+    }
+    case "cross": {
+      // Grid: horizontal + vertical — low rank on lines
+      const onH = ((py % 3) + 3) % 3 === 0;
+      const onV = ((px % 3) + 3) % 3 === 0;
+      if (onH && onV) return 4;
+      if (onH || onV) return 20;
+      return 58;
+    }
+    default:
+      return BAYER8[((py % 8) + 8) % 8]![((px % 8) + 8) % 8]!;
+  }
+}
+
 /** Normalize pointer pressure: mouse/trackpad get a usable default. */
 export function normalizePressure(
   pressure: number,
@@ -82,22 +192,28 @@ export function radiusFromPressure(pressure: number, maxRadius: number): number 
 
 /**
  * Variable-position dither pencil.
- * Pressure controls radius (via maxRadius) and Bayer threshold density.
- * ox/oy shift the matrix so repeated strokes layer differently.
+ * Pressure controls radius (via maxRadius) and pattern threshold density.
+ * ox/oy shift the pattern so repeated strokes layer differently.
  */
 export function stampDitherDisk(
   cx: number,
   cy: number,
-  opts: DiskStampOpts & { ditherOx: number; ditherOy: number },
+  opts: DiskStampOpts & {
+    ditherOx: number;
+    ditherOy: number;
+    pattern?: DitherPatternId;
+  },
   write: StampWrite,
 ): void {
-  // Slightly larger feel than solid pen at same size setting
+  const pattern = opts.pattern ?? DEFAULT_DITHER_PATTERN;
   const base = radiusFromPressure(opts.pressure, opts.maxRadius);
   const r = Math.max(1, Math.round(base * 1.15));
-  const threshold = Math.floor(2 + opts.pressure * 62); // 2..64
+  // Sparse needs higher pressure to reach solid; others 2..64
+  const maxThresh = pattern === "sparse" ? 72 : 64;
+  const threshold = Math.floor(2 + opts.pressure * (maxThresh - 2));
   const r2 = r * r;
-  const ox = ((opts.ditherOx % 8) + 8) % 8;
-  const oy = ((opts.ditherOy % 8) + 8) % 8;
+  const ox = opts.ditherOx | 0;
+  const oy = opts.ditherOy | 0;
   const x0 = Math.floor(cx - r);
   const y0 = Math.floor(cy - r);
   const x1 = Math.ceil(cx + r);
@@ -111,8 +227,8 @@ export function stampDitherDisk(
       if (d2 > r2) continue;
       const edge = Math.sqrt(d2) / r;
       const localThresh = threshold * (1 - edge * 0.55);
-      const b = BAYER8[(y + oy) % 8]![(x + ox) % 8]!;
-      if (b < localThresh) write(x, y);
+      const rank = sampleDitherRank(pattern, x, y, ox, oy);
+      if (rank < localThresh) write(x, y);
     }
   }
 }

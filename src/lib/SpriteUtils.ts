@@ -13,9 +13,18 @@ import {
   stampDitherDisk,
   stampHarshDisk,
   stampPressureDisk,
+  type DitherPatternId,
 } from "@/lib/drawStamps";
 
-export { forEachStrokePoint, normalizePressure, BAYER8 } from "@/lib/drawStamps";
+export {
+  forEachStrokePoint,
+  normalizePressure,
+  BAYER8,
+  DITHER_PATTERNS,
+  DEFAULT_DITHER_PATTERN,
+  sampleDitherRank,
+  type DitherPatternId,
+} from "@/lib/drawStamps";
 
 // ── COLOR CONVERSION ──
 
@@ -203,11 +212,12 @@ export function stampFrameDither(
   maxRadius: number,
   ditherOx: number,
   ditherOy: number,
+  pattern?: DitherPatternId,
 ): void {
   stampDitherDisk(
     cx,
     cy,
-    { pressure, maxRadius, ditherOx, ditherOy },
+    { pressure, maxRadius, ditherOx, ditherOy, pattern },
     (x, y) => setPixel(frame, x, y, color),
   );
 }

@@ -9,7 +9,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clientToCanvasBitmap, useCanvasViewport } from "@/lib/creative";
 import {
-  BAYER8,
+  DEFAULT_DITHER_PATTERN,
+  DITHER_PATTERNS,
   SHOT_H,
   SHOT_W,
   bitmapToDataURL,
@@ -19,7 +20,9 @@ import {
   dataURLToBitmap,
   forEachStrokePoint,
   normalizePressure,
+  sampleDitherRank,
   stampTool,
+  type DitherPatternId,
   type DrawTool,
   type MonoInk,
   type ShotBg,
@@ -96,11 +99,15 @@ export function ShotCanvas({
   const inkRef = useRef<MonoInk>(bg === "white" ? 0 : 255);
   const ditherOxRef = useRef(0);
   const ditherOyRef = useRef(0);
+  const ditherPatternRef = useRef<DitherPatternId>(DEFAULT_DITHER_PATTERN);
 
   const [tool, setTool] = useState<DrawTool>("harsh");
   const [ink, setInk] = useState<MonoInk>(bg === "white" ? 0 : 255);
   const [ditherOx, setDitherOx] = useState(0);
   const [ditherOy, setDitherOy] = useState(0);
+  const [ditherPattern, setDitherPattern] = useState<DitherPatternId>(
+    DEFAULT_DITHER_PATTERN,
+  );
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("Loading plate…");
   const [baseScale, setBaseScale] = useState(0.5);
@@ -109,6 +116,7 @@ export function ShotCanvas({
   inkRef.current = ink;
   ditherOxRef.current = ditherOx;
   ditherOyRef.current = ditherOy;
+  ditherPatternRef.current = ditherPattern;
 
   const paintView = useCallback(() => {
     const canvas = viewRef.current;
@@ -237,6 +245,7 @@ export function ShotCanvas({
         ditherOy: ditherOyRef.current,
         width: w,
         height: h,
+        ditherPattern: ditherPatternRef.current,
       };
       const last = lastPtRef.current;
       if (!last) {
@@ -415,9 +424,10 @@ export function ShotCanvas({
 
   const zoomIn = useCallback(() => zoomBy(1.2), [zoomBy]);
   const zoomOut = useCallback(() => zoomBy(1 / 1.2), [zoomBy]);
+  /** Reset zoom, pan, and rotation to normal fill view */
   const zoomFit = useCallback(() => {
     resetViewport();
-    setStatus("Zoom fit");
+    setStatus("View reset · fill");
   }, [resetViewport]);
 
   const rootStyle: React.CSSProperties = embedded
@@ -471,7 +481,15 @@ export function ShotCanvas({
             ? ` · r${Math.round(viewport.rotation)}°`
             : ""}
         </span>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            style={miniBtn()}
+            onClick={zoomFit}
+            title="Reset zoom, pan, and rotation to normal fill view (0)"
+          >
+            FIT
+          </button>
           {onOpenInSpriteEditor && (
             <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
               → SPRITE
@@ -561,13 +579,33 @@ export function ShotCanvas({
 
         {tool === "dither" && (
           <>
+            <span style={{ width: 1, height: 20, background: "#333", margin: "0 4px" }} />
+            {DITHER_PATTERNS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                style={miniBtn(ditherPattern === p.id)}
+                onClick={() => {
+                  setDitherPattern(p.id);
+                  setStatus(`DITHER · ${p.title}`);
+                }}
+                title={p.title}
+              >
+                {p.label}
+              </button>
+            ))}
             <button type="button" style={miniBtn()} onClick={() => setDitherOx((v) => (v + 1) % 8)}>
               OX {ditherOx}
             </button>
             <button type="button" style={miniBtn()} onClick={() => setDitherOy((v) => (v + 1) % 8)}>
               OY {ditherOy}
             </button>
-            <DitherPreview ox={ditherOx} oy={ditherOy} ink={ink} />
+            <DitherPreview
+              pattern={ditherPattern}
+              ox={ditherOx}
+              oy={ditherOy}
+              ink={ink}
+            />
           </>
         )}
       </div>
@@ -640,7 +678,7 @@ export function ShotCanvas({
       >
         <span>{status}</span>
         <span>
-          SCROLL zoom · +/− · SPACE+DRAG pan · SHIFT/ALT+DRAG rotate · 0 fit
+          FIT reset view · SCROLL zoom · SPACE pan · SHIFT/ALT rotate · 0
         </span>
       </div>
     </div>
@@ -648,10 +686,12 @@ export function ShotCanvas({
 }
 
 function DitherPreview({
+  pattern,
   ox,
   oy,
   ink,
 }: {
+  pattern: DitherPatternId;
   ox: number;
   oy: number;
   ink: MonoInk;
@@ -667,17 +707,18 @@ function DitherPreview({
     c.height = 8 * s;
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
-        const b = BAYER8[(y + oy) % 8]![(x + ox) % 8]!;
-        const on = b < 32;
+        const rank = sampleDitherRank(pattern, x, y, ox, oy);
+        const on = rank < 32;
         const v = on ? ink : ink === 0 ? 255 : 0;
         ctx.fillStyle = v === 0 ? "#000" : "#fff";
         ctx.fillRect(x * s, y * s, s, s);
       }
     }
-  }, [ox, oy, ink]);
+  }, [pattern, ox, oy, ink]);
   return (
     <canvas
       ref={ref}
+      title="Dither pattern preview (mid density)"
       style={{
         width: 24,
         height: 24,

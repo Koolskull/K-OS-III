@@ -98,6 +98,7 @@ export function ShotCanvas({
   const lastPtRef = useRef<{ x: number; y: number } | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const undoRef = useRef<Uint8ClampedArray[]>([]);
+  const redoRef = useRef<Uint8ClampedArray[]>([]);
   const inkRef = useRef<MonoInk>(bg === "white" ? 0 : 255);
   const ditherOxRef = useRef(0);
   const ditherOyRef = useRef(0);
@@ -161,14 +162,25 @@ export function ShotCanvas({
     stack.push(cloneBitmap(bmpRef.current));
     const max = maxUndoForSize(sizeRef.current.w, sizeRef.current.h);
     while (stack.length > max) stack.shift();
+    redoRef.current = [];
   }, []);
 
   const undo = useCallback(() => {
     const prev = undoRef.current.pop();
     if (!prev) return;
+    redoRef.current.push(cloneBitmap(bmpRef.current));
     bmpRef.current = prev;
     paintView();
     setStatus("Undo");
+  }, [paintView]);
+
+  const redo = useCallback(() => {
+    const next = redoRef.current.pop();
+    if (!next) return;
+    undoRef.current.push(cloneBitmap(bmpRef.current));
+    bmpRef.current = next;
+    paintView();
+    setStatus("Redo");
   }, [paintView]);
 
   const {
@@ -181,11 +193,12 @@ export function ShotCanvas({
     spaceDownRef,
   } = useCanvasViewport({
     onUndo: undo,
+    onRedo: redo,
     minZoom: 0.15,
     maxZoom: 12,
-    // No rotation — was glitchy and broke pen accuracy
-    enableRotation: false,
-    pinchRotate: false,
+    // Pinch twist + Shift/Alt rotate; mapping uses inverse rotate (accurate pen)
+    enableRotation: true,
+    pinchRotate: true,
   });
 
   // Load plate once per source/size. Keep canvas mounted while decoding so
@@ -201,6 +214,7 @@ export function ShotCanvas({
       if (cancelled || gen !== loadGenRef.current) return;
       bmpRef.current = next;
       undoRef.current = [];
+      redoRef.current = [];
       resetViewport();
       setReady(true);
       setStatus("ready");
@@ -285,13 +299,18 @@ export function ShotCanvas({
     };
   }, [ready, plateW, plateH, onWheelZoom]);
 
-  /** Map client coords → plate pixels. Canvas has no CSS transform. */
+  /** Map client coords → plate pixels (inverse CSS rotate when view is twisted). */
   const clientToPlate = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } | null => {
       const canvas = viewRef.current;
       if (!canvas || canvas.width < 1 || canvas.height < 1) return null;
       const { w, h } = sizeRef.current;
-      const { x, y } = clientToCanvasBitmap(canvas, clientX, clientY, 0);
+      const { x, y } = clientToCanvasBitmap(
+        canvas,
+        clientX,
+        clientY,
+        viewport.rotation,
+      );
       if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
       // Outside plate (with small slop for edge hits)
       if (x < -1 || y < -1 || x > w + 1 || y > h + 1) return null;
@@ -300,7 +319,7 @@ export function ShotCanvas({
         y: Math.max(0, Math.min(h - 0.01, y)),
       };
     },
-    [],
+    [viewport.rotation],
   );
 
   /**
@@ -357,7 +376,7 @@ export function ShotCanvas({
     return pressure;
   };
 
-  // Stage-level pointers (wrap) — pan works on empty area; pen uses canvas rect
+  // Stage-level pointers (wrap) — pan/pinch on empty area; pen uses canvas rect
   const onStagePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       // Let floating chrome (curve panel, help, info) keep their own clicks
@@ -367,7 +386,10 @@ export function ShotCanvas({
       }
       if (!ready) return;
       if (vpDown(e)) {
+        // Multi-touch / pan / rotate — stop drawing so strokes don't offset
         drawingRef.current = false;
+        pointerIdRef.current = null;
+        lastPtRef.current = null;
         try {
           e.currentTarget.setPointerCapture(e.pointerId);
         } catch {
@@ -397,7 +419,14 @@ export function ShotCanvas({
 
   const onStagePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (vpMove(e)) return;
+      if (vpMove(e)) {
+        if (drawingRef.current) {
+          drawingRef.current = false;
+          pointerIdRef.current = null;
+          lastPtRef.current = null;
+        }
+        return;
+      }
       if (!drawingRef.current || pointerIdRef.current !== e.pointerId) return;
       e.preventDefault();
       const pt = clientToPlate(e.clientX, e.clientY);
@@ -944,6 +973,9 @@ export function ShotCanvas({
                 <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8, height: 22 }} onClick={undo}>
                   UNDO
                 </button>
+                <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8, height: 22 }} onClick={redo}>
+                  REDO
+                </button>
                 <button type="button" style={{ ...miniBtn(), width: "100%", fontSize: 8, height: 22 }} onClick={clearPlate}>
                   CLR
                 </button>
@@ -982,8 +1014,8 @@ export function ShotCanvas({
               width={plateW}
               height={plateH}
               style={{
-                // Center + pan with left/top/margin only — NEVER transform
-                // (transform broke pen hit-testing / offset under cursor)
+                // Center + pan via left/top/margin; rotate about center.
+                // Pen map uses clientToCanvasBitmap(..., rotation) inverse.
                 position: "absolute",
                 left: `calc(50% + ${viewport.panX}px)`,
                 top: `calc(50% + ${viewport.panY}px)`,
@@ -991,7 +1023,11 @@ export function ShotCanvas({
                 height: cssH,
                 marginLeft: -Math.floor(cssW / 2),
                 marginTop: -Math.floor(cssH / 2),
-                transform: "none",
+                transform:
+                  Math.abs(viewport.rotation) > 0.05
+                    ? `rotate(${viewport.rotation}deg)`
+                    : "none",
+                transformOrigin: "center center",
                 imageRendering: "pixelated",
                 outline: "1px solid #333",
                 border: "none",
@@ -1070,7 +1106,9 @@ export function ShotCanvas({
               <div>Pen draws where you point (no rotate on plate)</div>
               <div>Tone strip = ordered dither %</div>
               <div>SCROLL zoom · SPACE+drag pan</div>
-              <div>Pinch zoom · 2-finger tap undo</div>
+              <div>Pinch zoom · twist rotate</div>
+              <div>2-finger tap undo · 3-finger redo</div>
+              <div>Shift+drag rotate · SPACE pan</div>
               <div>Width rail / [ ] = pen W 1–256 (mouse fixed, stylus max)</div>
               <div>C curve anchors · T tools · X ink · ⌘Z</div>
               <button type="button" style={{ ...miniBtn(), marginTop: 6 }} onClick={() => setHelpOpen(false)}>

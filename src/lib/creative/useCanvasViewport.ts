@@ -1,12 +1,16 @@
 /*
  * Shared canvas viewport gestures for drawing apps.
  * - Two-finger tap → undo
- * - Pinch → zoom + pan (rotation OFF by default — was glitchy)
+ * - Three-finger tap → redo
+ * - Pinch → zoom + pan; twist → rotate (when enabled)
  * - Space + drag → pan
- * - Shift/Alt + drag → rotate only when enableRotation is true
+ * - Shift + drag → rotate (when enableRotation)
+ *
+ * Drawing must not run while multi-touch is active (onPointerDown returns true).
+ * Apply rotation via CSS rotate(); map pointers with clientToCanvasBitmap(..., rotation).
  *
  * NOTE (macOS): Do NOT use Ctrl+click for rotate — macOS maps Ctrl+click to
- * a secondary/right-click. Use Shift or Alt only.
+ * a secondary/right-click. Use Shift only (not Alt).
  */
 
 "use client";
@@ -19,22 +23,26 @@ export interface ViewportState {
   panY: number;
   /** Multiplier (1 = 100%) */
   zoom: number;
-  /** Degrees clockwise — only used if enableRotation */
+  /** Degrees clockwise (CSS rotate) */
   rotation: number;
 }
 
 export interface UseCanvasViewportOptions {
   minZoom?: number;
   maxZoom?: number;
-  /** Called on two-finger tap */
+  /** Two-finger tap */
   onUndo?: () => void;
+  /** Three-finger tap */
+  onRedo?: () => void;
   enabled?: boolean;
   /**
-   * Allow Shift/Alt+drag rotate. Default false (accurate drawing first).
-   * Pinch never rotates unless pinchRotate is also true.
+   * Allow rotate (Shift/Alt drag + optional pinch twist).
+   * Default true for natural drawing-app feel.
    */
   enableRotation?: boolean;
-  /** Allow two-finger twist to rotate. Default false. */
+  /**
+   * Two-finger twist rotates the view. Default matches enableRotation.
+   */
   pinchRotate?: boolean;
 }
 
@@ -56,6 +64,17 @@ function angle(a: ActivePointer, b: ActivePointer): number {
   return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
 }
 
+function centroid(pts: ActivePointer[]): { x: number; y: number } {
+  let x = 0;
+  let y = 0;
+  for (const p of pts) {
+    x += p.x;
+    y += p.y;
+  }
+  const n = Math.max(1, pts.length);
+  return { x: x / n, y: y / n };
+}
+
 const INITIAL: ViewportState = { panX: 0, panY: 0, zoom: 1, rotation: 0 };
 
 /**
@@ -67,10 +86,13 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     minZoom = 0.15,
     maxZoom = 8,
     onUndo,
+    onRedo,
     enabled = true,
-    enableRotation = false,
-    pinchRotate = false,
+    enableRotation = true,
+    pinchRotate,
   } = opts;
+
+  const allowPinchRotate = pinchRotate ?? enableRotation;
 
   const [viewport, setViewport] = useState<ViewportState>(INITIAL);
   const viewportRef = useRef(viewport);
@@ -79,7 +101,7 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
   const spaceDownRef = useRef(false);
   const pointersRef = useRef<Map<number, ActivePointer>>(new Map());
   const gestureRef = useRef<{
-    mode: "none" | "draw" | "pan" | "rotate" | "pinch";
+    mode: "none" | "draw" | "pan" | "rotate" | "pinch" | "multi";
     lastX: number;
     lastY: number;
     startDist: number;
@@ -90,9 +112,10 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     startPanY: number;
     pinchMidX: number;
     pinchMidY: number;
-    /** Two-finger touch: track for tap-to-undo */
-    twoFingerDownAt: number | null;
-    twoFingerMoved: boolean;
+    multiDownAt: number | null;
+    multiMoved: boolean;
+    /** Peak simultaneous fingers in this multi-touch episode */
+    peakFingers: number;
   }>({
     mode: "none",
     lastX: 0,
@@ -105,18 +128,23 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     startPanY: 0,
     pinchMidX: 0,
     pinchMidY: 0,
-    twoFingerDownAt: null,
-    twoFingerMoved: false,
+    multiDownAt: null,
+    multiMoved: false,
+    peakFingers: 0,
   });
 
   const onUndoRef = useRef(onUndo);
   onUndoRef.current = onUndo;
+  const onRedoRef = useRef(onRedo);
+  onRedoRef.current = onRedo;
 
   useEffect(() => {
     if (!enabled) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
-        // Don't preventDefault always — only when we own the gesture later
+      if (
+        e.code === "Space" &&
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+      ) {
         spaceDownRef.current = true;
       }
     };
@@ -150,7 +178,6 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     [minZoom, maxZoom],
   );
 
-  /** Multiply current zoom (e.g. wheel / buttons). factor > 1 zooms in. */
   const zoomBy = useCallback(
     (factor: number) => {
       setViewport((v) => ({
@@ -161,15 +188,10 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     [minZoom, maxZoom],
   );
 
-  /**
-   * Mouse-wheel / trackpad zoom. Always zooms the camera (desktop-friendly).
-   * Call from onWheel on the canvas stage; prevents page scroll.
-   */
   const onWheelZoom = useCallback(
     (e: { deltaY: number; preventDefault: () => void }) => {
       if (!enabled) return;
       e.preventDefault();
-      // Smooth trackpads send small deltas; mouse wheels send larger steps.
       const dy = e.deltaY;
       const factor =
         Math.abs(dy) < 40
@@ -185,81 +207,35 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
   );
 
   /**
-   * Map client coordinates through inverse viewport transform into
-   * local plate/canvas space (origin top-left of the untransformed element).
-   */
-  const clientToLocal = useCallback(
-    (
-      clientX: number,
-      clientY: number,
-      el: HTMLElement,
-    ): { x: number; y: number } => {
-      const rect = el.getBoundingClientRect();
-      const v = viewportRef.current;
-      // Element center in client space
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      // Point relative to center
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      // Inverse pan is already in the rect (CSS transform pan moves the element;
-      // getBoundingClientRect includes transform). Work in pre-transform space:
-      // Use untransformed layout size from offsetWidth/Height.
-      const w = el.offsetWidth;
-      const h = el.offsetHeight;
-      // Rect already includes transform — reconstruct local by inverse rotate/scale/pan.
-      // Approximate: from center of transformed bounding box is imperfect when rotated.
-      // Prefer matrix from computed style when available.
-      const style = window.getComputedStyle(el);
-      const t = style.transform;
-      if (t && t !== "none") {
-        // DOMMatrix inverse
-        try {
-          const m = new DOMMatrix(t);
-          const inv = m.inverse();
-          // Point relative to element top-left before transform (in parent space)
-          // getBoundingClientRect is axis-aligned after transform; use offset parent chain.
-          // Simpler path: map via center using inverse rotation/scale only + pan.
-          const rad = (-v.rotation * Math.PI) / 180;
-          const cos = Math.cos(rad);
-          const sin = Math.sin(rad);
-          // Remove pan: center is shifted by pan in parent coords
-          dx = clientX - (cx);
-          dy = clientY - (cy);
-          // The center of the element in screen space already includes pan.
-          // Inverse scale and rotate around center:
-          dx /= v.zoom || 1;
-          dy /= v.zoom || 1;
-          const rx = dx * cos - dy * sin;
-          const ry = dx * sin + dy * cos;
-          return { x: w / 2 + rx, y: h / 2 + ry };
-        } catch {
-          /* fall through */
-        }
-      }
-      // Fallback without matrix
-      const rad = (-v.rotation * Math.PI) / 180;
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
-      dx /= v.zoom || 1;
-      dy /= v.zoom || 1;
-      const rx = dx * cos - dy * sin;
-      const ry = dx * sin + dy * cos;
-      return { x: w / 2 + rx, y: h / 2 + ry };
-    },
-    [],
-  );
-
-  /**
-   * CSS transform for pan + rotation only.
-   * Apply zoom by scaling the element's CSS width/height (not transform:scale)
-   * so hit-testing via getBoundingClientRect stays reliable on desktop.
+   * CSS transform for pan + rotation.
+   * Prefer zoom via layout size (width/height), not transform:scale.
    */
   const transformStyle = `translate(${viewport.panX}px, ${viewport.panY}px) rotate(${viewport.rotation}deg)`;
 
+  const beginMultiTouch = (g: (typeof gestureRef)["current"], map: Map<number, ActivePointer>) => {
+    const pts = [...map.values()];
+    g.peakFingers = Math.max(g.peakFingers, map.size);
+    g.multiDownAt = g.multiDownAt ?? Date.now();
+    if (map.size >= 2) {
+      const [a, b] = pts;
+      g.mode = "pinch";
+      g.startDist = Math.max(1, dist(a!, b!));
+      g.startAngle = angle(a!, b!);
+      g.startZoom = viewportRef.current.zoom;
+      g.startRotation = viewportRef.current.rotation;
+      g.startPanX = viewportRef.current.panX;
+      g.startPanY = viewportRef.current.panY;
+      const m = mid(a!, b!);
+      g.pinchMidX = m.x;
+      g.pinchMidY = m.y;
+    } else {
+      g.mode = "multi";
+    }
+  };
+
   /**
    * Call at pointerdown. Returns true if the viewport consumed the event
-   * (pan/rotate/pinch) — caller should not draw.
+   * (pan/rotate/pinch/multi) — caller must not draw.
    */
   const onPointerDown = useCallback(
     (e: React.PointerEvent): boolean => {
@@ -268,33 +244,27 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
       map.set(e.pointerId, { id: e.pointerId, x: e.clientX, y: e.clientY });
       const g = gestureRef.current;
 
-      if (map.size === 2) {
-        const pts = [...map.values()];
-        const [a, b] = pts;
-        g.mode = "pinch";
-        g.startDist = Math.max(1, dist(a!, b!));
-        g.startAngle = angle(a!, b!);
-        g.startZoom = viewportRef.current.zoom;
-        g.startRotation = viewportRef.current.rotation;
-        g.startPanX = viewportRef.current.panX;
-        g.startPanY = viewportRef.current.panY;
-        const m = mid(a!, b!);
-        g.pinchMidX = m.x;
-        g.pinchMidY = m.y;
-        g.twoFingerDownAt = Date.now();
-        g.twoFingerMoved = false;
+      // Multi-touch: never draw
+      if (map.size >= 2) {
+        e.preventDefault();
+        beginMultiTouch(g, map);
         return true;
       }
 
-      // Ignore secondary / right-click (incl. macOS Ctrl+click → button 2)
+      // Reset peak when starting a fresh single-finger episode
+      if (map.size === 1 && g.mode !== "pinch" && g.mode !== "multi") {
+        g.peakFingers = 1;
+        g.multiMoved = false;
+        g.multiDownAt = null;
+      }
+
       if (e.button === 2 || e.ctrlKey || e.metaKey) {
         return false;
       }
 
       const wantPan = spaceDownRef.current || e.button === 1;
-      // Shift or Alt only when rotation is enabled — never Ctrl
-      const wantRotate =
-        enableRotation && (e.shiftKey || e.altKey);
+      // Shift+drag only (not Alt) for rotate
+      const wantRotate = enableRotation && e.shiftKey && !e.altKey;
 
       if (wantPan) {
         g.mode = "pan";
@@ -317,9 +287,6 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     [enabled, enableRotation],
   );
 
-  /**
-   * Call on pointermove. Returns true if viewport consumed the event.
-   */
   const onPointerMove = useCallback(
     (e: React.PointerEvent): boolean => {
       if (!enabled) return false;
@@ -329,27 +296,41 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
       }
       const g = gestureRef.current;
 
-      if (g.mode === "pinch" && map.size >= 2) {
+      // Promote to multi if a second finger arrived without re-down (rare)
+      if (map.size >= 2 && g.mode === "draw") {
+        beginMultiTouch(g, map);
+      }
+
+      if ((g.mode === "pinch" || g.mode === "multi") && map.size >= 2) {
         const pts = [...map.values()];
+        g.peakFingers = Math.max(g.peakFingers, map.size);
         const [a, b] = pts;
         const d = Math.max(1, dist(a!, b!));
         const ang = angle(a!, b!);
-        if (Math.abs(d - g.startDist) > 8 || Math.abs(ang - g.startAngle) > 3) {
-          g.twoFingerMoved = true;
+        if (Math.abs(d - g.startDist) > 8 || Math.abs(ang - g.startAngle) > 4) {
+          g.multiMoved = true;
         }
-        const scale = d / g.startDist;
-        const m = mid(a!, b!);
-        const dmx = m.x - g.pinchMidX;
-        const dmy = m.y - g.pinchMidY;
-        // Pinch: zoom + pan only. Rotation only if explicitly enabled (default off).
-        const dAng =
-          pinchRotate && enableRotation ? ang - g.startAngle : 0;
-        setViewport({
-          zoom: Math.min(maxZoom, Math.max(minZoom, g.startZoom * scale)),
-          rotation: g.startRotation + dAng,
-          panX: g.startPanX + dmx,
-          panY: g.startPanY + dmy,
-        });
+        const m = centroid(pts);
+        if (
+          Math.hypot(m.x - g.pinchMidX, m.y - g.pinchMidY) > 10
+        ) {
+          g.multiMoved = true;
+        }
+
+        // Two-finger pinch/zoom/pan/twist (use first two for geometry)
+        if (map.size === 2 || g.mode === "pinch") {
+          const scale = d / g.startDist;
+          const pairMid = mid(a!, b!);
+          const dmx = pairMid.x - g.pinchMidX;
+          const dmy = pairMid.y - g.pinchMidY;
+          const dAng = allowPinchRotate ? ang - g.startAngle : 0;
+          setViewport({
+            zoom: Math.min(maxZoom, Math.max(minZoom, g.startZoom * scale)),
+            rotation: g.startRotation + dAng,
+            panX: g.startPanX + dmx,
+            panY: g.startPanY + dmy,
+          });
+        }
         e.preventDefault();
         return true;
       }
@@ -373,43 +354,53 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
         return true;
       }
 
-      return false;
+      // Drawing: viewport does not consume
+      return map.size >= 2;
     },
-    [enabled, minZoom, maxZoom, enableRotation, pinchRotate],
+    [enabled, minZoom, maxZoom, enableRotation, allowPinchRotate],
   );
 
-  const onPointerUp = useCallback(
-    (e: React.PointerEvent): void => {
-      const map = pointersRef.current;
-      map.delete(e.pointerId);
-      const g = gestureRef.current;
+  const onPointerUp = useCallback((e: React.PointerEvent): void => {
+    const map = pointersRef.current;
+    map.delete(e.pointerId);
+    const g = gestureRef.current;
 
-      if (g.mode === "pinch") {
-        // Two-finger tap undo: short contact, little movement
-        if (
-          map.size === 0 &&
-          g.twoFingerDownAt != null &&
-          !g.twoFingerMoved &&
-          Date.now() - g.twoFingerDownAt < 350
-        ) {
-          onUndoRef.current?.();
-        }
-        if (map.size < 2) {
-          g.mode = "none";
-          g.twoFingerDownAt = null;
-        }
-        return;
-      }
+    if (g.mode === "pinch" || g.mode === "multi" || g.peakFingers >= 2) {
+      g.peakFingers = Math.max(g.peakFingers, map.size + 1);
 
+      // Fire taps only when all fingers released
       if (map.size === 0) {
+        const short =
+          g.multiDownAt != null && Date.now() - g.multiDownAt < 400 && !g.multiMoved;
+        if (short) {
+          if (g.peakFingers >= 3) {
+            onRedoRef.current?.();
+          } else if (g.peakFingers === 2) {
+            onUndoRef.current?.();
+          }
+        }
         g.mode = "none";
+        g.multiDownAt = null;
+        g.multiMoved = false;
+        g.peakFingers = 0;
+      } else if (map.size === 1) {
+        // One finger left after multi — do not resume draw; wait for full release
+        g.mode = "multi";
+      } else if (map.size >= 2) {
+        // Re-seed pinch baseline with remaining fingers
+        beginMultiTouch(g, map);
+        g.multiMoved = true; // already a gesture, not a tap
       }
-    },
-    [],
-  );
+      return;
+    }
 
-  /** True while space is held (show grab cursor) */
-  const isSpacePan = spaceDownRef;
+    if (map.size === 0) {
+      g.mode = "none";
+      g.peakFingers = 0;
+      g.multiDownAt = null;
+      g.multiMoved = false;
+    }
+  }, []);
 
   return {
     viewport,
@@ -419,11 +410,10 @@ export function useCanvasViewport(opts: UseCanvasViewportOptions = {}) {
     onWheelZoom,
     resetViewport,
     transformStyle,
-    clientToLocal,
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    isSpacePan,
+    isSpacePan: spaceDownRef,
     spaceDownRef,
     minZoom,
     maxZoom,

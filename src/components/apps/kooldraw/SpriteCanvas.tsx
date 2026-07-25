@@ -9,7 +9,7 @@
  *   Handles mouse/touch input and routes to active tool.
  *   Uses Pointer Events so finger-drag paints continuously on mobile.
  *   Pressure-aware freehand: pen / harsh / dither / eraser.
- *   Viewport: space-pan, shift/ctrl rotate, pinch zoom+rot, 2-finger undo.
+ *   Viewport: space-pan, shift rotate, pinch zoom+twist, 2-finger undo, 3-finger redo.
  *   Supports onion skinning (previous = purple, next = green).
  *   Supports playback displayFrameIndex for main-canvas animation preview.
  */
@@ -44,6 +44,11 @@ export interface OnionSkinSettings {
   prevOpacities: [number, number, number];
   /** Opacity for next frames: index 0 = frame+1, 1 = frame+2, 2 = frame+3 */
   nextOpacities: [number, number, number];
+  /**
+   * Wrap onion around the animation loop:
+   * first frame sees last as previous; last frame sees first as next.
+   */
+  loopWrap?: boolean;
 }
 
 /** Soft paint / pressure brush settings (full color) */
@@ -108,6 +113,8 @@ interface SpriteCanvasProps {
   onStrokeEnd?: () => void;
   /** Two-finger tap / external undo */
   onUndo?: () => void;
+  /** Three-finger tap / external redo */
+  onRedo?: () => void;
   onColorPicked: (color: PackedColor) => void;
   onionSkin?: OnionSkinSettings;
 }
@@ -177,6 +184,7 @@ export function SpriteCanvas({
   onStrokeBegin,
   onStrokeEnd,
   onUndo,
+  onRedo,
   onColorPicked,
   onionSkin,
 }: SpriteCanvasProps) {
@@ -197,11 +205,12 @@ export function SpriteCanvas({
     resetViewport,
   } = useCanvasViewport({
     onUndo,
+    onRedo,
     minZoom: 0.35,
     maxZoom: 4,
     enabled: !playing,
-    enableRotation: false,
-    pinchRotate: false,
+    enableRotation: true,
+    pinchRotate: true,
   });
 
   /** Pixel zoom × camera zoom (pinch / scroll multiplies camera) */
@@ -235,13 +244,18 @@ export function SpriteCanvas({
     (clientX: number, clientY: number): [number, number] => {
       const canvas = canvasRef.current;
       if (!canvas) return [-1, -1];
-      const { x: sx, y: sy } = clientToCanvasBitmap(canvas, clientX, clientY, 0);
+      const { x: sx, y: sy } = clientToCanvasBitmap(
+        canvas,
+        clientX,
+        clientY,
+        viewport.rotation,
+      );
       if (sx < 0 || sy < 0) return [-1, -1];
       const px = (sx - offset.x) / drawZoom;
       const py = (sy - offset.y) / drawZoom;
       return [px, py];
     },
-    [offset, drawZoom],
+    [offset, drawZoom, viewport.rotation],
   );
 
   /** Integer pixel coords (shapes / fill / picker). */
@@ -316,10 +330,25 @@ export function SpriteCanvas({
       const octx = onion.getContext("2d")!;
       const img = octx.createImageData(width, height);
       const frameCount = layers[0]?.frames.length ?? 0;
+      const wrap = !!onionSkin.loopWrap && frameCount > 1;
+      const resolvePrev = (d: number): number | null => {
+        let fi = viewFrameIndex - d;
+        if (fi >= 0) return fi;
+        if (!wrap) return null;
+        fi = ((fi % frameCount) + frameCount) % frameCount;
+        return fi === viewFrameIndex ? null : fi;
+      };
+      const resolveNext = (d: number): number | null => {
+        let fi = viewFrameIndex + d;
+        if (fi < frameCount) return fi;
+        if (!wrap) return null;
+        fi = fi % frameCount;
+        return fi === viewFrameIndex ? null : fi;
+      };
       for (let d = 3; d >= 1; d--) {
-        const fi = viewFrameIndex - d;
+        const fi = resolvePrev(d);
         const op = onionSkin.prevOpacities[d - 1] ?? 0;
-        if (op > 0.001 && fi >= 0 && fi < frameCount) {
+        if (fi != null && op > 0.001) {
           packFrameToImageData(img, layers, fi, width, height, ONION_PREV, op);
           octx.putImageData(img, 0, 0);
           ctx.imageSmoothingEnabled = false;
@@ -327,9 +356,9 @@ export function SpriteCanvas({
         }
       }
       for (let d = 3; d >= 1; d--) {
-        const fi = viewFrameIndex + d;
+        const fi = resolveNext(d);
         const op = onionSkin.nextOpacities[d - 1] ?? 0;
-        if (op > 0.001 && fi >= 0 && fi < frameCount) {
+        if (fi != null && op > 0.001) {
           packFrameToImageData(img, layers, fi, width, height, ONION_NEXT, op);
           octx.putImageData(img, 0, 0);
           ctx.imageSmoothingEnabled = false;
@@ -604,7 +633,13 @@ export function SpriteCanvas({
     (e: React.PointerEvent) => {
       if (playing) return;
       if (vpDown(e)) {
-        drawingRef.current = false;
+        // Multi-touch / pan / rotate — cancel any in-progress stroke
+        if (drawingRef.current) {
+          drawingRef.current = false;
+          activePointerIdRef.current = null;
+          lastPixelRef.current = null;
+          onStrokeEnd?.();
+        }
         return;
       }
       if (e.button !== 0 && e.pointerType === "mouse") return;
@@ -627,12 +662,20 @@ export function SpriteCanvas({
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
       applyTool(px, py, true, pressure, e.pointerType);
     },
-    [screenToFloatPixel, applyTool, playing, vpDown],
+    [screenToFloatPixel, applyTool, playing, vpDown, onStrokeEnd],
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (vpMove(e)) return;
+      if (vpMove(e)) {
+        // Multi-touch mid-stroke: stop drawing
+        if (drawingRef.current) {
+          drawingRef.current = false;
+          activePointerIdRef.current = null;
+          lastPixelRef.current = null;
+        }
+        return;
+      }
       if (!drawingRef.current) return;
       if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
 
@@ -746,11 +789,9 @@ export function SpriteCanvas({
           border: "none",
           padding: 0,
           margin: 0,
-          // Pan only (no rotate) — keep mapping simple / fast
-          transform:
-            Math.abs(viewport.panX) > 0.01 || Math.abs(viewport.panY) > 0.01
-              ? `translate(${viewport.panX}px, ${viewport.panY}px)`
-              : undefined,
+          // Pan + rotate (zoom is CSS size via drawZoom / parent). Pen map inverse-rotates.
+          transform: `translate(${viewport.panX}px, ${viewport.panY}px) rotate(${viewport.rotation}deg)`,
+          transformOrigin: "center center",
         }}
       />
       {/* Desktop zoom cluster */}

@@ -201,11 +201,53 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [renderTick, setRenderTick] = useState(0);
   // Onion skin ON by default (mobile + desktop)
   const [onionEnabled, setOnionEnabled] = useState(true);
+  const [onionLoopWrap, setOnionLoopWrap] = useState(true);
   const [showOnionOptions, setShowOnionOptions] = useState(false);
   const [prevOpacities, setPrevOpacities] = useState<[number, number, number]>([...DEFAULT_PREV_OP]);
   const [nextOpacities, setNextOpacities] = useState<[number, number, number]>([...DEFAULT_NEXT_OP]);
+  /** Timeline panel height (0 = collapsed); drag handle resizes */
+  const [timelineHeight, setTimelineHeight] = useState(72);
+  const timelineDragRef = useRef<{ startY: number; startH: number } | null>(null);
 
-  const onionSkin: OnionSkinSettings = { enabled: onionEnabled, prevOpacities, nextOpacities };
+  const onionSkin: OnionSkinSettings = {
+    enabled: onionEnabled,
+    prevOpacities,
+    nextOpacities,
+    loopWrap: onionLoopWrap,
+  };
+
+  const TIMELINE_MIN = 0;
+  const TIMELINE_MAX = 220;
+  const TIMELINE_DEFAULT = 72;
+
+  const onTimelineHandlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      timelineDragRef.current = { startY: e.clientY, startH: timelineHeight };
+    },
+    [timelineHeight],
+  );
+
+  const onTimelineHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = timelineDragRef.current;
+    if (!drag) return;
+    // Drag up = taller timeline
+    const dy = drag.startY - e.clientY;
+    const next = Math.min(TIMELINE_MAX, Math.max(TIMELINE_MIN, drag.startH + dy));
+    setTimelineHeight(next);
+  }, []);
+
+  const onTimelineHandlePointerUp = useCallback((e: React.PointerEvent) => {
+    timelineDragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    // Snap closed if nearly collapsed
+    setTimelineHeight((h) => (h < 20 ? 0 : h));
+  }, []);
   const historyRef = useRef<HistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
   const forceRender = useCallback(() => setRenderTick((t) => t + 1), []);
@@ -354,13 +396,36 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   useEffect(() => {
     if (!isFocused) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "z") { e.preventDefault(); undo(); return; }
         if (e.key === "y") { e.preventDefault(); redo(); return; }
       }
+      const count = project.layers[0]?.frames.length ?? 1;
+      // Frame navigation: , prev · . next · w first
+      if (e.key === "," && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setPlaying(false);
+        setActiveFrameIndex((i) => (i - 1 + count) % count);
+        return;
+      }
+      if (e.key === "." && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setPlaying(false);
+        setActiveFrameIndex((i) => (i + 1) % count);
+        return;
+      }
+      if ((e.key === "w" || e.key === "W") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setPlaying(false);
+        setActiveFrameIndex(0);
+        return;
+      }
       const toolEntry = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());
       if (toolEntry) { setActiveTool(toolEntry.id); return; }
-      // Pen size — hold Shift to nudge dither phase instead
+      // Pen size — hold Shift to nudge dither phase X
       if (e.key === "[") {
         if (e.shiftKey) setDitherOx((v) => (v + 7) % 8);
         else setPenSize((s) => Math.max(1, s - 1));
@@ -371,11 +436,12 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         else setPenSize((s) => Math.min(256, s + 1));
         return;
       }
-      if (e.key === "," || e.key === ";") {
+      // Dither phase Y (moved off ,/. which now change frames)
+      if (e.key === ";" || e.key === ":") {
         setDitherOy((v) => (v + 7) % 8);
         return;
       }
-      if (e.key === "." || e.key === "'") {
+      if (e.key === "'" || e.key === '"') {
         setDitherOy((v) => (v + 1) % 8);
         return;
       }
@@ -388,7 +454,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFocused, undo, redo, togglePlayback]);
+  }, [isFocused, undo, redo, togglePlayback, project.layers]);
 
   useEffect(() => {
     if (!playing) return;
@@ -485,8 +551,30 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   }, [project, displayFrameIndex, renderTick]);
 
   const onionOptionsContent = (
-    <div style={{ padding: 8, backgroundColor: "#000", border: "1px solid #333", minWidth: 180, fontFamily: "var(--dm-font-primary)" }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+    <div style={{ padding: 8, backgroundColor: "#000", border: "1px solid #333", minWidth: 200, fontFamily: "var(--dm-font-primary)" }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
       <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 8 }}>ONION SKIN OPTIONS</div>
+      <button
+        type="button"
+        onClick={() => setOnionLoopWrap((v) => !v)}
+        title="On frame 1, show last as previous; on last frame, show first as next"
+        style={{
+          width: "100%",
+          height: 24,
+          marginBottom: 10,
+          border: onionLoopWrap ? "1px solid #ffff00" : "1px solid #555",
+          background: onionLoopWrap ? "#ffff00" : "#000",
+          color: onionLoopWrap ? "#000" : "#ccc",
+          fontFamily: "inherit",
+          fontSize: 7,
+          letterSpacing: 1,
+          cursor: "pointer",
+        }}
+      >
+        LOOP WRAP {onionLoopWrap ? "ON" : "OFF"}
+      </button>
+      <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 10, lineHeight: 1.4 }}>
+        When ON: first frame ghosts the last; last frame ghosts the first (cycle anims).
+      </div>
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 7, color: "#b850ff", letterSpacing: 1, marginBottom: 4 }}>PREV (PURPLE)</div>
         {[0, 1, 2].map((i) => (
@@ -508,7 +596,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         ))}
       </div>
       <div style={{ display: "flex", gap: 4 }}>
-        <button onClick={() => { setPrevOpacities([...DEFAULT_PREV_OP]); setNextOpacities([...DEFAULT_NEXT_OP]); }} style={{ flex: 1, height: 18, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
+        <button onClick={() => { setPrevOpacities([...DEFAULT_PREV_OP]); setNextOpacities([...DEFAULT_NEXT_OP]); setOnionLoopWrap(true); }} style={{ flex: 1, height: 18, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
         <button onClick={() => setShowOnionOptions(false)} style={{ flex: 1, height: 18, border: "1px solid #555", background: "#000", color: "#aaa", fontFamily: "var(--dm-font-primary)", fontSize: 6, letterSpacing: 1, cursor: "pointer" }}>CLOSE</button>
       </div>
     </div>
@@ -534,7 +622,8 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       className="flex flex-col"
       style={{
         width: collapse ? "auto" : 108,
-        maxHeight: "100%",
+        height: "100%",
+        minHeight: 0,
         overflowY: "auto",
         overflowX: "hidden",
       }}
@@ -699,7 +788,15 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   );
 
   const sideContent = (
-    <div className="flex flex-col" style={{ width: collapse ? "100%" : 120 }}>
+    <div
+      className="flex flex-col"
+      style={{
+        width: collapse ? "100%" : 120,
+        height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
+      }}
+    >
       <div className="border-b" style={{ borderColor: "#1a1a1a", padding: 4 }}>
         <div className="flex items-center justify-between mb-1">
           <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>PREVIEW</span>
@@ -858,19 +955,33 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         {playing ? "||" : ">"}
       </button>
 
-      {Array.from({ length: frameCount }, (_, i) => (
-        <FrameThumbnail
-          key={i}
-          frame={compositeFrame(project.layers, i, project.width, project.height)}
-          index={i}
-          isActive={i === displayFrameIndex}
-          onClick={() => { setPlaying(false); setActiveFrameIndex(i); }}
-          spriteWidth={project.width}
-          spriteHeight={project.height}
-          isOnionPrev={!playing && onionEnabled && i < activeFrameIndex && i >= activeFrameIndex - 3}
-          isOnionNext={!playing && onionEnabled && i > activeFrameIndex && i <= activeFrameIndex + 3}
-        />
-      ))}
+      {Array.from({ length: frameCount }, (_, i) => {
+        let isOnionPrev = false;
+        let isOnionNext = false;
+        if (!playing && onionEnabled && frameCount > 1 && i !== activeFrameIndex) {
+          for (let d = 1; d <= 3; d++) {
+            let prev = activeFrameIndex - d;
+            if (prev < 0) prev = onionLoopWrap ? ((prev % frameCount) + frameCount) % frameCount : -1;
+            let next = activeFrameIndex + d;
+            if (next >= frameCount) next = onionLoopWrap ? next % frameCount : -1;
+            if (prev === i) isOnionPrev = true;
+            if (next === i) isOnionNext = true;
+          }
+        }
+        return (
+          <FrameThumbnail
+            key={i}
+            frame={compositeFrame(project.layers, i, project.width, project.height)}
+            index={i}
+            isActive={i === displayFrameIndex}
+            onClick={() => { setPlaying(false); setActiveFrameIndex(i); }}
+            spriteWidth={project.width}
+            spriteHeight={project.height}
+            isOnionPrev={isOnionPrev}
+            isOnionNext={isOnionNext}
+          />
+        );
+      })}
       <div className="flex gap-1 ml-2">
         <button onClick={addFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 14, cursor: "pointer" }}>+</button>
         <button onClick={duplicateFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>DUP</button>
@@ -967,55 +1078,175 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden relative">
+      {/* Main workspace: L/R rails full height · canvas + timeline in the center column */}
+      <div
+        className="flex flex-1 overflow-hidden relative"
+        style={{ minHeight: 0 }}
+      >
         {!collapse && (
           <div
             className="flex flex-col border-r flex-shrink-0"
-            style={{ borderColor: "#1a1a1a", width: 108 }}
+            style={{
+              borderColor: "#1a1a1a",
+              width: 108,
+              alignSelf: "stretch",
+              height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
+            }}
           >
             {toolsContent}
           </div>
         )}
 
-        <div className="flex-1 relative overflow-hidden">
-          <SpriteCanvas
-            layers={project.layers}
-            activeLayerIndex={activeLayerIndex}
-            activeFrameIndex={activeFrameIndex}
-            displayFrameIndex={displayFrameIndex}
-            playing={playing}
-            width={project.width}
-            height={project.height}
-            tool={activeTool}
-            color={primaryColor}
-            penSize={penSize}
-            brush={brushForCanvas}
-            ditherOx={ditherOx}
-            ditherOy={ditherOy}
-            ditherPattern={ditherPattern}
-            zoom={zoom}
-            onZoomChange={setZoom}
-            onPixelsChanged={handlePixelsChanged}
-            onStrokeBegin={handleStrokeBegin}
-            onStrokeEnd={handleStrokeEnd}
-            onUndo={undo}
-            onColorPicked={handleColorPicked}
-            onionSkin={onionSkin}
-          />
-          <CornerDismissLayer />
-          {showOnionOptions && !collapse && <div style={{ position: "absolute", top: 8, left: 48, zIndex: 40 }}>{onionOptionsContent}</div>}
-          {collapse && (
-            <>
-              <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, zIndex: 42 }}>
-                <button type="button" style={mobileOnionBtn(onionEnabled)} onClick={(e) => { e.stopPropagation(); setOnionEnabled((v) => !v); }}>{onionEnabled ? "ON" : "ONI"}</button>
-                <button type="button" style={mobileOnionBtn(showOnionOptions)} onClick={(e) => { e.stopPropagation(); setShowOnionOptions((v) => !v); }}>OPT</button>
+        <div
+          className="flex flex-col flex-1 overflow-hidden"
+          style={{ minWidth: 0, minHeight: 0 }}
+        >
+          {/* Drawing area */}
+          <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
+            <SpriteCanvas
+              layers={project.layers}
+              activeLayerIndex={activeLayerIndex}
+              activeFrameIndex={activeFrameIndex}
+              displayFrameIndex={displayFrameIndex}
+              playing={playing}
+              width={project.width}
+              height={project.height}
+              tool={activeTool}
+              color={primaryColor}
+              penSize={penSize}
+              brush={brushForCanvas}
+              ditherOx={ditherOx}
+              ditherOy={ditherOy}
+              ditherPattern={ditherPattern}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              onPixelsChanged={handlePixelsChanged}
+              onStrokeBegin={handleStrokeBegin}
+              onStrokeEnd={handleStrokeEnd}
+              onUndo={undo}
+              onRedo={redo}
+              onColorPicked={handleColorPicked}
+              onionSkin={onionSkin}
+            />
+            <CornerDismissLayer />
+            {showOnionOptions && !collapse && (
+              <div style={{ position: "absolute", top: 8, left: 8, zIndex: 40 }}>
+                {onionOptionsContent}
               </div>
-              {showOnionOptions && <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>{onionOptionsContent}</div>}
+            )}
+            {collapse && (
+              <>
+                <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8, zIndex: 42 }}>
+                  <button type="button" style={mobileOnionBtn(onionEnabled)} onClick={(e) => { e.stopPropagation(); setOnionEnabled((v) => !v); }}>{onionEnabled ? "ON" : "ONI"}</button>
+                  <button type="button" style={mobileOnionBtn(showOnionOptions)} onClick={(e) => { e.stopPropagation(); setShowOnionOptions((v) => !v); }}>OPT</button>
+                </div>
+                {showOnionOptions && (
+                  <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>
+                    {onionOptionsContent}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Timeline strip — between L/R rails, under canvas; drag handle to show/hide */}
+          {!collapse && (
+            <>
+              <div
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Drag to resize animation timeline"
+                title={
+                  timelineHeight > 0
+                    ? "Drag down to hide timeline · double-click to toggle"
+                    : "Drag up to show timeline · double-click to expand"
+                }
+                onPointerDown={onTimelineHandlePointerDown}
+                onPointerMove={onTimelineHandlePointerMove}
+                onPointerUp={onTimelineHandlePointerUp}
+                onPointerCancel={onTimelineHandlePointerUp}
+                onDoubleClick={() =>
+                  setTimelineHeight((h) => (h > 0 ? 0 : TIMELINE_DEFAULT))
+                }
+                style={{
+                  flexShrink: 0,
+                  height: 10,
+                  cursor: "ns-resize",
+                  touchAction: "none",
+                  background: "#0a0a0a",
+                  borderTop: "1px solid #333",
+                  borderBottom: timelineHeight > 0 ? "1px solid #222" : "1px solid #333",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  userSelect: "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 3,
+                    background: timelineHeight > 0 ? "#555" : "#ffff00",
+                    borderRadius: 0,
+                  }}
+                />
+                <span style={{ fontSize: 6, color: "#666", letterSpacing: 1 }}>
+                  {timelineHeight > 0 ? "TIMELINE" : "TIMELINE · DRAG UP"}
+                </span>
+                <div
+                  style={{
+                    width: 36,
+                    height: 3,
+                    background: timelineHeight > 0 ? "#555" : "#ffff00",
+                    borderRadius: 0,
+                  }}
+                />
+              </div>
+              {timelineHeight > 0 && (
+                <div
+                  className="flex items-center overflow-x-auto"
+                  style={{
+                    flexShrink: 0,
+                    height: timelineHeight,
+                    borderColor: "#1a1a1a",
+                    background: "#000",
+                    minHeight: 0,
+                  }}
+                >
+                  {timelineContent}
+                </div>
+              )}
+              <div
+                className="flex items-center justify-between px-2 py-0.5 border-t flex-shrink-0"
+                style={{ borderColor: "#1a1a1a", minHeight: 18 }}
+              >
+                <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
+                  ,/. frame · 2-tap undo · 3-tap redo · pinch/twist · P play
+                </span>
+                <span style={{ fontSize: 7, color: "#555" }}>☦</span>
+              </div>
             </>
           )}
         </div>
 
-        {!collapse && <div className="flex flex-col border-l flex-shrink-0" style={{ borderColor: "#1a1a1a", width: 120 }}>{sideContent}</div>}
+        {!collapse && (
+          <div
+            className="flex flex-col border-l flex-shrink-0"
+            style={{
+              borderColor: "#1a1a1a",
+              width: 120,
+              alignSelf: "stretch",
+              height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
+            {sideContent}
+          </div>
+        )}
 
         {collapse && (
           <>
@@ -1048,8 +1279,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 {activeTool === "dither" && (
                   <div style={{ marginTop: 2 }}>DITHER Φ {ditherOx},{ditherOy}</div>
                 )}
-                <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>ONION {onionEnabled ? "ON" : "OFF"}</div>
-                <div style={{ marginTop: 6 }}>B/K/D freehand · H = UI · O = onion</div>
+                <div style={{ marginTop: 4, color: onionEnabled ? "#b850ff" : "#555" }}>
+                  ONION {onionEnabled ? "ON" : "OFF"}
+                  {onionLoopWrap ? " · LOOP" : ""}
+                </div>
+                <div style={{ marginTop: 6 }}>, . frames · W first · O onion · H UI</div>
               </div>
             </CornerPanel>
           </>
@@ -1057,16 +1291,6 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
         <VerticalChromeToggle corner="bottom-right" />
       </div>
-
-      {!collapse && <div className="flex items-center border-t flex-shrink-0 overflow-x-auto" style={{ borderColor: "#1a1a1a", minHeight: 48 }}>{timelineContent}</div>}
-      {!collapse && (
-        <div className="flex items-center justify-between px-2 py-0.5 border-t-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 18 }}>
-          <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-            B/K/D freehand · SPACE+DRAG pan · SHIFT/ALT+DRAG rot · SCROLL zoom · PINCH · 2-FINGER TAP undo · P play · H:ZEN
-          </span>
-          <span style={{ fontSize: 7, color: "#555" }}>☦</span>
-        </div>
-      )}
     </div>
   );
 }

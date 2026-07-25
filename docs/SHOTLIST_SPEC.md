@@ -58,7 +58,7 @@ Each frame can contain:
 - Dialogue
 - Camera notes
 - Audio cue / timing mark relative to soundtrack
-- Sprite or asset reference (links to Sprite Editor / KoolDraw)
+- Sprite or asset reference (links to KoolDraw)
 - Free-form production notes
 
 This is the collapsible “detail” level the user expands only when needed.
@@ -94,11 +94,11 @@ Possible internal screens (navigated like Datamoshpit’s ScreenMap):
 
 ---
 
-## 5. Sprite Editor round-trip
+## 5. KoolDraw round-trip
 
 From any frame or Shot thumbnail:
-- Open the linked sprite in KoolDraw (Sprite Editor).
-- Sprite Editor shows a **“Return to Shot List”** button when launched in this context.
+- Open the linked sprite in KoolDraw.
+- KoolDraw shows a **“Return to Shot List”** button when launched in this context.
 - On return: save the sprite, update the reference in SHOTLIST, restore focus and scroll position.
 
 Requires a lightweight caller-context mechanism in the OS shell (simple event / shared state). No heavy IPC needed for v0.
@@ -184,18 +184,18 @@ Every shot starts on a monochrome thumbnail plate — **portrait 480×853** or *
 - Viewport (desktop): **scroll** zoom · **Space+drag** pan · **Shift/Alt+drag** rotate (never Ctrl — macOS right-click). See [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md) § Canvas viewport controls.
 
 ### Phase 0.6 — Cross-app workflow (landed)
-Sprite Editor round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md):
+KoolDraw round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WORKFLOW.md`](./CREATIVE_WORKFLOW.md):
 
-- **S** / **SPRITE** / plate **→ SPRITE** hands the plate to KoolDraw  
+- **S** / **KOOL** / plate **→ KOOL** hands the plate to KoolDraw  
 - KoolDraw yellow bar: **RETURN TO SHOTLIST** (mono threshold on return)  
 - Shared freehand registry: `FREEHAND_TOOLS` in `@/lib/creative`
 
 ### Phase 1 — Offline MVP
 - Sequence view of Shots (thumbnail + description + **variable duration**) — *list + plate draw: done*
 - Expand Shot → 24 fps X-Sheet editor (frame rows driven by duration / exposures)
-- Quick thumbnail creation / assignment — *inline mono + Sprite Editor round-trip: done*
+- Quick thumbnail creation / assignment — *inline mono + KoolDraw round-trip: done*
 - Basic audio-timing notes
-- Sprite assignment + round-trip to Sprite Editor
+- Sprite assignment + round-trip to KoolDraw
 - Full keyboard model + mobile CornerChrome
 
 ### Phase 2 — Production polish + print export
@@ -216,7 +216,7 @@ Sprite Editor round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WO
 ## 10. Open questions (decide during Phase 0/1)
 
 1. Default name on the desktop: **SHOTLIST** (current), or rename later?
-2. Exact thumbnail generation method (canvas snapshot from Sprite Editor, simple solid + text, or user-supplied image)?
+2. Exact thumbnail generation method (canvas snapshot from KoolDraw, simple solid + text, or user-supplied image)?
 3. Should the X-Sheet support multiple layers / levels per frame from day one, or start single-layer and expand later?
 4. How tightly should a Sequence share its audio clock with an open Datamoshpit project (shared tick vs independent)?
 5. File extension and whether it lives inside or beside the tracker project format.

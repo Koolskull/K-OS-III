@@ -85,7 +85,7 @@ export default function Glossary() {
       </Term>
 
       <Term name="KoolDraw">
-        K-OS's pixel-art sprite editor. Standalone app on the desktop;
+        K-OS's pixel-art drawing app (KoolDraw). Standalone on the desktop;
         embeddable as a sprite-creation surface from the F4 instrument visual
         editor.
       </Term>

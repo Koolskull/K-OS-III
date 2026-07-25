@@ -15,7 +15,7 @@ KoolDraw owns full sprite layers, animation frames, and the same freehand stack.
 Artists need to:
 
 1. Sketch a plate quickly in SHOTLIST  
-2. Jump into the Sprite Editor for layers / polish / onion skin  
+2. Jump into the KoolDraw for layers / polish / onion skin  
 3. **Return** the plate to the same shot without losing place  
 
 Datamoshpit can keep its local embedded KoolDraw overlay for instrument visuals; the bus is for **windowed** multi-app workflow.
@@ -72,10 +72,10 @@ useEffect(() => {
 
 ---
 
-## User flow (SHOTLIST ↔ Sprite Editor)
+## User flow (SHOTLIST ↔ KoolDraw)
 
-1. Select a shot → **SPRITE** (or press **S**), or in plate editor **→ SPRITE**  
-2. Sprite Editor opens with the plate loaded (mono-aware)  
+1. Select a shot → **KOOL** (or press **S**), or in plate editor **→ KOOL**  
+2. KoolDraw opens with the plate loaded (mono-aware)  
 3. Yellow bar: **RETURN TO SHOTLIST** / **CANCEL**  
 4. On RETURN, mono threshold is applied and the shot thumbnail updates  
 
@@ -85,7 +85,7 @@ Inline mono DRAW (E) still works for quick sketching without leaving SHOTLIST.
 
 ## Canvas viewport controls (SHOTLIST plate + KoolDraw)
 
-Shared by `useCanvasViewport` + `pointerMap`. Used in the storyboard plate editor and the sprite editor.
+Shared by `useCanvasViewport` + `pointerMap`. Used in the storyboard plate editor and the KoolDraw.
 
 | Control | Action |
 |---------|--------|

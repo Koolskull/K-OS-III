@@ -10,20 +10,27 @@
 
 import type { SpriteFrame, SpriteLayer, SpriteProject, RGBA, PackedColor } from "@/types/sprite";
 import {
+  radiusFromPressure,
+  samplePressureCurve,
   stampDitherDisk,
   stampHarshDisk,
   stampPressureDisk,
   type DitherPatternId,
+  type PressureCurve,
 } from "@/lib/drawStamps";
 
 export {
   forEachStrokePoint,
   normalizePressure,
+  radiusFromPressure,
+  samplePressureCurve,
   BAYER8,
   DITHER_PATTERNS,
   DEFAULT_DITHER_PATTERN,
+  DEFAULT_PRESSURE_CURVE,
   sampleDitherRank,
   type DitherPatternId,
+  type PressureCurve,
 } from "@/lib/drawStamps";
 
 // ── COLOR CONVERSION ──
@@ -232,6 +239,154 @@ export function stampFrameEraserDisk(
 ): void {
   stampPressureDisk(cx, cy, { pressure, maxRadius }, (x, y) => setPixel(frame, x, y, TRANSPARENT));
 }
+
+/** Soft / natural paint brush options (full color + opacity). */
+export interface SoftPaintOpts {
+  pressure: number;
+  maxRadius: number;
+  minRadius?: number;
+  curve?: PressureCurve;
+  /** Base opacity 0..1 (before pressure mapping) */
+  opacity: number;
+  /** When true, pressure also scales opacity */
+  opacityFromPressure?: boolean;
+  /** 0 = hard edge, 1 = fully feathered */
+  softness: number;
+  /** 0..1 scatter as fraction of radius */
+  scatter: number;
+  /** Sub-pixel coverage at edges (soft AA) */
+  antialias: boolean;
+  /** Snap final color to nearest palette hex (indexed mode) */
+  indexedPalette?: string[] | null;
+}
+
+/** Nearest palette color by RGB distance (indexed / classic hardware feel). */
+export function nearestPalettePacked(color: PackedColor, palette: string[]): PackedColor {
+  if (!palette.length) return color;
+  const { r, g, b, a } = packedColorToRGBA(color);
+  let best = hexToPackedColor(palette[0]!);
+  let bestD = Infinity;
+  for (const hex of palette) {
+    const p = hexToPackedColor(hex);
+    const pr = p & 0xff;
+    const pg = (p >> 8) & 0xff;
+    const pb = (p >> 16) & 0xff;
+    const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+  // Keep source alpha intent
+  return (best & 0x00ffffff) | (a << 24);
+}
+
+/**
+ * Full-color soft paint disk: pressure size (curve), opacity, feather, scatter, AA.
+ * Blends into existing frame pixels (not hard overwrite).
+ */
+export function stampFrameSoftPaint(
+  frame: SpriteFrame,
+  cx: number,
+  cy: number,
+  color: PackedColor,
+  opts: SoftPaintOpts,
+): void {
+  const maxR = Math.max(1, opts.maxRadius);
+  const minR = Math.max(0.5, Math.min(opts.minRadius ?? 1, maxR));
+  const p = Math.min(1, Math.max(0, opts.pressure));
+  // Smooth (non-integer) radius for soft paint
+  const y = samplePressureCurve(p, opts.curve);
+  const r = minR + y * (maxR - minR);
+
+  let ox = cx;
+  let oy = cy;
+  const scatter = Math.min(1, Math.max(0, opts.scatter));
+  if (scatter > 0.001) {
+    const s = scatter * r;
+    ox += (Math.random() * 2 - 1) * s;
+    oy += (Math.random() * 2 - 1) * s;
+  }
+
+  let opac = Math.min(1, Math.max(0, opts.opacity));
+  if (opts.opacityFromPressure) opac *= Math.max(0.05, p);
+
+  let paint = color;
+  if (opts.indexedPalette && opts.indexedPalette.length) {
+    paint = nearestPalettePacked(color, opts.indexedPalette);
+  }
+  const { r: cr, g: cg, b: cb } = packedColorToRGBA(paint);
+  const softness = Math.min(1, Math.max(0, opts.softness));
+  const aa = opts.antialias;
+  const rOuter = r + (aa ? 0.75 : 0);
+  const rInner = Math.max(0.01, r * (1 - softness * 0.95));
+  const rOuter2 = rOuter * rOuter;
+  const rInner2 = rInner * rInner;
+
+  const x0 = Math.floor(ox - rOuter);
+  const y0 = Math.floor(oy - rOuter);
+  const x1 = Math.ceil(ox + rOuter);
+  const y1 = Math.ceil(oy + rOuter);
+
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (x < 0 || y < 0 || x >= frame.width || y >= frame.height) continue;
+      const dx = x + 0.5 - ox;
+      const dy = y + 0.5 - oy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > rOuter2) continue;
+
+      let cover = 1;
+      if (softness > 0.001 || aa) {
+        const d = Math.sqrt(d2);
+        if (d <= rInner) cover = 1;
+        else if (d >= rOuter) cover = 0;
+        else cover = 1 - (d - rInner) / Math.max(0.001, rOuter - rInner);
+        // Smoothstep for natural feather
+        cover = cover * cover * (3 - 2 * cover);
+      }
+
+      const a = Math.round(255 * opac * cover);
+      if (a <= 0) continue;
+      const src = rgbaToPackedColor(cr, cg, cb, a);
+      const i = y * frame.width + x;
+      frame.pixels[i] = alphaBlend(frame.pixels[i]!, src);
+    }
+  }
+}
+
+/** Classic / hardware-style palette presets (hex). */
+export const INDEXED_PALETTE_PRESETS: Record<
+  string,
+  { label: string; colors: string[] }
+> = {
+  pico8: {
+    label: "PICO-8",
+    colors: [
+      "#000000", "#1D2B53", "#7E2553", "#008751",
+      "#AB5236", "#5F574F", "#C2C3C7", "#FFF1E8",
+      "#FF004D", "#FFA300", "#FFEC27", "#00E436",
+      "#29ADFF", "#83769C", "#FF77A8", "#FFCCAA",
+    ],
+  },
+  gameboy: {
+    label: "GAME BOY",
+    colors: ["#0f380f", "#306230", "#8bac0f", "#9bbc0f"],
+  },
+  cga: {
+    label: "CGA",
+    colors: [
+      "#000000", "#0000AA", "#00AA00", "#00AAAA",
+      "#AA0000", "#AA00AA", "#AA5500", "#AAAAAA",
+      "#555555", "#5555FF", "#55FF55", "#55FFFF",
+      "#FF5555", "#FF55FF", "#FFFF55", "#FFFFFF",
+    ],
+  },
+  mono: {
+    label: "MONO",
+    colors: ["#000000", "#ffffff"],
+  },
+};
 
 // ── LAYER COMPOSITING ──
 

@@ -45,15 +45,15 @@ Spec: [`SHOTLIST_SPEC.md`](./SHOTLIST_SPEC.md) §9 Phase 1. Scaffold (Phase 0) i
 
 **Landed:**
 - Shot plates + freehand stamps (`drawStamps`) in SHOTLIST and KoolDraw  
-- **Creative Workflow Bus** — SHOTLIST ↔ Sprite Editor handoff (**S** / RETURN). See `docs/CREATIVE_WORKFLOW.md`
+- **Creative Workflow Bus** — SHOTLIST ↔ KoolDraw handoff (**S** / RETURN). See `docs/CREATIVE_WORKFLOW.md`
 
 Minimal remaining Phase 1 slice (in order):
 
 1. Persist sequence to IndexedDB / downloadable `.k3shot` JSON (even if schema is v0).
 2. Drive X-Sheet rows from `durationFrames` + exposure holds (not a single dummy frame).
-3. Optional: import image → threshold to mono plate; Sprite Editor round-trip later.
+3. Optional: import image → threshold to mono plate; KoolDraw round-trip later.
 4. Keyboard model parity with Datamoshpit for list / expand / field edit.
-5. Sprite Editor return-to-shot context (only after 1–4).
+5. KoolDraw return-to-shot context (only after 1–4).
 
 Defer: print export (Phase 2), wallet approvals (Phase 3).
 

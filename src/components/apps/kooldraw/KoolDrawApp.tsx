@@ -1,5 +1,5 @@
 /*
- * KOOLDRAW SPRITE EDITOR
+ * KOOLDRAW — pixel art & animation
  * Freehand tools from @/lib/creative tool registry.
  * Cross-app handoffs via CreativeWorkflow (SHOTLIST ↔ etc.).
  */
@@ -24,10 +24,17 @@ import {
   dataUrlToMonoDataUrl,
   DITHER_PATTERNS,
   DEFAULT_DITHER_PATTERN,
+  INDEXED_PALETTE_PRESETS,
+  DEFAULT_PRESSURE_CURVE,
   type DitherPatternId,
 } from "@/lib/SpriteUtils";
 import { FREEHAND_TOOLS, useCreativeWorkflow } from "@/lib/creative";
-import { SpriteCanvas, type OnionSkinSettings } from "./SpriteCanvas";
+import {
+  SpriteCanvas,
+  DEFAULT_BRUSH,
+  type BrushSettings,
+  type OnionSkinSettings,
+} from "./SpriteCanvas";
 import {
   CornerHost,
   CornerPanel,
@@ -161,12 +168,31 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [handoffReady, setHandoffReady] = useState(true);
   const [activeTool, setActiveTool] = useState<ToolId>("pen");
   const [primaryColor, setPrimaryColor] = useState<PackedColor>(hexToPackedColor("#ffffff"));
-  const [penSize, setPenSize] = useState(4);
+  const [penSize, setPenSize] = useState(8);
+  const [brush, setBrush] = useState<BrushSettings>(() => ({
+    ...DEFAULT_BRUSH,
+    maxSize: 8,
+    curve: { ...DEFAULT_PRESSURE_CURVE },
+  }));
+  /** free = any hex; indexed = snap to active palette (classic hardware) */
+  const [paletteMode, setPaletteMode] = useState<"free" | "indexed">("free");
+  const [palettePreset, setPalettePreset] = useState<string>("project");
   /** Bayer matrix phase for dither pencil (variable-positioned dither) */
   const [ditherOx, setDitherOx] = useState(0);
   const [ditherOy, setDitherOy] = useState(0);
   const [ditherPattern, setDitherPattern] =
     useState<DitherPatternId>(DEFAULT_DITHER_PATTERN);
+
+  const activePalette: string[] =
+    palettePreset === "project"
+      ? project.palette
+      : INDEXED_PALETTE_PRESETS[palettePreset]?.colors ?? project.palette;
+
+  const brushForCanvas: BrushSettings = {
+    ...brush,
+    maxSize: penSize,
+    indexedPalette: paletteMode === "indexed" ? activePalette : null,
+  };
   const [zoom, setZoom] = useState(12);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
@@ -342,7 +368,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       }
       if (e.key === "]") {
         if (e.shiftKey) setDitherOx((v) => (v + 1) % 8);
-        else setPenSize((s) => Math.min(32, s + 1));
+        else setPenSize((s) => Math.min(256, s + 1));
         return;
       }
       if (e.key === "," || e.key === ";") {
@@ -488,21 +514,149 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     </div>
   );
 
-  // Onion controls always present in tools (desktop strip + mobile TOOL panel)
+  const railLabel: React.CSSProperties = {
+    fontSize: 6,
+    color: "#666",
+    letterSpacing: 1,
+    textAlign: "center",
+    lineHeight: 1.2,
+  };
+  const railInput: React.CSSProperties = {
+    width: "100%",
+    accentColor: "#ffff00",
+    height: 4,
+    cursor: "pointer",
+  };
+
+  // Tools + brush rail (desktop strip + mobile TOOL panel)
   const toolsContent = (
-    <div className="flex flex-col" style={{ width: collapse ? "auto" : 40 }}>
-      {TOOLS.map((t) => (
+    <div
+      className="flex flex-col"
+      style={{
+        width: collapse ? "auto" : 108,
+        maxHeight: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", flexWrap: "wrap" }}>
+        {TOOLS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTool(t.id)}
+            style={{ ...toolBtn(activeTool === t.id), width: "50%", height: 28 }}
+            title={t.title ?? `${t.label} (${t.key})`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Brush size / opacity / feel — shared with freehand + paint */}
+      <div style={{ borderTop: "1px solid #1a1a1a", padding: 4, display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={railLabel}>SIZE {penSize}px</div>
+        <input
+          type="range"
+          min={1}
+          max={256}
+          value={penSize}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setPenSize(v);
+            setBrush((b) => ({ ...b, maxSize: v }));
+          }}
+          style={railInput}
+          title="Max pen width 1–256 · mouse = this size · stylus = pressure max"
+        />
+        <div style={railLabel}>OPAC {Math.round(brush.opacity * 100)}%</div>
+        <input
+          type="range"
+          min={1}
+          max={100}
+          value={Math.round(brush.opacity * 100)}
+          onChange={(e) =>
+            setBrush((b) => ({ ...b, opacity: Number(e.target.value) / 100 }))
+          }
+          style={railInput}
+          title="Base opacity (paint tool)"
+        />
+        <div style={railLabel}>SOFT {Math.round(brush.softness * 100)}</div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(brush.softness * 100)}
+          onChange={(e) =>
+            setBrush((b) => ({ ...b, softness: Number(e.target.value) / 100 }))
+          }
+          style={railInput}
+          title="Feather / softness (paint)"
+        />
+        <div style={railLabel}>SCAT {Math.round(brush.scatter * 100)}</div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(brush.scatter * 100)}
+          onChange={(e) =>
+            setBrush((b) => ({ ...b, scatter: Number(e.target.value) / 100 }))
+          }
+          style={railInput}
+          title="Pen scatter (paint)"
+        />
         <button
-          key={t.id}
-          onClick={() => setActiveTool(t.id)}
-          style={toolBtn(activeTool === t.id)}
-          title={t.title ?? `${t.label} (${t.key})`}
+          type="button"
+          style={{ ...toolBtn(brush.antialias), height: 22, fontSize: 6 }}
+          onClick={() => setBrush((b) => ({ ...b, antialias: !b.antialias }))}
+          title="Antialiased soft edges"
         >
-          {t.label}
+          AA {brush.antialias ? "ON" : "OFF"}
         </button>
-      ))}
+        <button
+          type="button"
+          style={{ ...toolBtn(brush.sizeFromPressure), height: 22, fontSize: 6 }}
+          onClick={() =>
+            setBrush((b) => ({ ...b, sizeFromPressure: !b.sizeFromPressure }))
+          }
+          title="Map stylus pressure → size"
+        >
+          P→SZ {brush.sizeFromPressure ? "ON" : "OFF"}
+        </button>
+        <button
+          type="button"
+          style={{ ...toolBtn(brush.opacityFromPressure), height: 22, fontSize: 6 }}
+          onClick={() =>
+            setBrush((b) => ({
+              ...b,
+              opacityFromPressure: !b.opacityFromPressure,
+            }))
+          }
+          title="Map stylus pressure → opacity"
+        >
+          P→OP {brush.opacityFromPressure ? "ON" : "OFF"}
+        </button>
+        <button
+          type="button"
+          style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
+          onClick={() =>
+            setBrush((b) => ({
+              ...b,
+              curve: { ...DEFAULT_PRESSURE_CURVE },
+              softness: 0.35,
+              scatter: 0,
+              antialias: true,
+              opacity: 1,
+            }))
+          }
+          title="Reset brush feel"
+        >
+          RST BRUSH
+        </button>
+      </div>
+
       {activeTool === "dither" && (
         <div style={{ borderTop: "1px solid #1a1a1a", padding: 2 }}>
+          <div style={railLabel}>DITHER</div>
           {DITHER_PATTERNS.map((p) => (
             <button
               key={p.id}
@@ -518,7 +672,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             type="button"
             onClick={() => setDitherOx((v) => (v + 1) % 8)}
             style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
-            title="Dither phase X (Shift+])"
+            title="Dither phase X"
           >
             OX{ditherOx}
           </button>
@@ -526,7 +680,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             type="button"
             onClick={() => setDitherOy((v) => (v + 1) % 8)}
             style={{ ...toolBtn(false), height: 22, fontSize: 6 }}
-            title="Dither phase Y (.)"
+            title="Dither phase Y"
           >
             OY{ditherOy}
           </button>
@@ -535,7 +689,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       <div style={{ borderTop: "1px solid #1a1a1a", marginTop: 2 }}>
         <button onClick={() => setOnionEnabled((v) => !v)} style={toolBtn(onionEnabled)} title="Onion Skin (O)">ONI</button>
         <button onClick={() => setShowOnionOptions((v) => !v)} style={{ ...toolBtn(showOnionOptions), height: 24, fontSize: 6 }} title="Onion Skin Options">OPT</button>
-        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (P)">{playing ? "||" : ">"}</button>
+        <button onClick={togglePlayback} style={toolBtn(playing)} title="Play / Pause (Space)">{playing ? "||" : ">"}</button>
       </div>
       <div style={{ marginTop: "auto" }}>
         <button onClick={undo} style={{ ...toolBtn(false), height: 24 }}>UNDO</button>
@@ -566,9 +720,98 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       <div className="border-b" style={{ borderColor: "#1a1a1a", padding: 4 }}>
         <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>COLOR</span>
         <div className="mt-1 mb-1" style={{ width: "100%", height: 16, backgroundColor: packedColorToHex(primaryColor), border: "1px solid #555" }} />
+        <input
+          type="color"
+          value={packedColorToHex(primaryColor)}
+          onChange={(e) => setPrimaryColor(hexToPackedColor(e.target.value))}
+          title="Hex color picker"
+          style={{
+            width: "100%",
+            height: 22,
+            border: "1px solid #333",
+            background: "#000",
+            padding: 0,
+            cursor: "pointer",
+            marginBottom: 4,
+          }}
+        />
+        <div style={{ display: "flex", gap: 2, marginBottom: 4 }}>
+          <button
+            type="button"
+            onClick={() => setPaletteMode("free")}
+            style={{
+              flex: 1,
+              height: 18,
+              fontSize: 6,
+              letterSpacing: 1,
+              border: paletteMode === "free" ? "1px solid #ffff00" : "1px solid #333",
+              background: paletteMode === "free" ? "#fff" : "#000",
+              color: paletteMode === "free" ? "#000" : "#888",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+            title="Free hex colors"
+          >
+            HEX
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaletteMode("indexed")}
+            style={{
+              flex: 1,
+              height: 18,
+              fontSize: 6,
+              letterSpacing: 1,
+              border: paletteMode === "indexed" ? "1px solid #ffff00" : "1px solid #333",
+              background: paletteMode === "indexed" ? "#fff" : "#000",
+              color: paletteMode === "indexed" ? "#000" : "#888",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+            title="Snap paint to indexed palette (classic hardware)"
+          >
+            IDX
+          </button>
+        </div>
+        <select
+          value={palettePreset}
+          onChange={(e) => setPalettePreset(e.target.value)}
+          style={{
+            width: "100%",
+            height: 20,
+            marginBottom: 4,
+            background: "#000",
+            color: "#ccc",
+            border: "1px solid #333",
+            fontFamily: "inherit",
+            fontSize: 7,
+          }}
+          title="Palette source"
+        >
+          <option value="project">PROJECT</option>
+          {Object.entries(INDEXED_PALETTE_PRESETS).map(([id, p]) => (
+            <option key={id} value={id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 1 }}>
-          {project.palette.map((hex, i) => (
-            <div key={i} onClick={() => handlePaletteClick(hex)} style={{ width: "100%", aspectRatio: "1", backgroundColor: hex, border: packedColorToHex(primaryColor) === hex ? "1px solid #fff" : "1px solid #333", cursor: "pointer" }} />
+          {activePalette.map((hex, i) => (
+            <div
+              key={`${hex}-${i}`}
+              onClick={() => handlePaletteClick(hex)}
+              style={{
+                width: "100%",
+                aspectRatio: "1",
+                backgroundColor: hex,
+                border:
+                  packedColorToHex(primaryColor) === hex.toLowerCase() ||
+                  packedColorToHex(primaryColor) === hex
+                    ? "1px solid #fff"
+                    : "1px solid #333",
+                cursor: "pointer",
+              }}
+            />
           ))}
         </div>
       </div>
@@ -648,7 +891,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         </div>
       ) : null}
 
-      {/* OS creative-bus handoff (SHOTLIST ↔ Sprite Editor) */}
+      {/* OS creative-bus handoff (SHOTLIST ↔ KoolDraw) */}
       {!embeddedMode && handoff ? (
         <div
           className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0 flex-wrap gap-2"
@@ -698,11 +941,14 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
 
       {!collapse && (
         <div className="flex items-center justify-between px-2 py-0.5 border-b-2 flex-shrink-0" style={{ borderColor: "#1a1a1a", minHeight: 22 }}>
-          <span style={{ letterSpacing: 2 }}>SPRITE EDITOR</span>
+          <span style={{ letterSpacing: 2 }}>KOOLDRAW</span>
           <div className="flex gap-2 items-center">
             <span style={{ color: "#888" }}>{project.width}x{project.height}</span>
             <span style={{ color: "#555" }}>FRM:{displayFrameIndex + 1}/{frameCount}</span>
-            <span style={{ color: "#555" }}>SZ:{penSize}</span>
+            <span style={{ color: "#555" }}>
+              SZ:{penSize} · OP:{Math.round(brush.opacity * 100)}
+              {paletteMode === "indexed" ? " · IDX" : ""}
+            </span>
             {activeTool === "dither" && (
               <span style={{ color: "#666" }}>DΦ:{ditherOx},{ditherOy}</span>
             )}
@@ -722,7 +968,14 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       )}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {!collapse && <div className="flex flex-col border-r flex-shrink-0" style={{ borderColor: "#1a1a1a", width: 40 }}>{toolsContent}</div>}
+        {!collapse && (
+          <div
+            className="flex flex-col border-r flex-shrink-0"
+            style={{ borderColor: "#1a1a1a", width: 108 }}
+          >
+            {toolsContent}
+          </div>
+        )}
 
         <div className="flex-1 relative overflow-hidden">
           <SpriteCanvas
@@ -736,6 +989,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             tool={activeTool}
             color={primaryColor}
             penSize={penSize}
+            brush={brushForCanvas}
             ditherOx={ditherOx}
             ditherOy={ditherOy}
             ditherPattern={ditherPattern}

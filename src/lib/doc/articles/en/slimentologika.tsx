@@ -98,7 +98,7 @@ export default function Slimentologika() {
       <UList>
         <Li>The K-OS boot sequence flashes a few Slimentologika characters between Psalms.</Li>
         <Li>The taskbar uses standard ASCII; Slimentologika is exclusive to the tracker.</Li>
-        <Li>The Sprite Editor's color picker shows hex values in standard form (Slimentologika doesn't toggle there yet — pending).</Li>
+        <Li>KoolDraw's color picker shows hex values in standard form (Slimentologika doesn't toggle there yet — pending).</Li>
         <Li>2KOOL Productions merch and the K-OS aesthetic spread it further out.</Li>
       </UList>
 

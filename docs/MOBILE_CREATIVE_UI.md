@@ -9,7 +9,7 @@
 
 # Mobile Creative UI Pattern
 
-**Status:** Design specification (July 2026). Implementation begins with Sprite Editor (KoolDraw) and Tilemap Painter. This is a **reusable pattern** — every new creative app (future animation timeline tools, level editors, 3D viewport tools, etc.) must follow it or explicitly document why it diverges.
+**Status:** Design specification (July 2026). Implementation begins with KoolDraw and Tilemap Painter. This is a **reusable pattern** — every new creative app (future animation timeline tools, level editors, 3D viewport tools, etc.) must follow it or explicitly document why it diverges.
 
 **Goal:** On cellphones and narrow portrait screens the canvas must be as large as possible. Toolbars, palettes, layers, timelines and status bars must be able to collapse completely out of the way, yet remain one-tap reachable. The four corners of the screen become the permanent “home” for collapsed panels.
 
@@ -141,7 +141,7 @@ From `koolskull-os-ui-notes.md` and the project rules:
 
 ## 6. Implementation Roadmap
 
-1. **Sprite Editor (KoolDraw)** — first target. Convert the current left tool strip, right sidebar, and bottom timeline into CornerPanels. Add VerticalChromeToggle.
+1. **KoolDraw** — first target. Convert the current left tool strip, right sidebar, and bottom timeline into CornerPanels. Add VerticalChromeToggle.
 2. **Tilemap Painter** — second target. Map the top control bar and left spritesheet panel into the corner system.
 3. Extract the shared `CornerHost` / `CornerPanel` / `VerticalChromeToggle` into `src/components/ui/` (or `src/components/os/`) so future apps import them.
 4. Update this document with any learned interaction tweaks after the first two apps ship the pattern.

@@ -33,9 +33,9 @@ import {
   type ShotBg,
 } from "./monoDraw";
 
-/** Pen size clamps (px radius) */
+/** Pen width clamps (px) — max brush size; pressure maps min→max, mouse uses max fixed */
 const PEN_SIZE_FLOOR = 1;
-const PEN_SIZE_CEIL = 96;
+const PEN_SIZE_CEIL = 256;
 const DEFAULT_PEN_MIN = 1;
 const DEFAULT_PEN_MAX = 24;
 
@@ -115,9 +115,12 @@ export function ShotCanvas({
   );
   /** Ordered-dither gray coverage 0..1 (Bayer gradient stop) */
   const [coverage, setCoverage] = useState(0.5);
-  /** Brush radius at zero pressure (px) */
+  /** Brush size at zero pressure (px) — stylus only */
   const [penMinSize, setPenMinSize] = useState(DEFAULT_PEN_MIN);
-  /** Brush radius at full pressure (px) */
+  /**
+   * Max pen width 1–256 (vertical rail: bottom=1, top=256).
+   * Stylus: pressure ramps min→this. Mouse: fixed click-drag width.
+   */
   const [penMaxSize, setPenMaxSize] = useState(DEFAULT_PEN_MAX);
   /** Cubic-Bezier anchors for pressure→size */
   const [penCurve, setPenCurve] = useState<PressureCurve>(DEFAULT_PRESSURE_CURVE);
@@ -300,14 +303,17 @@ export function ShotCanvas({
     [],
   );
 
-  const stampAt = useCallback((x: number, y: number, pressure: number) => {
+  /**
+   * @param sizePressure 0..1 used for brush size (mouse forced to 1 = max width)
+   */
+  const stampAt = useCallback((x: number, y: number, sizePressure: number) => {
     const { w, h } = sizeRef.current;
     const cov = coverageRef.current;
     const minR = penMinRef.current;
     const maxR = penMaxRef.current;
     const base = {
       ink: inkRef.current,
-      pressure,
+      pressure: sizePressure,
       ditherOx: ditherOxRef.current,
       ditherOy: ditherOyRef.current,
       width: w,
@@ -328,12 +334,12 @@ export function ShotCanvas({
   }, []);
 
   const strokeTo = useCallback(
-    (x: number, y: number, pressure: number) => {
+    (x: number, y: number, sizePressure: number) => {
       const last = lastPtRef.current;
-      if (!last) stampAt(x, y, pressure);
+      if (!last) stampAt(x, y, sizePressure);
       else {
         forEachStrokePoint(last.x, last.y, x, y, (px, py) => {
-          stampAt(px, py, pressure);
+          stampAt(px, py, sizePressure);
         });
       }
       lastPtRef.current = { x, y };
@@ -341,6 +347,15 @@ export function ShotCanvas({
     },
     [paintView, stampAt],
   );
+
+  /** Mouse → fixed max width (pressure=1). Pen/stylus → live pressure. */
+  const sizePressureFromEvent = (
+    pressure: number,
+    pointerType: string,
+  ): number => {
+    if (pointerType === "mouse") return 1;
+    return pressure;
+  };
 
   // Stage-level pointers (wrap) — pan works on empty area; pen uses canvas rect
   const onStagePointerDown = useCallback(
@@ -375,7 +390,7 @@ export function ShotCanvas({
       lastPtRef.current = null;
       const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
       setLastPressure(p);
-      strokeTo(pt.x, pt.y, p);
+      strokeTo(pt.x, pt.y, sizePressureFromEvent(p, e.pointerType));
     },
     [ready, vpDown, clientToPlate, pushUndo, strokeTo],
   );
@@ -389,7 +404,7 @@ export function ShotCanvas({
       if (!pt) return;
       const p = normalizePressure(e.pressure, e.pointerType, e.buttons);
       setLastPressure(p);
-      strokeTo(pt.x, pt.y, p);
+      strokeTo(pt.x, pt.y, sizePressureFromEvent(p, e.pointerType));
     },
     [vpMove, clientToPlate, strokeTo],
   );
@@ -550,6 +565,17 @@ export function ShotCanvas({
     setCoverage(Math.min(1, Math.max(0, 1 - t)));
   };
 
+  /** Top of strip = max pen width 256, bottom = 1 */
+  const setPenWidthFromClientY = (clientY: number, el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    const t = (clientY - rect.top) / Math.max(1, rect.height);
+    const span = PEN_SIZE_CEIL - PEN_SIZE_FLOOR;
+    const v = Math.round(PEN_SIZE_FLOOR + (1 - Math.min(1, Math.max(0, t))) * span);
+    const next = Math.min(PEN_SIZE_CEIL, Math.max(PEN_SIZE_FLOOR, v));
+    setPenMaxSize(next);
+    setPenMinSize((min) => Math.min(min, next));
+  };
+
   return (
     <div style={rootStyle}>
       {/* ONE compact header bar */}
@@ -586,7 +612,7 @@ export function ShotCanvas({
         </button>
         {onOpenInSpriteEditor && (
           <button type="button" style={miniBtn()} onClick={handleOpenSprite}>
-            SPRITE
+            KOOL
           </button>
         )}
         <button type="button" style={miniBtn(true)} onClick={handleSave}>
@@ -613,7 +639,7 @@ export function ShotCanvas({
             onClick={() => setToolsOpen((v) => !v)}
             title="Pen tools (T)"
             style={{
-              width: toolsOpen ? 92 : 36,
+              width: toolsOpen ? 118 : 36,
               height: 26,
               flexShrink: 0,
               border: "none",
@@ -631,7 +657,7 @@ export function ShotCanvas({
           {toolsOpen && (
             <div
               style={{
-                width: 92,
+                width: 118,
                 flex: 1,
                 minHeight: 0,
                 overflow: "hidden",
@@ -651,13 +677,25 @@ export function ShotCanvas({
                 </button>
               </div>
 
-              <div style={{ fontSize: 7, color: "#555", letterSpacing: 1, flexShrink: 0 }}>
-                {Math.round(coverage * 100)}%
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 7,
+                  color: "#555",
+                  letterSpacing: 1,
+                  flexShrink: 0,
+                  padding: "0 2px",
+                }}
+              >
+                <span>{Math.round(coverage * 100)}%</span>
+                <span title="Pen width (max) · [ ]">W{penMaxSize}</span>
               </div>
 
               {/*
-                Vertical tone rail fills remaining height (no scroll).
-                Top = solid 100%, bottom = empty 0%.
+                Three verticals: tone % · pen width · dither kernels.
+                Rails fill remaining height (no scroll).
               */}
               <div
                 ref={railRef}
@@ -667,12 +705,13 @@ export function ShotCanvas({
                   width: "100%",
                   display: "flex",
                   flexDirection: "row",
-                  gap: 4,
+                  gap: 3,
                   alignItems: "stretch",
                   justifyContent: "center",
                   overflow: "hidden",
                 }}
               >
+                {/* 1 · Tone / dither density */}
                 <div
                   style={{
                     position: "relative",
@@ -693,7 +732,7 @@ export function ShotCanvas({
                     if (e.buttons !== 1) return;
                     setCoverageFromClientY(e.clientY, e.currentTarget);
                   }}
-                  title="Drag: top=solid · bottom=empty"
+                  title="Tone: top=solid · bottom=empty"
                 >
                   <canvas
                     ref={gradientRef}
@@ -722,7 +761,106 @@ export function ShotCanvas({
                   />
                 </div>
 
-                {/* Kernel swatches — fill rail height evenly, no scroll */}
+                {/* 2 · Pen width 1–256 (bottom→top) — max / mouse size */}
+                <div
+                  style={{
+                    position: "relative",
+                    width: 16,
+                    height: "100%",
+                    border: "1px solid #333",
+                    cursor: "ns-resize",
+                    flexShrink: 0,
+                    overflow: "hidden",
+                    background:
+                      "linear-gradient(to top, #111 0%, #333 40%, #888 75%, #fff 100%)",
+                    imageRendering: "pixelated",
+                  }}
+                  onPointerDown={(e) => {
+                    const el = e.currentTarget;
+                    el.setPointerCapture(e.pointerId);
+                    setPenWidthFromClientY(e.clientY, el);
+                  }}
+                  onPointerMove={(e) => {
+                    if (e.buttons !== 1) return;
+                    setPenWidthFromClientY(e.clientY, e.currentTarget);
+                  }}
+                  title="Pen width: top=256px · bottom=1px · [ ] · stylus max / mouse size"
+                >
+                  {/* Taper graphic: thin at bottom, fat at top */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "linear-gradient(to top, transparent 0%, transparent 100%)",
+                    }}
+                  />
+                  <svg
+                    width="16"
+                    height="100%"
+                    viewBox="0 0 16 100"
+                    preserveAspectRatio="none"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <polygon points="7,98 9,98 14,2 2,2" fill="#ffff00" opacity="0.35" />
+                  </svg>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      top: `${
+                        (1 -
+                          (penMaxSize - PEN_SIZE_FLOOR) /
+                            Math.max(1, PEN_SIZE_CEIL - PEN_SIZE_FLOOR)) *
+                        100
+                      }%`,
+                      height: 2,
+                      background: "#ffff00",
+                      transform: "translateY(-1px)",
+                      pointerEvents: "none",
+                      boxShadow: "0 0 0 1px #000",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 2,
+                      left: 0,
+                      right: 0,
+                      textAlign: "center",
+                      fontSize: 6,
+                      color: "#666",
+                      pointerEvents: "none",
+                      letterSpacing: 0,
+                    }}
+                  >
+                    1
+                  </div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      left: 0,
+                      right: 0,
+                      textAlign: "center",
+                      fontSize: 5,
+                      color: "#888",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    256
+                  </div>
+                </div>
+
+                {/* 3 · Kernel swatches */}
                 <div
                   style={{
                     display: "flex",
@@ -781,9 +919,9 @@ export function ShotCanvas({
                   lineHeight: 1.3,
                   flexShrink: 0,
                 }}
-                title="[ ] max size · Shift+[ ] min size"
+                title="[ ] pen width · Shift+[ ] min (stylus)"
               >
-                SIZE {penMinSize}–{penMaxSize}
+                W {penMaxSize}px · min {penMinSize}
               </div>
 
               <div
@@ -933,8 +1071,8 @@ export function ShotCanvas({
               <div>Tone strip = ordered dither %</div>
               <div>SCROLL zoom · SPACE+drag pan</div>
               <div>Pinch zoom · 2-finger tap undo</div>
-              <div>[ ] max size · Shift+[ ] min size</div>
-              <div>C curve (drag 2 anchors) · T · X · ⌘Z</div>
+              <div>Width rail / [ ] = pen W 1–256 (mouse fixed, stylus max)</div>
+              <div>C curve anchors · T tools · X ink · ⌘Z</div>
               <button type="button" style={{ ...miniBtn(), marginTop: 6 }} onClick={() => setHelpOpen(false)}>
                 CLOSE
               </button>
@@ -1314,7 +1452,7 @@ function PressureCurvePanel({
         />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 8, color: "#777", letterSpacing: 1 }}>
-        MAX {maxSize}px  ·  [ ]
+        MAX WIDTH {maxSize}px  ·  [ ] · rail
         <input
           type="range"
           min={PEN_SIZE_FLOOR}

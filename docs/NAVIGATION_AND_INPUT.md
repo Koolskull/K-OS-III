@@ -19,7 +19,7 @@ On a Miyoo Mini or Anbernic handheld, it runs in the browser natively.
 
 **See also: [CONTROLLER_SUPPORT.md](CONTROLLER_SUPPORT.md)** for MIDI, gamepad, and handheld device specifications.
 
-**Creative apps (Sprite Editor / KoolDraw, Tilemap Painter, and future drawing/animation tools)** use a different mobile pattern so the canvas can stay large on phones. See **[MOBILE_CREATIVE_UI.md](MOBILE_CREATIVE_UI.md)** — Corner-Collapsible Panels + Vertical Menu Toggle.
+**Creative apps (KoolDraw, Tilemap Painter, and future drawing/animation tools)** use a different mobile pattern so the canvas can stay large on phones. See **[MOBILE_CREATIVE_UI.md](MOBILE_CREATIVE_UI.md)** — Corner-Collapsible Panels + Vertical Menu Toggle.
 
 ---
 
@@ -198,7 +198,7 @@ When no keyboard is attached, a virtual controller overlay appears:
 - Haptic feedback on button presses (if device supports it)
 - Touch controls can be hidden when a keyboard is detected
 
-### Creative Apps (Sprite Editor, Tilemap, future tools)
+### Creative Apps (KoolDraw, Tilemap, future tools)
 
 These apps prioritize a large free-hand canvas on phones. They do **not** use the bottom virtual Game Boy controller by default. Instead they use the **Corner-Collapsible Panels** system:
 

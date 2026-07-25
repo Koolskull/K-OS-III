@@ -18,14 +18,14 @@ A discoverable overlay that pops on `?` (or `Shift+?`) showing the most relevant
 ### 2. Screenshot pass: capture the 4 hero GIFs/PNGs for README
 **Labels:** `good-first-issue`, `docs`, `screenshots`
 **Size:** small
-Capture the four screenshots referenced from the top of `README.md`: boot sequence, Datamoshpit phrase editor, sprite editor, desktop with multiple windows. Save into [`public/screenshots/`](../public/screenshots/) per the README in that folder. Animated GIFs welcome.
+Capture the four screenshots referenced from the top of `README.md`: boot sequence, Datamoshpit phrase editor, KoolDraw, desktop with multiple windows. Save into [`public/screenshots/`](../public/screenshots/) per the README in that folder. Animated GIFs welcome.
 
 ### 3. Datamoshpit: per-channel meters in the taskbar
 **Labels:** `datamoshpit`, `help-wanted`
 **Size:** medium
 Tiny per-channel level meters visible in the taskbar when Datamoshpit is the active window. 8 columns of pixel-bar level indicators. Updates from the AudioEngine's per-channel mixer.
 
-### 4. Sprite editor: onion-skin toggle
+### 4. KoolDraw: onion-skin toggle
 **Labels:** `good-first-issue`, `os-shell`, `kooldraw`
 **Size:** small-medium
 Add a toggle to overlay the previous and next animation frames at reduced opacity behind the current frame for animation work. Reference: Piskel's onion skin implementation.
@@ -50,7 +50,7 @@ A small About panel reachable from the start menu showing version, contributor c
 **Size:** small
 A pair of pixel-bar VU meters for L/R master output on the project screen. Smaller scope than the per-channel meters issue (#3) and a good warm-up for it.
 
-### 9. Sprite editor: export-as-PNG-sequence button
+### 9. KoolDraw: export-as-PNG-sequence button
 **Labels:** `good-first-issue`, `kooldraw`
 **Size:** small
 A single-action export of all animation frames as numbered PNGs, ready to drop into Datamoshpit's planned Image Sequence VM (see [`DATAMOSHPIT_VIDEO_SPEC.md`](./DATAMOSHPIT_VIDEO_SPEC.md)).
@@ -168,7 +168,7 @@ Set up Open Collective for the project, or alternatively pursue Software Freedom
 
 ### 31. Funding: record 90-second demo video
 **Labels:** `funding`, `media`, `screenshots`
-The single highest-leverage item for grant applications and investor conversations. Boot, desktop, Datamoshpit live demo, sprite editor cameo. Record at native resolution, no upscaling. Gated on screenshot pass (#2).
+The single highest-leverage item for grant applications and investor conversations. Boot, desktop, Datamoshpit live demo, KoolDraw cameo. Record at native resolution, no upscaling. Gated on screenshot pass (#2).
 
 ---
 
@@ -202,7 +202,7 @@ A payment-request attachment type that renders as a card inside the chat UI, inv
 
 ## Part 1.12 — Mobile Creative UI (new)
 
-### 38. Implement Corner-Collapsible Panels + Vertical Chrome Toggle for Sprite Editor
+### 38. Implement Corner-Collapsible Panels + Vertical Chrome Toggle for KoolDraw
 **Labels:** `kooldraw`, `ux`, `mobile`, `design`
 **Size:** medium
 Follow the specification in [`MOBILE_CREATIVE_UI.md`](./MOBILE_CREATIVE_UI.md). Convert the left tool strip, right sidebar (palette/layers/preview), and bottom timeline into `CornerPanel`s that collapse into the four corners. Add independent vertical hide/restore (“zen mode”) so the canvas can occupy the full window on a phone. Extract shared components (`CornerHost`, `CornerPanel`, `VerticalChromeToggle`) into `src/components/ui/` (or `os/`) for reuse. Keep hard-edged, pixelated aesthetic; no rounded corners.

@@ -410,7 +410,7 @@ function visualAssetLoadField(): InstrumentField {
   };
 }
 
-/** Action: open the KoolDraw sprite editor embedded; result becomes the asset */
+/** Action: open KoolDraw embedded; result becomes the asset */
 function visualAssetDrawField(): InstrumentField {
   return {
     key: "v_asset_draw", label: "DRAW",

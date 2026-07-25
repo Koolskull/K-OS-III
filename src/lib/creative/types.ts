@@ -53,4 +53,4 @@ export interface CreativeReturn {
 }
 
 /** Freehand tool ids shared by SHOTLIST + KoolDraw (+ future apps) */
-export type FreehandToolId = "pen" | "harsh" | "dither" | "eraser";
+export type FreehandToolId = "pen" | "paint" | "harsh" | "dither" | "eraser";

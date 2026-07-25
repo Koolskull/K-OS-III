@@ -198,7 +198,7 @@ Chat-as-context-for-commerce is a long-standing pattern (Discord bots, Telegram 
 A **"share into chat"** target means anything made in K-OS can be sent directly to a channel on any connected network, **honoring that network's attachment semantics.**
 
 - A song from Datamoshpit shared to a Farcaster channel → uploads to a host the network supports, posts as cast with attachment.
-- A sprite from the sprite editor shared to a Matrix room → uploads via the Matrix media repo, posts as message with embedded image.
+- A sprite from the KoolDraw shared to a Matrix room → uploads via the Matrix media repo, posts as message with embedded image.
 - A 3D scene shared to a chat → handled per the network's capabilities; if the network doesn't support 3D scene attachments, the UI surfaces this and offers alternatives.
 
 ### 8.3 K-Wallet integration

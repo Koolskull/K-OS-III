@@ -51,6 +51,7 @@ export interface SpriteProject {
 /** Drawing tool identifiers */
 export type ToolId =
   | "pen"
+  | "paint"
   | "harsh"
   | "dither"
   | "eraser"

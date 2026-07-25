@@ -27,13 +27,15 @@ import {
   floodFill,
   compositeFrame,
   packedColorToRGBA,
-  forEachStrokePoint,
   normalizePressure,
   stampFramePressurePen,
   stampFrameHarsh,
   stampFrameDither,
   stampFrameEraserDisk,
+  stampFrameSoftPaint,
   type DitherPatternId,
+  type PressureCurve,
+  DEFAULT_PRESSURE_CURVE,
 } from "@/lib/SpriteUtils";
 
 export interface OnionSkinSettings {
@@ -43,6 +45,38 @@ export interface OnionSkinSettings {
   /** Opacity for next frames: index 0 = frame+1, 1 = frame+2, 2 = frame+3 */
   nextOpacities: [number, number, number];
 }
+
+/** Soft paint / pressure brush settings (full color) */
+export interface BrushSettings {
+  /** Max brush radius/width in px (1–256) */
+  maxSize: number;
+  minSize: number;
+  /** Base opacity 0..1 */
+  opacity: number;
+  /** Map pressure → opacity */
+  opacityFromPressure: boolean;
+  /** Map pressure → size (via curve) */
+  sizeFromPressure: boolean;
+  softness: number;
+  scatter: number;
+  antialias: boolean;
+  curve: PressureCurve;
+  /** When set, snap paint colors to this palette (indexed mode) */
+  indexedPalette: string[] | null;
+}
+
+export const DEFAULT_BRUSH: BrushSettings = {
+  maxSize: 8,
+  minSize: 1,
+  opacity: 1,
+  opacityFromPressure: true,
+  sizeFromPressure: true,
+  softness: 0.35,
+  scatter: 0,
+  antialias: true,
+  curve: { ...DEFAULT_PRESSURE_CURVE },
+  indexedPalette: null,
+};
 
 interface SpriteCanvasProps {
   layers: SpriteLayer[];
@@ -57,6 +91,7 @@ interface SpriteCanvasProps {
   tool: ToolId;
   color: PackedColor;
   penSize: number;
+  brush?: BrushSettings;
   /** Bayer phase X for dither pencil (0–7) */
   ditherOx?: number;
   /** Bayer phase Y for dither pencil (0–7) */
@@ -84,39 +119,40 @@ const GRID_COLOR = "#333333";
 const ONION_PREV = { r: 180, g: 80, b: 255 };
 const ONION_NEXT = { r: 60, g: 220, b: 120 };
 
-function drawOnionFrame(
-  ctx: CanvasRenderingContext2D,
+/** Write composited frame into ImageData (fast path — one putImageData). */
+function packFrameToImageData(
+  imageData: ImageData,
   layers: SpriteLayer[],
   frameIndex: number,
   width: number,
   height: number,
-  offset: { x: number; y: number },
-  zoom: number,
-  opacity: number,
-  tint: { r: number; g: number; b: number },
-) {
-  if (opacity <= 0.001) return;
-  const frameCount = layers[0]?.frames.length ?? 0;
-  if (frameIndex < 0 || frameIndex >= frameCount) return;
-
+  tint?: { r: number; g: number; b: number },
+  opacity = 1,
+): void {
   const composited = compositeFrame(layers, frameIndex, width, height);
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const c = composited.pixels[y * width + x];
-      if (c === 0) continue;
-      const rgba = packedColorToRGBA(c);
-      if (rgba.a === 0) continue;
-
-      const lum = (rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114) / 255;
-      const r = Math.round(tint.r * (0.35 + lum * 0.65));
-      const g = Math.round(tint.g * (0.35 + lum * 0.65));
-      const b = Math.round(tint.b * (0.35 + lum * 0.65));
-      const a = (rgba.a / 255) * opacity;
-
-      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
-      ctx.fillRect(offset.x + x * zoom, offset.y + y * zoom, zoom, zoom);
+  const buf = new Uint32Array(imageData.data.buffer);
+  if (!tint) {
+    buf.set(composited.pixels);
+    return;
+  }
+  for (let i = 0; i < width * height; i++) {
+    const c = composited.pixels[i]!;
+    if (c === 0) {
+      buf[i] = 0;
+      continue;
     }
+    const rgba = packedColorToRGBA(c);
+    if (rgba.a === 0) {
+      buf[i] = 0;
+      continue;
+    }
+    const lum = (rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114) / 255;
+    const r = Math.round(tint.r * (0.35 + lum * 0.65));
+    const g = Math.round(tint.g * (0.35 + lum * 0.65));
+    const b = Math.round(tint.b * (0.35 + lum * 0.65));
+    const a = Math.round(rgba.a * opacity);
+    // ABGR packed (little-endian ImageData)
+    buf[i] = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
   }
 }
 
@@ -131,6 +167,7 @@ export function SpriteCanvas({
   tool,
   color,
   penSize,
+  brush = DEFAULT_BRUSH,
   ditherOx = 0,
   ditherOy = 0,
   ditherPattern = "bayer8",
@@ -145,17 +182,17 @@ export function SpriteCanvas({
 }: SpriteCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const spriteBufRef = useRef<HTMLCanvasElement | null>(null);
+  const onionBufRef = useRef<HTMLCanvasElement | null>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drawingRef = useRef(false);
 
   const {
     viewport,
-    transformStyle,
     onPointerDown: vpDown,
     onPointerMove: vpMove,
     onPointerUp: vpUp,
     spaceDownRef,
-    zoomBy: camZoomBy,
     onWheelZoom: camWheelZoom,
     resetViewport,
   } = useCanvasViewport({
@@ -163,6 +200,8 @@ export function SpriteCanvas({
     minZoom: 0.35,
     maxZoom: 4,
     enabled: !playing,
+    enableRotation: false,
+    pinchRotate: false,
   });
 
   /** Pixel zoom × camera zoom (pinch / scroll multiplies camera) */
@@ -175,12 +214,14 @@ export function SpriteCanvas({
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
   const penSizeRef = useRef(penSize);
+  const brushRef = useRef(brush);
   const ditherOxRef = useRef(ditherOx);
   const ditherOyRef = useRef(ditherOy);
   const ditherPatternRef = useRef(ditherPattern);
   toolRef.current = tool;
   colorRef.current = color;
   penSizeRef.current = penSize;
+  brushRef.current = brush;
   ditherOxRef.current = ditherOx;
   ditherOyRef.current = ditherOy;
   ditherPatternRef.current = ditherPattern;
@@ -194,18 +235,13 @@ export function SpriteCanvas({
     (clientX: number, clientY: number): [number, number] => {
       const canvas = canvasRef.current;
       if (!canvas) return [-1, -1];
-      const { x: sx, y: sy } = clientToCanvasBitmap(
-        canvas,
-        clientX,
-        clientY,
-        viewport.rotation,
-      );
+      const { x: sx, y: sy } = clientToCanvasBitmap(canvas, clientX, clientY, 0);
       if (sx < 0 || sy < 0) return [-1, -1];
       const px = (sx - offset.x) / drawZoom;
       const py = (sy - offset.y) / drawZoom;
       return [px, py];
     },
-    [offset, viewport.rotation, drawZoom],
+    [offset, drawZoom],
   );
 
   /** Integer pixel coords (shapes / fill / picker). */
@@ -217,6 +253,23 @@ export function SpriteCanvas({
     [screenToFloatPixel],
   );
 
+  const ensureBuf = (ref: React.MutableRefObject<HTMLCanvasElement | null>) => {
+    let c = ref.current;
+    if (!c) {
+      c = document.createElement("canvas");
+      ref.current = c;
+    }
+    if (c.width !== width || c.height !== height) {
+      c.width = width;
+      c.height = height;
+    }
+    return c;
+  };
+
+  /**
+   * Fast path: composite → ImageData once, blit with drawImage.
+   * (Previously filled every pixel with fillRect — unusable while stroking.)
+   */
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -228,47 +281,80 @@ export function SpriteCanvas({
     ctx.clearRect(0, 0, cw, ch);
 
     const z = drawZoom;
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const isLight = (x + y) % 2 === 0;
-        ctx.fillStyle = isLight ? CHECKER_LIGHT : CHECKER_DARK;
-        ctx.fillRect(offset.x + x * z, offset.y + y * z, z, z);
+    const ox = offset.x;
+    const oy = offset.y;
+    const dw = width * z;
+    const dh = height * z;
+
+    // Checker background (two-color grid via few rects when z is large is still OK;
+    // for speed use a 2×2 pattern scaled to z)
+    {
+      const tile = Math.max(1, Math.floor(z));
+      const pat = document.createElement("canvas");
+      pat.width = tile * 2;
+      pat.height = tile * 2;
+      const pctx = pat.getContext("2d")!;
+      pctx.fillStyle = CHECKER_LIGHT;
+      pctx.fillRect(0, 0, tile, tile);
+      pctx.fillRect(tile, tile, tile, tile);
+      pctx.fillStyle = CHECKER_DARK;
+      pctx.fillRect(tile, 0, tile, tile);
+      pctx.fillRect(0, tile, tile, tile);
+      const pattern = ctx.createPattern(pat, "repeat");
+      if (pattern) {
+        ctx.save();
+        ctx.translate(ox, oy);
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, dw, dh);
+        ctx.restore();
       }
     }
 
-    // Onion only when not playing and enabled
+    // Onion skins (composited once each → drawImage)
     if (onionSkin?.enabled && !playing) {
+      const onion = ensureBuf(onionBufRef);
+      const octx = onion.getContext("2d")!;
+      const img = octx.createImageData(width, height);
+      const frameCount = layers[0]?.frames.length ?? 0;
       for (let d = 3; d >= 1; d--) {
         const fi = viewFrameIndex - d;
         const op = onionSkin.prevOpacities[d - 1] ?? 0;
-        drawOnionFrame(ctx, layers, fi, width, height, offset, z, op, ONION_PREV);
+        if (op > 0.001 && fi >= 0 && fi < frameCount) {
+          packFrameToImageData(img, layers, fi, width, height, ONION_PREV, op);
+          octx.putImageData(img, 0, 0);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(onion, ox, oy, dw, dh);
+        }
       }
       for (let d = 3; d >= 1; d--) {
         const fi = viewFrameIndex + d;
         const op = onionSkin.nextOpacities[d - 1] ?? 0;
-        drawOnionFrame(ctx, layers, fi, width, height, offset, z, op, ONION_NEXT);
+        if (op > 0.001 && fi >= 0 && fi < frameCount) {
+          packFrameToImageData(img, layers, fi, width, height, ONION_NEXT, op);
+          octx.putImageData(img, 0, 0);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(onion, ox, oy, dw, dh);
+        }
       }
     }
 
-    const composited = compositeFrame(layers, viewFrameIndex, width, height);
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const c = composited.pixels[y * width + x];
-        if (c === 0) continue;
-        const rgba = packedColorToRGBA(c);
-        ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
-        ctx.fillRect(offset.x + x * z, offset.y + y * z, z, z);
+    // Main composite — single blit
+    {
+      const buf = ensureBuf(spriteBufRef);
+      const bctx = buf.getContext("2d")!;
+      const img = bctx.createImageData(width, height);
+      packFrameToImageData(img, layers, viewFrameIndex, width, height);
+      // Overlay shape preview into buffer
+      if (!playing && overlayRef.current.length) {
+        const u32 = new Uint32Array(img.data.buffer);
+        for (const [px, py, oc] of overlayRef.current) {
+          if (px < 0 || py < 0 || px >= width || py >= height) continue;
+          u32[py * width + px] = oc;
+        }
       }
-    }
-
-    if (!playing) {
-      for (const [ox, oy, oc] of overlayRef.current) {
-        if (ox < 0 || ox >= width || oy < 0 || oy >= height) continue;
-        const rgba = packedColorToRGBA(oc);
-        ctx.fillStyle = `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a / 255})`;
-        ctx.fillRect(offset.x + ox * z, offset.y + oy * z, z, z);
-      }
+      bctx.putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(buf, ox, oy, dw, dh);
     }
 
     if (z >= 6 && !playing) {
@@ -276,21 +362,21 @@ export function SpriteCanvas({
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let x = 0; x <= width; x++) {
-        const px = offset.x + x * z + 0.5;
-        ctx.moveTo(px, offset.y);
-        ctx.lineTo(px, offset.y + height * z);
+        const px = ox + x * z + 0.5;
+        ctx.moveTo(px, oy);
+        ctx.lineTo(px, oy + dh);
       }
       for (let y = 0; y <= height; y++) {
-        const py = offset.y + y * z + 0.5;
-        ctx.moveTo(offset.x, py);
-        ctx.lineTo(offset.x + width * z, py);
+        const py = oy + y * z + 0.5;
+        ctx.moveTo(ox, py);
+        ctx.lineTo(ox + dw, py);
       }
       ctx.stroke();
     }
 
     ctx.strokeStyle = "#555555";
     ctx.lineWidth = 1;
-    ctx.strokeRect(offset.x - 0.5, offset.y - 0.5, width * z + 1, height * z + 1);
+    ctx.strokeRect(ox - 0.5, oy - 0.5, dw + 1, dh + 1);
   }, [layers, viewFrameIndex, width, height, drawZoom, offset, onionSkin, playing]);
 
   useEffect(() => {
@@ -316,17 +402,45 @@ export function SpriteCanvas({
   }, [width, height, drawZoom, render]);
 
   const applyFreehandStamp = useCallback(
-    (fx: number, fy: number, pressure: number) => {
+    (fx: number, fy: number, pressure: number, pointerType: string) => {
       if (!activeFrame) return;
       const t = toolRef.current;
       const c = colorRef.current;
-      const maxR = Math.max(1, penSizeRef.current);
+      const br = brushRef.current;
+      const maxR = Math.max(1, br.maxSize || penSizeRef.current);
+      const minR = Math.max(1, Math.min(br.minSize, maxR));
+      // Mouse → full width; stylus → live pressure (unless size-from-pressure off)
+      const sizeP = br.sizeFromPressure
+        ? pointerType === "mouse"
+          ? 1
+          : pressure
+        : 1;
+      const opacMul = br.opacityFromPressure
+        ? pointerType === "mouse"
+          ? 1
+          : Math.max(0.05, pressure)
+        : 1;
+
       switch (t) {
         case "pen":
-          stampFramePressurePen(activeFrame, fx, fy, c, pressure, maxR);
+          stampFramePressurePen(activeFrame, fx, fy, c, sizeP, maxR);
+          break;
+        case "paint":
+          stampFrameSoftPaint(activeFrame, fx, fy, c, {
+            pressure: sizeP,
+            maxRadius: maxR,
+            minRadius: minR,
+            curve: br.curve,
+            opacity: br.opacity * opacMul,
+            opacityFromPressure: false,
+            softness: br.softness,
+            scatter: br.scatter,
+            antialias: br.antialias,
+            indexedPalette: br.indexedPalette,
+          });
           break;
         case "harsh":
-          stampFrameHarsh(activeFrame, fx, fy, c, pressure, maxR);
+          stampFrameHarsh(activeFrame, fx, fy, c, sizeP, maxR);
           break;
         case "dither":
           stampFrameDither(
@@ -334,7 +448,7 @@ export function SpriteCanvas({
             fx,
             fy,
             c,
-            pressure,
+            sizeP,
             maxR,
             ditherOxRef.current,
             ditherOyRef.current,
@@ -342,7 +456,7 @@ export function SpriteCanvas({
           );
           break;
         case "eraser":
-          stampFrameEraserDisk(activeFrame, fx, fy, pressure, maxR);
+          stampFrameEraserDisk(activeFrame, fx, fy, sizeP, maxR);
           break;
         default:
           break;
@@ -352,25 +466,33 @@ export function SpriteCanvas({
   );
 
   const applyTool = useCallback(
-    (px: number, py: number, isStart: boolean, pressure: number) => {
+    (px: number, py: number, isStart: boolean, pressure: number, pointerType = "mouse") => {
       if (playing) return;
       if (!activeFrame) return;
 
       const t = toolRef.current;
-      const freehand = t === "pen" || t === "harsh" || t === "dither" || t === "eraser";
+      const freehand =
+        t === "pen" || t === "paint" || t === "harsh" || t === "dither" || t === "eraser";
 
       if (freehand) {
         if (isStart) onStrokeBegin?.();
         const last = lastPixelRef.current;
         if (!last || isStart) {
-          applyFreehandStamp(px, py, pressure);
+          applyFreehandStamp(px, py, pressure, pointerType);
         } else {
-          forEachStrokePoint(last.x, last.y, px, py, (x, y) => {
-            applyFreehandStamp(x, y, pressure);
-          });
+          // Soft paint: denser sampling for smooth feathers
+          const step = t === "paint" ? 0.5 : 1;
+          const dx = px - last.x;
+          const dy = py - last.y;
+          const dist = Math.hypot(dx, dy);
+          const n = Math.max(1, Math.ceil(dist / step));
+          for (let i = 0; i <= n; i++) {
+            const u = i / n;
+            applyFreehandStamp(last.x + dx * u, last.y + dy * u, pressure, pointerType);
+          }
         }
         lastPixelRef.current = { x: px, y: py };
-        // Live paint: re-composite only. Undo snapshot was taken at stroke begin.
+        // Live paint: fast composite blit (not per-pixel fillRect)
         render();
         return;
       }
@@ -463,7 +585,13 @@ export function SpriteCanvas({
       if (t === "line" || t === "rect") {
         const [px, py] = screenToPixel(clientX, clientY);
         commitShape(px, py);
-      } else if (t === "pen" || t === "harsh" || t === "dither" || t === "eraser") {
+      } else if (
+        t === "pen" ||
+        t === "paint" ||
+        t === "harsh" ||
+        t === "dither" ||
+        t === "eraser"
+      ) {
         onStrokeEnd?.();
       }
       lastPixelRef.current = null;
@@ -497,7 +625,7 @@ export function SpriteCanvas({
       lastPixelRef.current = null;
       const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
-      applyTool(px, py, true, pressure);
+      applyTool(px, py, true, pressure, e.pointerType);
     },
     [screenToFloatPixel, applyTool, playing, vpDown],
   );
@@ -511,7 +639,7 @@ export function SpriteCanvas({
       e.preventDefault();
       const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
-      applyTool(px, py, false, pressure);
+      applyTool(px, py, false, pressure, e.pointerType);
     },
     [screenToFloatPixel, applyTool, vpMove],
   );
@@ -618,14 +746,11 @@ export function SpriteCanvas({
           border: "none",
           padding: 0,
           margin: 0,
-          // Only transform when panning/rotating — keeps desktop cursor exact at rest
+          // Pan only (no rotate) — keep mapping simple / fast
           transform:
-            Math.abs(viewport.panX) > 0.01 ||
-            Math.abs(viewport.panY) > 0.01 ||
-            Math.abs(viewport.rotation) > 0.01
-              ? transformStyle
+            Math.abs(viewport.panX) > 0.01 || Math.abs(viewport.panY) > 0.01
+              ? `translate(${viewport.panX}px, ${viewport.panY}px)`
               : undefined,
-          transformOrigin: "center center",
         }}
       />
       {/* Desktop zoom cluster */}

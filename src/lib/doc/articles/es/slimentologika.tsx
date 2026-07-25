@@ -100,7 +100,7 @@ export default function Slimentologika() {
       <UList>
         <Li>La secuencia de arranque de K-OS muestra algunos caracteres Slimentologika entre Salmos.</Li>
         <Li>La taskbar usa ASCII estándar; Slimentologika es exclusiva del tracker.</Li>
-        <Li>El selector de color del Sprite Editor muestra valores hex en forma estándar (Slimentologika no alterna ahí aún — pendiente).</Li>
+        <Li>El selector de color de KoolDraw muestra valores hex en forma estándar (Slimentologika no alterna ahí aún — pendiente).</Li>
         <Li>Merch de 2KOOL Productions y la estética de K-OS lo extienden más allá.</Li>
       </UList>
 

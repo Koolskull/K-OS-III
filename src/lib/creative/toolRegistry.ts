@@ -14,13 +14,19 @@ export interface FreehandToolDef {
   title: string;
 }
 
-/** Core freehand stack — pressure pen, harsh carve, dither pencil, eraser */
+/** Core freehand stack — pixel pen, soft paint, harsh, dither, eraser */
 export const FREEHAND_TOOLS: readonly FreehandToolDef[] = [
   {
     id: "pen",
     label: "PEN",
     key: "B",
-    title: "Pressure pen — size from pressure × pen size",
+    title: "Hard pixel pen — size from pressure × max width",
+  },
+  {
+    id: "paint",
+    label: "PNT",
+    key: "A",
+    title: "Soft color paint — opacity, feather, scatter, optional AA (A)",
   },
   {
     id: "harsh",

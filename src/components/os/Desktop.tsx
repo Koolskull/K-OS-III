@@ -29,7 +29,7 @@ interface DesktopIcon {
 const ICONS: DesktopIcon[] = [
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
-  { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
+  { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
   { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
   { id: "tilemap", label: "TILEMAP", glyph: "▤" },
   { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },

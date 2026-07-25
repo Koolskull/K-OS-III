@@ -12,7 +12,7 @@ The README hero row expects four images, in this order:
 |---|---|---|
 | `boot.png` | The K-OS III boot sequence mid-scroll — Rosary text or Psalms visible, terminal styling unmistakable | Capture early so the screen has black background and the cursor is visible |
 | `datamoshpit-phrase.png` | The Datamoshpit phrase editor with at least one channel filled in, Slimentologika or hex visible | Make it look like a real working session, not an empty grid |
-| `sprite-editor.png` | The sprite editor with a frame open and the tool palette visible | Bonus points for an in-progress pixel piece |
+| `sprite-editor.png` | KoolDraw with a frame open and the tool palette visible | Bonus points for an in-progress pixel piece |
 | `desktop.png` | The K-OS III desktop with **multiple** windows open — at least Datamoshpit + one other app, taskbar visible | This is the elevator-pitch shot. Make it dense |
 
 Animated GIFs are welcome and encouraged for the same slots — name them `.gif` and update the README link if you go that route.

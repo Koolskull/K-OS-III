@@ -93,7 +93,7 @@ export default function Slimentologika() {
       <UList>
         <Li>K-OSのブートシーケンスは詩篇の合間にいくつかのSlimentologika文字を点滅させます。</Li>
         <Li>タスクバーは標準ASCIIを使用；Slimentologikaはトラッカー専用です。</Li>
-        <Li>スプライトエディタの色選択器はhex値を標準形式で表示します (Slimentologikaはまだそこで切り替わりません — 保留中)。</Li>
+        <Li>KoolDrawの色選択器はhex値を標準形式で表示します (Slimentologikaはまだそこで切り替わりません — 保留中)。</Li>
         <Li>2KOOL Productionsのマーチャンダイズとk-OSの美学がさらに広げます。</Li>
       </UList>
 

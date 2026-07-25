@@ -200,7 +200,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         ),
       }));
       setSelectedShotId(shotId);
-      setStatusLine(`Returned from SPRITE · ${rw}×${rh}`);
+      setStatusLine(`Returned from KOOLDRAW · ${rw}×${rh}`);
     } else if (ret.cancelled) {
       setStatusLine("Sprite handoff cancelled");
     }
@@ -278,7 +278,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         bg: shot.bg,
         ref: { shotId: shot.id },
       });
-      setStatusLine(`→ SPRITE EDITOR ${shot.plateW}×${shot.plateH}`);
+      setStatusLine(`→ KOOLDRAW ${shot.plateW}×${shot.plateH}`);
     },
     [sequence.shots, workflow],
   );
@@ -553,7 +553,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           style={btn()}
           onClick={() => openInSpriteEditor(shot.id, shot.thumbnail)}
         >
-          SPRITE
+          KOOL
         </button>
         <button type="button" style={btn(true)} onClick={finishDrawSession}>
           DONE
@@ -727,7 +727,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                       style={btn()}
                       onClick={() => openInSpriteEditor(shot.id)}
                     >
-                      → SPRITE
+                      → KOOL
                     </button>
                     {shot.hasCommittedThumbnail &&
                       availableUpgrades(true, shot.plateW, shot.plateH).length >
@@ -770,7 +770,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         onClick={openSelectedInSprite}
         disabled={selectedShotId == null}
       >
-        SPRITE
+        KOOL
       </button>
       <button
         type="button"
@@ -801,7 +801,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <div style={{ color: "#ffff00", marginBottom: 6 }}>SHOTLIST</div>
       <div>N — new shot (orient + B/W → draw → meta)</div>
       <div>E — draw plate</div>
-      <div>S — sprite editor</div>
+      <div>S — KoolDraw</div>
       <div>U — upgrade HD/4K (after thumb)</div>
       <div>↑↓ Enter Del · H zen</div>
       <div style={{ marginTop: 8, color: "#555" }}>
@@ -1208,7 +1208,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           }}
         >
           <span>{statusLine}</span>
-          <span>N +SHOT · E DRAW · S SPRITE · U HD/4K</span>
+          <span>N +SHOT · E DRAW · S KOOL · U HD/4K</span>
         </div>
       )}
     </div>

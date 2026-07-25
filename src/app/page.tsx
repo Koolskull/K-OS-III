@@ -69,7 +69,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
-  kooldraw: { title: "SPRITE EDITOR", width: 800, height: 600 },
+  kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
   manual: { title: "K-OS MANUAL", width: 880, height: 600 },
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },

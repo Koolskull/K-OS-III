@@ -6,7 +6,7 @@
  *      ╚══════════════════════════╝
  *
  *   Reusable corner-collapsible panels + vertical zen hide
- *   for Sprite Editor, Tilemap, and future creative tools.
+ *   for KoolDraw, Tilemap, and future creative tools.
  *   Spec: docs/MOBILE_CREATIVE_UI.md
  *
  *   No rounded corners. Pixel font. Hard edges only.

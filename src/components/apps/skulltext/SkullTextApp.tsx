@@ -15,11 +15,29 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SkullEditor } from "./SkullEditor";
+import dynamic from "next/dynamic";
 
-/* ------------------------------------------------------------------ */
-/*  Types & constants                                                  */
-/* ------------------------------------------------------------------ */
+const SkullEditor = dynamic(
+  () => import("./SkullEditor").then((m) => m.SkullEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#555",
+          letterSpacing: 2,
+          fontSize: 11,
+        }}
+      >
+        LOADING EDITOR…
+      </div>
+    ),
+  },
+);
 
 interface SkullFile {
   id: string;
@@ -155,7 +173,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
         id: uid(),
         name: defaultName(".md"),
         content:
-          "# SKULLTEXT\n\nLocal-first notes and code (CodeMirror 6).\n\n- Soft wrap on by default\n- Tab indents · Ctrl-Space completes\n- Save to cache · Export to disk\n",
+          "# SKULLTEXT\n\nLocal-first notes and code (CodeMirror 6).\n\n- Soft wrap on by default\n- Tab indents\n- Save to cache · Export to disk\n",
         updatedAt: Date.now(),
       };
       setFiles([starter]);
@@ -590,7 +608,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
             <span>
               {active
                 ? `${active.content.length} chars · ${active.content.split("\n").length} lines · wrap ${wrap ? "on" : "off"}`
-                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · Tab indent · Ctrl-Space complete"}
+                : "Ctrl+S save · Ctrl+N new · Ctrl+E export · Tab indent"}
             </span>
           </div>
         </div>

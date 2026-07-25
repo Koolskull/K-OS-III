@@ -1,38 +1,15 @@
 /*
  * CodeMirror 6 host for SKULLTEXT — K-OS theme, soft wrap default on.
+ * Client-only; parent should dynamic-import this module.
  */
 
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { EditorState, Compartment, type Extension } from "@codemirror/state";
-import {
-  EditorView,
-  keymap,
-  lineNumbers,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  drawSelection,
-} from "@codemirror/view";
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-} from "@codemirror/commands";
-import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import {
-  autocompletion,
-  completionKeymap,
-  closeBrackets,
-  closeBracketsKeymap,
-} from "@codemirror/autocomplete";
-import { lintKeymap } from "@codemirror/lint";
-import {
-  bracketMatching,
-  foldGutter,
-  indentOnInput,
-} from "@codemirror/language";
+import { useEffect, useRef } from "react";
+import { basicSetup } from "codemirror";
+import { EditorView, keymap } from "@codemirror/view";
+import { EditorState, Compartment } from "@codemirror/state";
+import { indentWithTab } from "@codemirror/commands";
 import { kosTheme } from "./kosTheme";
 import { languageForFilename } from "./languages";
 
@@ -55,70 +32,43 @@ export function SkullEditor({ value, filename, wrap, onChange }: SkullEditorProp
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Create editor once per mount (parent remounts via key={fileId})
   useEffect(() => {
     const parent = parentRef.current;
     if (!parent) return;
 
     const lang = languageForFilename(filename);
 
-    const extensions: Extension[] = [
-      kosTheme,
-      lineNumbers(),
-      highlightActiveLine(),
-      highlightActiveLineGutter(),
-      drawSelection(),
-      history(),
-      indentOnInput(),
-      bracketMatching(),
-      closeBrackets(),
-      foldGutter(),
-      autocompletion(),
-      highlightSelectionMatches(),
-      keymap.of([
-        indentWithTab,
-        ...closeBracketsKeymap,
-        ...defaultKeymap,
-        ...historyKeymap,
-        ...searchKeymap,
-        ...completionKeymap,
-        ...lintKeymap,
-      ]),
-      langComp.current.of(lang ?? []),
-      wrapComp.current.of(wrap ? EditorView.lineWrapping : []),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged && !applyingExternal.current) {
-          onChangeRef.current(update.state.doc.toString());
-        }
-      }),
-      EditorState.tabSize.of(2),
-      EditorView.editable.of(true),
-    ];
-
     const state = EditorState.create({
       doc: value,
-      extensions,
+      extensions: [
+        basicSetup,
+        kosTheme,
+        keymap.of([indentWithTab]),
+        langComp.current.of(lang ?? []),
+        wrapComp.current.of(wrap ? EditorView.lineWrapping : []),
+        EditorState.tabSize.of(2),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged && !applyingExternal.current) {
+            onChangeRef.current(update.state.doc.toString());
+          }
+        }),
+      ],
     });
 
-    const view = new EditorView({
-      state,
-      parent,
-    });
+    const view = new EditorView({ state, parent });
     viewRef.current = view;
 
     return () => {
       view.destroy();
       viewRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; file switches remount via key
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync doc when parent forces a new value without remount (rare)
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    const current = view.state.doc.toString();
-    if (current === value) return;
+    if (view.state.doc.toString() === value) return;
     applyingExternal.current = true;
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: value },
@@ -129,9 +79,8 @@ export function SkullEditor({ value, filename, wrap, onChange }: SkullEditorProp
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    const lang = languageForFilename(filename);
     view.dispatch({
-      effects: langComp.current.reconfigure(lang ?? []),
+      effects: langComp.current.reconfigure(languageForFilename(filename) ?? []),
     });
   }, [filename]);
 
@@ -146,7 +95,6 @@ export function SkullEditor({ value, filename, wrap, onChange }: SkullEditorProp
   return (
     <div
       ref={parentRef}
-      className="skulltext-cm-host"
       style={{
         flex: 1,
         minHeight: 0,
@@ -160,3 +108,5 @@ export function SkullEditor({ value, filename, wrap, onChange }: SkullEditorProp
     />
   );
 }
+
+export default SkullEditor;

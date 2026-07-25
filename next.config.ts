@@ -35,6 +35,28 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {},
 
+  // CodeMirror / Lezer ship as pure ESM packages — ensure Next bundles them.
+  transpilePackages: [
+    "codemirror",
+    "@codemirror/autocomplete",
+    "@codemirror/commands",
+    "@codemirror/lang-cpp",
+    "@codemirror/lang-css",
+    "@codemirror/lang-html",
+    "@codemirror/lang-javascript",
+    "@codemirror/lang-json",
+    "@codemirror/lang-markdown",
+    "@codemirror/lang-xml",
+    "@codemirror/language",
+    "@codemirror/lint",
+    "@codemirror/search",
+    "@codemirror/state",
+    "@codemirror/view",
+    "@lezer/highlight",
+    "@lezer/common",
+    "@lezer/lr",
+  ],
+
   // Static export (only when K_OS_EXPORT=true). Skips API routes, server
   // components, image optimization. Headers below are no-ops for export but
   // kept for `npm run dev` / future server-rendered builds.

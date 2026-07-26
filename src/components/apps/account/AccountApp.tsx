@@ -15,10 +15,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { signIn, signOut } from "next-auth/react";
+import { SiweMessage } from "siwe";
 
 interface SessionUser {
   name?: string | null;
   id?: string;
+}
+
+interface Eip1193Provider {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+}
+
+declare global {
+  interface Window {
+    ethereum?: Eip1193Provider;
+  }
 }
 
 interface Profile {
@@ -86,6 +97,8 @@ export function AccountApp() {
   const [password, setPassword] = useState("");
   const [signInError, setSignInError] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [signingInWallet, setSigningInWallet] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -137,6 +150,53 @@ export function AccountApp() {
     await signOut({ redirect: false });
     setProfile(null);
     setUser(null);
+  }
+
+  async function handleEthereumSignIn() {
+    setWalletError(null);
+    if (!window.ethereum) {
+      setWalletError("No Ethereum wallet found — install MetaMask or a similar browser wallet.");
+      return;
+    }
+    setSigningInWallet(true);
+    try {
+      const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
+      const address = accounts[0];
+      if (!address) throw new Error("No account returned by wallet.");
+
+      const chainIdHex = (await window.ethereum.request({ method: "eth_chainId" })) as string;
+      const chainId = parseInt(chainIdHex, 16);
+
+      const nonceRes = await fetch("/api/ethereum/nonce");
+      const { nonce } = (await nonceRes.json()) as { nonce: string };
+
+      const siweMessage = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: "Sign in to K-OS III.",
+        uri: window.location.origin,
+        version: "1",
+        chainId,
+        nonce,
+      });
+      const preparedMessage = siweMessage.prepareMessage();
+
+      const signature = (await window.ethereum.request({
+        method: "personal_sign",
+        params: [preparedMessage, address],
+      })) as string;
+
+      const res = await signIn("ethereum", { message: preparedMessage, signature, redirect: false });
+      if (res?.error) {
+        setWalletError(res.error);
+        return;
+      }
+      await refreshSession();
+    } catch (err) {
+      setWalletError(err instanceof Error ? err.message : "Wallet sign-in failed.");
+    } finally {
+      setSigningInWallet(false);
+    }
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -197,6 +257,26 @@ export function AccountApp() {
             {signInError && (
               <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
                 {signInError.toUpperCase()}
+              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0" }}>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
+              <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR</span>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleEthereumSignIn}
+              disabled={signingInWallet}
+              style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+            >
+              {signingInWallet ? "CHECK YOUR WALLET…" : "SIGN IN WITH ETHEREUM"}
+            </button>
+            {walletError && (
+              <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                {walletError.toUpperCase()}
               </div>
             )}
           </form>

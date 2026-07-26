@@ -278,6 +278,11 @@ export function SpriteCanvas({
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const { x: sx, y: sy } = clientToCanvasBitmap(canvas, clientX, clientY, viewport.rotation);
+      // How far across the canvas box (0..1) the raw pointer coordinate falls,
+      // per getBoundingClientRect — the ground truth we now trust unconditionally.
+      const fracX = (clientX - rect.left) / rect.width;
+      const fracY = (clientY - rect.top) / rect.height;
+      const html = document.documentElement;
       setDbg({
         pointerType,
         clientX: Math.round(clientX),
@@ -286,6 +291,7 @@ export function SpriteCanvas({
         "canvas.clientW/H": `${canvas.clientWidth}/${canvas.clientHeight}`,
         "rect.w/h": `${rect.width.toFixed(1)}/${rect.height.toFixed(1)}`,
         "rect.left/top": `${rect.left.toFixed(1)}/${rect.top.toFixed(1)}`,
+        "frac X,Y (0..1 across canvas)": `${fracX.toFixed(3)}, ${fracY.toFixed(3)}`,
         sx: sx.toFixed(1),
         sy: sy.toFixed(1),
         "px,py (sprite px)": `${px.toFixed(2)}, ${py.toFixed(2)}`,
@@ -293,7 +299,9 @@ export function SpriteCanvas({
         drawZoom: drawZoom.toFixed(3),
         "viewport.zoom/rotation": `${viewport.zoom.toFixed(2)}/${viewport.rotation.toFixed(1)}`,
         devicePixelRatio: typeof window !== "undefined" ? window.devicePixelRatio : -1,
-        "visualViewport.scale": typeof window !== "undefined" && window.visualViewport ? window.visualViewport.scale : -1,
+        "visualViewport.scale/w": `${window.visualViewport ? window.visualViewport.scale.toFixed(3) : -1}/${window.visualViewport ? Math.round(window.visualViewport.width) : -1}`,
+        "html computed zoom": getComputedStyle(html).zoom || "n/a",
+        "html clientW vs innerWidth": `${html.clientWidth} vs ${window.innerWidth}`,
         spriteWH: `${width}x${height}`,
       });
     },

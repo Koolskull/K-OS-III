@@ -15,6 +15,29 @@
  *
  * @param rotationDeg CSS rotate() angle in degrees (positive = CSS clockwise)
  */
+/**
+ * Some WebKit versions, under the CSS `zoom` property (not `transform:
+ * scale`), paint an element at its zoomed visual size but report
+ * getBoundingClientRect() / clientWidth / clientHeight at the PRE-zoom
+ * logical size — the two agree with each other, but neither matches where
+ * PointerEvent.clientX/clientY actually land (those are always true
+ * on-screen position). Chromium keeps rect in sync with the real visual
+ * size instead, so rect ends up LARGER than clientWidth there once zoom is
+ * active. That difference is exactly how we detect which behavior the
+ * current browser has, without any UA sniffing: if rect still matches
+ * clientWidth despite an active zoom, rect hasn't picked it up, and we
+ * scale it in ourselves using the zoom factor we set in the first place.
+ */
+function detectZoomCorrection(canvas: HTMLCanvasElement, rect: DOMRect, layoutW: number, layoutH: number): number {
+  if (typeof document === "undefined") return 1;
+  const zoomStr = getComputedStyle(document.documentElement).zoom;
+  const activeZoom = zoomStr ? parseFloat(zoomStr) : 1;
+  if (!Number.isFinite(activeZoom) || activeZoom <= 1.001) return 1;
+  const rectMatchesLayout =
+    Math.abs(rect.width - layoutW) < 1 && Math.abs(rect.height - layoutH) < 1;
+  return rectMatchesLayout ? activeZoom : 1;
+}
+
 export function clientToCanvasBitmap(
   canvas: HTMLCanvasElement,
   clientX: number,
@@ -25,13 +48,21 @@ export function clientToCanvasBitmap(
   const bh = canvas.height;
   if (bw < 1 || bh < 1) return { x: -1, y: -1 };
 
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width < 1 || rect.height < 1) return { x: -1, y: -1 };
+  const rawRect = canvas.getBoundingClientRect();
+  if (rawRect.width < 1 || rawRect.height < 1) return { x: -1, y: -1 };
 
   // Unrotated content size (layout). Zoom is baked into these.
-  const layoutW = canvas.clientWidth || rect.width;
-  const layoutH = canvas.clientHeight || rect.height;
-  if (layoutW < 1 || layoutH < 1) return { x: -1, y: -1 };
+  const rawLayoutW = canvas.clientWidth || rawRect.width;
+  const rawLayoutH = canvas.clientHeight || rawRect.height;
+  if (rawLayoutW < 1 || rawLayoutH < 1) return { x: -1, y: -1 };
+
+  const zc = detectZoomCorrection(canvas, rawRect, rawLayoutW, rawLayoutH);
+  // Scaled from the viewport origin, matching how the browser paints a
+  // zoomed subtree rooted at <html>/<body> — not from the element's own
+  // top-left, which would double-count its already-corrected position.
+  const rect = zc === 1 ? rawRect : new DOMRect(rawRect.left * zc, rawRect.top * zc, rawRect.width * zc, rawRect.height * zc);
+  const layoutW = rawLayoutW * zc;
+  const layoutH = rawLayoutH * zc;
 
   const rot = rotationDeg;
 
@@ -50,7 +81,9 @@ export function clientToCanvasBitmap(
     // and only trusted rect when they "looked" ancestor-scaled — a heuristic
     // that silently mismapped clicks whenever clientWidth and rect diverged
     // for reasons other than a transform:scale ancestor (e.g. page-level CSS
-    // zoom). Trusting rect unconditionally removes that failure mode.
+    // zoom). Trusting rect unconditionally removes that failure mode — except
+    // on WebKit browsers where rect itself doesn't reflect zoom either, which
+    // `zc` above corrects for.
     const x = ((clientX - rect.left) / rect.width) * bw;
     const y = ((clientY - rect.top) / rect.height) * bh;
     return { x, y };

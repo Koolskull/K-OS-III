@@ -19,18 +19,32 @@ interface TaskbarWindow {
   isMinimized: boolean;
 }
 
+const menuActionBtn: React.CSSProperties = {
+  width: "100%",
+  height: "var(--dm-ui-btn-h, 22px)",
+  border: "1px solid #555555",
+  backgroundColor: "#000000",
+  color: "#ffffff",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: "var(--dm-ui-font-xs, 7px)",
+  letterSpacing: "1px",
+  cursor: "pointer",
+  boxSizing: "border-box",
+};
+
 interface TaskbarProps {
   windows: TaskbarWindow[];
   focusedId: string | null;
   onWindowClick: (id: string) => void;
   onShowDesktop: () => void;
+  onLaunchApp: (appId: string) => void;
 }
 
 interface SessionUser {
   name?: string | null;
 }
 
-export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: TaskbarProps) {
+export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLaunchApp }: TaskbarProps) {
   const [time, setTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -164,22 +178,29 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
                     >
                       {user.name}
                     </div>
-                    <button
-                      onClick={handleSignOut}
-                      style={{
-                        width: "100%",
-                        height: "var(--dm-ui-btn-h, 22px)",
-                        border: "1px solid #555555",
-                        backgroundColor: "#000000",
-                        color: "#ffffff",
-                        fontFamily: "var(--dm-font-primary)",
-                        fontSize: "var(--dm-ui-font-xs, 7px)",
-                        letterSpacing: "1px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      SIGN OUT
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("account");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        ACCOUNT
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("browser");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        KOS BROWSER
+                      </button>
+                      <button onClick={handleSignOut} style={menuActionBtn}>
+                        SIGN OUT
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -193,26 +214,26 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
                     >
                       NOT SIGNED IN
                     </div>
-                    <a
-                      href="/account"
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        height: "var(--dm-ui-btn-h, 22px)",
-                        lineHeight: "var(--dm-ui-btn-h, 22px)",
-                        textAlign: "center",
-                        border: "1px solid #ffffff",
-                        backgroundColor: "#ffffff",
-                        color: "#000000",
-                        fontFamily: "var(--dm-font-primary)",
-                        fontSize: "var(--dm-ui-font-xs, 7px)",
-                        letterSpacing: "1px",
-                        textDecoration: "none",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      LOG IN
-                    </a>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("account");
+                        }}
+                        style={{ ...menuActionBtn, border: "1px solid #ffffff", backgroundColor: "#ffffff", color: "#000000" }}
+                      >
+                        LOG IN
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("browser");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        KOS BROWSER
+                      </button>
+                    </div>
                   </>
                 )}
               </div>

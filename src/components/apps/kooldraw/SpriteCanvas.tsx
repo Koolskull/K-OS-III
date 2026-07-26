@@ -262,6 +262,45 @@ export function SpriteCanvas({
    * Math.max(1, …) locked zoom-out and made big plates glitch/overflow.
    */
   const drawZoom = clampPixelZoom(zoom * (viewport.zoom || 1));
+
+  // TEMP DIAGNOSTIC: visit with ?pendebug=1 to show live pointer/canvas
+  // geometry on-screen — for tracking down the iPad pen-offset report
+  // without needing a cable + Safari remote debugger. Safe to delete once
+  // the bug is confirmed/fixed.
+  const [pendebug] = useState(
+    () => typeof window !== "undefined" && window.location.search.includes("pendebug"),
+  );
+  const [dbg, setDbg] = useState<Record<string, string | number>>({});
+  const recordDebug = useCallback(
+    (clientX: number, clientY: number, pointerType: string, px: number, py: number) => {
+      if (!pendebug) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const { x: sx, y: sy } = clientToCanvasBitmap(canvas, clientX, clientY, viewport.rotation);
+      setDbg({
+        pointerType,
+        clientX: Math.round(clientX),
+        clientY: Math.round(clientY),
+        "canvas.width/height": `${canvas.width}/${canvas.height}`,
+        "canvas.clientW/H": `${canvas.clientWidth}/${canvas.clientHeight}`,
+        "rect.w/h": `${rect.width.toFixed(1)}/${rect.height.toFixed(1)}`,
+        "rect.left/top": `${rect.left.toFixed(1)}/${rect.top.toFixed(1)}`,
+        sx: sx.toFixed(1),
+        sy: sy.toFixed(1),
+        "px,py (sprite px)": `${px.toFixed(2)}, ${py.toFixed(2)}`,
+        "offset.x/y": `${offset.x}/${offset.y}`,
+        drawZoom: drawZoom.toFixed(3),
+        "viewport.zoom/rotation": `${viewport.zoom.toFixed(2)}/${viewport.rotation.toFixed(1)}`,
+        devicePixelRatio: typeof window !== "undefined" ? window.devicePixelRatio : -1,
+        "visualViewport.scale": typeof window !== "undefined" && window.visualViewport ? window.visualViewport.scale : -1,
+        spriteWH: `${width}x${height}`,
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pendebug, offset, drawZoom, viewport.zoom, viewport.rotation, width, height],
+  );
+
   /** Sub-pixel stroke continuity for freehand tools */
   const lastPixelRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<[number, number] | null>(null);
@@ -767,9 +806,10 @@ export function SpriteCanvas({
       lastPixelRef.current = null;
       const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
+      recordDebug(e.clientX, e.clientY, e.pointerType, px, py);
       applyTool(px, py, true, pressure, e.pointerType);
     },
-    [screenToFloatPixel, applyTool, playing, vpDown, onStrokeEnd],
+    [screenToFloatPixel, applyTool, playing, vpDown, onStrokeEnd, recordDebug],
   );
 
   const handlePointerMove = useCallback(
@@ -793,9 +833,10 @@ export function SpriteCanvas({
       e.preventDefault();
       const pressure = normalizePressure(e.pressure, e.pointerType, e.buttons);
       const [px, py] = screenToFloatPixel(e.clientX, e.clientY);
+      recordDebug(e.clientX, e.clientY, e.pointerType, px, py);
       applyTool(px, py, false, pressure, e.pointerType);
     },
-    [screenToFloatPixel, applyTool, vpMove],
+    [screenToFloatPixel, applyTool, vpMove, recordDebug],
   );
 
   const handlePointerUp = useCallback(
@@ -953,6 +994,29 @@ export function SpriteCanvas({
         {drawZoom < 1 ? " · FIT" : ""}
         {playing ? " · PLAY" : onionSkin?.enabled ? " · ONION" : ""}
       </div>
+      {pendebug && (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            zIndex: 999,
+            background: "rgba(0,0,0,0.85)",
+            border: "1px solid #0f0",
+            color: "#0f0",
+            fontFamily: "monospace",
+            fontSize: 10,
+            lineHeight: 1.5,
+            padding: "6px 8px",
+            pointerEvents: "none",
+            whiteSpace: "pre",
+          }}
+        >
+          {Object.entries(dbg)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n") || "touch/click the canvas..."}
+        </div>
+      )}
     </div>
   );
 }

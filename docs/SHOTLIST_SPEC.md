@@ -192,19 +192,26 @@ KoolDraw round-trip via the **Creative Workflow Bus** — see [`CREATIVE_WORKFLO
 
 ### Phase 1 — Offline MVP
 - Sequence view of Shots (thumbnail + description + **variable duration**) — *list + plate draw: done*
-- Expand Shot → 24 fps X-Sheet editor (frame rows driven by duration / exposures)
+- Expand Shot → 24 fps X-Sheet editor (frame rows driven by duration / exposures) — *done, `XSheetEditor.tsx`*
 - Quick thumbnail creation / assignment — *inline mono + KoolDraw round-trip: done*
 - Basic audio-timing notes
 - Sprite assignment + round-trip to KoolDraw
 - Full keyboard model + mobile CornerChrome
 
 ### Phase 2 — Production polish + print export
-- **3840×4969 monochrome printable exports**
-  - Storyboard + script layout
-  - Animator X-sheet layout
+- **Printable exports, 8.5×11 @ 300dpi** (superseded the original 3840×4969 mono-raster plan — done, see below)
+  - Storyboard + script layout — *done*
+  - Animator X-sheet layout — *done*
 - CSV / Markdown companions
 - Stronger Datamoshpit import / audio reference
 - Versioned asset slots against the same template
+
+**Landed (2026-07):** `ExportView.tsx` + `exportRender.ts` render both export modes onto
+canvas pages at 300dpi US Letter, reused for both `window.print()` (isolated via scoped
+`@media print` CSS) and a direct **Download PDF** button (`jsPDF`, flate-compressed
+images — uncompressed embeds blow up to ~25MB/page). X-Sheet frame numbering runs
+top-down (frame 1 at top), intentionally matching OpenToonz's and Tahoma2D's on-screen
+Xsheet panel order so a printed sheet lines up row-for-row with either app.
 
 ### Phase 3 — Wallet / multi-user approvals
 - After offline core is stable

@@ -5,6 +5,7 @@ export type {
   CreativeReturn,
   CreativeSession,
   FreehandToolId,
+  XSheetSnapshot,
 } from "./types";
 
 export {

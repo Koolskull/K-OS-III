@@ -15,6 +15,8 @@ import {
   useCornerChromeOptional,
 } from "@/components/ui/CornerChrome";
 import { ShotCanvas } from "./ShotCanvas";
+import { XSheetEditor } from "./XSheetEditor";
+import { ExportView } from "./ExportView";
 import {
   SHOT_H,
   SHOT_W,
@@ -28,62 +30,31 @@ import {
   type ShotBg,
 } from "./monoDraw";
 import { useCreativeWorkflow } from "@/lib/creative";
+import {
+  btn,
+  createEmptyXFrame,
+  fieldStyle,
+  uid,
+  xsheetFrameRanges,
+  xsheetTotalFrames,
+  type Sequence,
+  type Shot,
+  type XFrame,
+} from "./shotlistShared";
+
+export type { Sequence, Shot, XFrame } from "./shotlistShared";
+export {
+  btn,
+  createEmptyXFrame,
+  fieldStyle,
+  uid,
+  xsheetFrameRanges,
+  xsheetTotalFrames,
+} from "./shotlistShared";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-interface XFrame {
-  id: number;
-  exposure: number;
-  action: string;
-  dialogue: string;
-  camera: string;
-  audioCue: string;
-  notes: string;
-  assetRef: string | null;
-}
-
-interface Shot {
-  id: number;
-  title: string;
-  description: string;
-  durationFrames: number;
-  audioNotes: string;
-  bg: ShotBg;
-  orientation: PlateOrientation;
-  plateW: number;
-  plateH: number;
-  thumbnail: string | null;
-  hasCommittedThumbnail: boolean;
-  xsheet: XFrame[];
-  status: "draft" | "review" | "approved";
-}
-
-interface Sequence {
-  id: number;
-  name: string;
-  fps: number;
-  shots: Shot[];
-}
-
-let nextId = 1;
-function uid(): number {
-  return nextId++;
-}
-
-function createEmptyXFrame(): XFrame {
-  return {
-    id: uid(),
-    exposure: 1,
-    action: "",
-    dialogue: "",
-    camera: "",
-    audioCue: "",
-    notes: "",
-    assetRef: null,
-  };
-}
 
 function createEmptyShot(
   title = "SHOT",
@@ -113,7 +84,9 @@ type EditorState =
   | { mode: "closed" }
   | { mode: "pick-start" }
   | { mode: "pick-upgrade"; shotId: number }
-  | { mode: "draw"; shotId: number; isNew: boolean };
+  | { mode: "draw"; shotId: number; isNew: boolean }
+  | { mode: "xsheet"; shotId: number }
+  | { mode: "export" };
 
 function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
   return { id: uid(), name, fps: 24, shots: [] };
@@ -122,30 +95,6 @@ function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
 interface ShotlistAppProps {
   isFocused?: boolean;
 }
-
-const btn = (active = false): React.CSSProperties => ({
-  padding: "6px 10px",
-  background: active ? "#ffffff" : "#000000",
-  color: active ? "#000000" : "#cccccc",
-  border: active ? "1px solid #ffffff" : "1px solid #555555",
-  cursor: "pointer",
-  fontFamily: "inherit",
-  fontSize: 10,
-  letterSpacing: 1,
-  touchAction: "manipulation",
-});
-
-const fieldStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  marginTop: 2,
-  background: "#111",
-  color: "#eee",
-  border: "1px solid #333",
-  padding: "4px 6px",
-  fontFamily: "inherit",
-  fontSize: 11,
-};
 
 export default function ShotlistApp({ isFocused = true }: ShotlistAppProps) {
   return (
@@ -217,6 +166,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       ? sequence.shots.find((s) => s.id === editor.shotId) ?? null
       : null;
 
+  const xsheetShot =
+    editor.mode === "xsheet"
+      ? sequence.shots.find((s) => s.id === editor.shotId) ?? null
+      : null;
+
   const beginAddShot = useCallback(() => {
     // Always re-seed defaults so mobile/desktop get the same start state
     setPickOrientation("landscape");
@@ -277,10 +231,18 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         mono: true,
         bg: shot.bg,
         ref: { shotId: shot.id },
+        xsheetSnapshot: {
+          fps: sequence.fps,
+          durationFrames: shot.durationFrames,
+          rows: xsheetFrameRanges(shot.xsheet).map((r, i) => ({
+            ...r,
+            label: shot.xsheet[i]?.action || shot.xsheet[i]?.dialogue || "",
+          })),
+        },
       });
       setStatusLine(`→ KOOLDRAW ${shot.plateW}×${shot.plateH}`);
     },
-    [sequence.shots, workflow],
+    [sequence.shots, sequence.fps, workflow],
   );
 
   const openSelectedInSprite = useCallback(() => {
@@ -404,6 +366,39 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     }));
   }, []);
 
+  const openXSheet = useCallback((shotId: number) => {
+    setSelectedShotId(shotId);
+    setEditor({ mode: "xsheet", shotId });
+    setStatusLine("X-Sheet editor");
+  }, []);
+
+  const openXSheetSelected = useCallback(() => {
+    if (selectedShotId == null) return;
+    openXSheet(selectedShotId);
+  }, [selectedShotId, openXSheet]);
+
+  const updateXSheetFrames = useCallback((shotId: number, frames: XFrame[]) => {
+    setSequence((prev) => ({
+      ...prev,
+      shots: prev.shots.map((s) => (s.id === shotId ? { ...s, xsheet: frames } : s)),
+    }));
+  }, []);
+
+  const closeXSheet = useCallback(() => {
+    setEditor({ mode: "closed" });
+    setStatusLine("X-Sheet closed");
+  }, []);
+
+  const openExport = useCallback(() => {
+    setEditor({ mode: "export" });
+    setStatusLine("Export / print");
+  }, []);
+
+  const closeExport = useCallback(() => {
+    setEditor({ mode: "closed" });
+    setStatusLine("Export closed");
+  }, []);
+
   useEffect(() => {
     if (!isFocused) return;
     if (editor.mode !== "closed") return;
@@ -432,6 +427,16 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
             e.preventDefault();
             beginUpgrade(selectedShotId);
           }
+          break;
+        case "x":
+          if (selectedShotId != null) {
+            e.preventDefault();
+            openXSheetSelected();
+          }
+          break;
+        case "p":
+          e.preventDefault();
+          openExport();
           break;
         case "delete":
         case "backspace":
@@ -474,6 +479,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
     openDrawSelected,
     openSelectedInSprite,
     beginUpgrade,
+    openXSheetSelected,
+    openExport,
     deleteSelectedShot,
     toggleExpand,
     selectedShotId,
@@ -554,6 +561,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           onClick={() => openInSpriteEditor(shot.id, shot.thumbnail)}
         >
           KOOL
+        </button>
+        <button type="button" style={btn()} onClick={() => openXSheet(shot.id)}>
+          X-SHEET · {xsheetTotalFrames(shot.xsheet)}/{shot.durationFrames}
         </button>
         <button type="button" style={btn(true)} onClick={finishDrawSession}>
           DONE
@@ -729,6 +739,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                     >
                       → KOOL
                     </button>
+                    <button type="button" style={btn()} onClick={() => openXSheet(shot.id)}>
+                      X-SHEET
+                    </button>
                     {shot.hasCommittedThumbnail &&
                       availableUpgrades(true, shot.plateW, shot.plateH).length >
                         0 && (
@@ -783,6 +796,17 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <button
         type="button"
         style={btn()}
+        onClick={openXSheetSelected}
+        disabled={selectedShotId == null}
+      >
+        X-SHEET
+      </button>
+      <button type="button" style={btn()} onClick={openExport}>
+        EXPORT
+      </button>
+      <button
+        type="button"
+        style={btn()}
         onClick={deleteSelectedShot}
         disabled={selectedShotId == null}
       >
@@ -803,6 +827,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <div>E — draw plate</div>
       <div>S — KoolDraw</div>
       <div>U — upgrade HD/4K (after thumb)</div>
+      <div>X — X-Sheet (exposure notes)</div>
+      <div>P — export / print</div>
       <div>↑↓ Enter Del · H zen</div>
       <div style={{ marginTop: 8, color: "#555" }}>
         Draw: SPACE pan · SHIFT/ALT rotate · scroll zoom · pinch · 2-finger undo
@@ -1120,6 +1146,28 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       </div>
     ) : null;
 
+  const xsheetWorkspace =
+    editor.mode === "xsheet" && xsheetShot ? (
+      <XSheetEditor
+        shot={xsheetShot}
+        onChange={(frames) => updateXSheetFrames(xsheetShot.id, frames)}
+        onDurationChange={(durationFrames) =>
+          updateShotField(xsheetShot.id, { durationFrames })
+        }
+        onClose={closeXSheet}
+        isNarrow={isNarrow}
+      />
+    ) : null;
+
+  const exportWorkspace =
+    editor.mode === "export" ? (
+      <ExportView
+        sequence={sequence}
+        selectedShotId={selectedShotId}
+        onClose={closeExport}
+      />
+    ) : null;
+
   return (
     <div
       style={{
@@ -1156,6 +1204,9 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           <span style={{ color: "#666", fontSize: 9, letterSpacing: 1, flex: 1, textAlign: "center" }}>
             {sequence.shots.length} SHOTS · {sequence.fps} FPS
           </span>
+          <button type="button" style={btn()} onClick={openExport} title="Export / print (P)">
+            EXPORT
+          </button>
           <button
             type="button"
             style={btn(true)}
@@ -1190,6 +1241,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         {startPicker}
         {upgradePicker}
         {drawWorkspace}
+        {xsheetWorkspace}
+        {exportWorkspace}
       </div>
 
       {editor.mode === "closed" && (
@@ -1208,7 +1261,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           }}
         >
           <span>{statusLine}</span>
-          <span>N +SHOT · E DRAW · S KOOL · U HD/4K</span>
+          <span>N +SHOT · E DRAW · S KOOL · U HD/4K · X X-SHEET · P EXPORT</span>
         </div>
       )}
     </div>

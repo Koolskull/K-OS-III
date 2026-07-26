@@ -211,6 +211,38 @@ export function manifestFromInstrumentVisual(
     return baseManifest;
   }
 
+  if (visual.source === "sprite" && visual.spriteBundle && visual.spriteBundle.layers.length > 0) {
+    const bundle = visual.spriteBundle;
+    bundle.layers.forEach((bl, idx) => {
+      const layerId = `spr${idx}`;
+      for (const f of bl.frames) {
+        baseManifest.assets.push({
+          id: `${layerId}-${f.hexId}`,
+          type: "image",
+          path: f.dataUrl,
+          label: `${bl.name}/${f.hexId}`,
+        });
+      }
+      baseManifest.layers.push({
+        id: layerId,
+        type: "vmi-sprite",
+        z: idx + 1,
+        initialOpacity: bl.visible ? bl.opacity : 0,
+        // Sprite layers are placed statically — the animation itself IS the
+        // per-frame bitmap swap, not a scale/opacity flourish like color/image
+        // get. The user can still layer custom transform keyframes on top.
+        transformKeyframes: useCustom ? visual.customKeyframes : [
+          { frame: 1, mode: "hold", x, y, scaleX: 1, scaleY: 1, rotation: 0, opacity: bl.visible ? bl.opacity : 0 },
+        ],
+        spriteFrames: bl.frames.map((f) => ({ hexId: f.hexId, assetRef: `${layerId}-${f.hexId}` })),
+        spriteExposures: bl.exposures,
+        spriteFps: bundle.fps,
+        spriteLoopMode: bundle.loopMode,
+      });
+    });
+    return baseManifest;
+  }
+
   // Placeholder for sources we haven't implemented yet (shader, model, video, iframe)
   const placeholderColor =
     visual.source === "shader" ? "#00ffaa" :

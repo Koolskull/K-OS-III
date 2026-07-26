@@ -6,12 +6,11 @@
 
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { SpriteProject, SpriteLayer, ToolId, PackedColor, HistoryEntry } from "@/types/sprite";
 import {
   createBlankSprite,
   createFrame,
-  cloneFrame,
   nextSpriteId,
   hexToPackedColor,
   packedColorToHex,
@@ -20,6 +19,7 @@ import {
   renderSpriteSheet,
   downloadCanvasAsPng,
   downloadFramesAsZip,
+  downloadAnimationBundle,
   loadProjectFromDataUrl,
   dataUrlToMonoDataUrl,
   resizeProject,
@@ -29,8 +29,17 @@ import {
   CANVAS_SIZE_PRESETS,
   DITHER_PATTERNS,
   DEFAULT_DITHER_PATTERN,
+  renderDitherToneSwatch,
+  renderDitherGradientStripColor,
   INDEXED_PALETTE_PRESETS,
   DEFAULT_PRESSURE_CURVE,
+  insertBlankExposure,
+  duplicateExposure,
+  reuseExposure,
+  deleteExposure,
+  moveExposure,
+  moveLayer,
+  deleteLayer,
   type DitherPatternId,
 } from "@/lib/SpriteUtils";
 import { FREEHAND_TOOLS, useCreativeWorkflow } from "@/lib/creative";
@@ -41,6 +50,8 @@ import {
   type BrushSettings,
   type OnionSkinSettings,
 } from "./SpriteCanvas";
+import { Timeline, TimelineToolbar, type TimelineOrientation, type OnionMark } from "./Timeline";
+import { LayerPanel } from "./LayerPanel";
 import {
   CornerHost,
   CornerPanel,
@@ -83,6 +94,15 @@ const TOOLS: { id: ToolId; label: string; key: string; title?: string }[] = [
 ];
 
 const MAX_HISTORY = 100;
+
+/** Deep-clone every layer's pool + exposures so a pushed history entry is immune to later in-place edits. */
+function snapshotLayers(layers: SpriteLayer[]): SpriteLayer[] {
+  return layers.map((layer) => ({
+    ...layer,
+    frames: layer.frames.map((f) => ({ ...f, pixels: new Uint32Array(f.pixels) })),
+    exposures: [...layer.exposures],
+  }));
+}
 
 /**
  * Falloff for ±1…±3 (index 0 = closest).
@@ -214,13 +234,18 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [project, setProject] = useState<SpriteProject>(() =>
     createBlankSprite("SPRITE", embeddedMode?.initialWidth ?? 32, embeddedMode?.initialHeight ?? 32),
   );
+  /** Mandatory name+size prompt before drawing — skipped when arriving via a handoff/embed, which already have their own naming/sizing context. */
+  const [needsSetup, setNeedsSetup] = useState(() => !embeddedMode && !handoff);
+  const [setupName, setSetupName] = useState("");
+  const [setupW, setSetupW] = useState(32);
+  const [setupH, setSetupH] = useState(32);
   const [handoffReady, setHandoffReady] = useState(true);
   const [activeTool, setActiveTool] = useState<ToolId>("pen");
   const [primaryColor, setPrimaryColor] = useState<PackedColor>(hexToPackedColor("#ffffff"));
-  const [penSize, setPenSize] = useState(8);
+  const [penSize, setPenSize] = useState(1);
   const [brush, setBrush] = useState<BrushSettings>(() => ({
     ...DEFAULT_BRUSH,
-    maxSize: 8,
+    maxSize: 1,
     curve: { ...DEFAULT_PRESSURE_CURVE },
   }));
   /** free = any hex; indexed = snap to active palette (classic hardware) */
@@ -231,6 +256,12 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [ditherOy, setDitherOy] = useState(0);
   const [ditherPattern, setDitherPattern] =
     useState<DitherPatternId>(DEFAULT_DITHER_PATTERN);
+  /** Manual density (Shotlist-style tone bar) — overrides pressure-based coverage. */
+  const [ditherCoverage, setDitherCoverage] = useState(0.5);
+  /** Paint both dither colors instead of ink-only density over existing content. */
+  const [ditherTwoTone, setDitherTwoTone] = useState(false);
+  const [ditherColorB, setDitherColorB] = useState<PackedColor>(hexToPackedColor("#000000"));
+  const [showDitherColorB, setShowDitherColorB] = useState(false);
 
   const activePalette: string[] =
     palettePreset === "project"
@@ -259,6 +290,83 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   /** Timeline panel height (0 = collapsed); drag handle resizes */
   const [timelineHeight, setTimelineHeight] = useState(72);
   const timelineDragRef = useRef<{ startY: number; startH: number } | null>(null);
+  /**
+   * "auto" follows the window's own aspect ratio live: taller-than-wide →
+   * horizontal filmstrip at the bottom; wider-than-tall → vertical X-Sheet
+   * grid in a thin right-side column. The header button cycles
+   * auto → horizontal → vertical → auto, pinning an explicit choice until
+   * cycled back to auto. Persisted like CornerHost's zen state.
+   */
+  const [timelineOrientationMode, setTimelineOrientationMode] = useState<
+    TimelineOrientation | "auto"
+  >(() => {
+    if (typeof window === "undefined") return "auto";
+    const saved = window.localStorage.getItem("kos-kooldraw-timeline-orientation");
+    return saved === "vertical" || saved === "horizontal" ? saved : "auto";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("kos-kooldraw-timeline-orientation", timelineOrientationMode);
+  }, [timelineOrientationMode]);
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [isWideWindow, setIsWideWindow] = useState(true);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => setIsWideWindow(el.clientWidth >= el.clientHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const timelineOrientation: TimelineOrientation =
+    timelineOrientationMode === "auto"
+      ? isWideWindow
+        ? "vertical"
+        : "horizontal"
+      : timelineOrientationMode;
+
+  const cycleTimelineOrientationMode = useCallback(() => {
+    setTimelineOrientationMode((m) =>
+      m === "auto" ? "horizontal" : m === "horizontal" ? "vertical" : "auto",
+    );
+  }, []);
+
+  /** Vertical X-Sheet column width — drag handle on its left edge. */
+  const XSHEET_MIN = 140;
+  const XSHEET_MAX = 420;
+  const XSHEET_DEFAULT = 200;
+  const [xsheetWidth, setXsheetWidth] = useState(XSHEET_DEFAULT);
+  const xsheetDragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  const onXsheetHandlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      xsheetDragRef.current = { startX: e.clientX, startW: xsheetWidth };
+    },
+    [xsheetWidth],
+  );
+
+  const onXsheetHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = xsheetDragRef.current;
+    if (!drag) return;
+    // Column is on the right edge — dragging left (toward canvas) widens it.
+    const dx = drag.startX - e.clientX;
+    const next = Math.min(XSHEET_MAX, Math.max(XSHEET_MIN, drag.startW + dx));
+    setXsheetWidth(next);
+  }, []);
+
+  const onXsheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
+    xsheetDragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const onionSkin: OnionSkinSettings = {
     enabled: onionEnabled,
@@ -326,8 +434,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           fitPixelZoom(handoff.width, handoff.height, 720, 520),
         ),
       );
-      historyRef.current = [];
-      historyIndexRef.current = -1;
+      if (handoff.xsheetSnapshot) setTimelineOrientationMode("vertical");
+      // Baseline entry so undo can return to the freshly-loaded state, but no further.
+      historyRef.current = [{ layers: snapshotLayers(proj.layers), activeFrameIndex: 0, activeLayerIndex: 0 }];
+      historyIndexRef.current = 0;
+      setNeedsSetup(false);
       setHandoffReady(true);
       forceRender();
     })();
@@ -365,82 +476,196 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     workflow.cancel();
   }, [workflow]);
 
+  const pingPongDirRef = useRef<1 | -1>(1);
+
   const togglePlayback = useCallback(() => {
     setPlaying((p) => {
-      if (!p) setPreviewFrame(activeFrameIndex);
+      if (!p) {
+        setPreviewFrame(activeFrameIndex);
+        pingPongDirRef.current = 1;
+      }
       return !p;
     });
   }, [activeFrameIndex]);
 
-  const saveHistory = useCallback(() => {
-    const entry: HistoryEntry = {
-      layerSnapshots: project.layers.flatMap((layer) =>
-        layer.frames.map((frame, fi) => ({
-          layerId: layer.id,
-          frameIndex: fi,
-          pixels: new Uint32Array(frame.pixels),
-        })),
-      ),
-      activeFrameIndex,
-      activeLayerIndex,
-    };
-    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
-    historyRef.current.push(entry);
-    if (historyRef.current.length > MAX_HISTORY) historyRef.current.shift();
-    historyIndexRef.current = historyRef.current.length - 1;
-  }, [project, activeFrameIndex, activeLayerIndex]);
+  /**
+   * Push a POST-edit checkpoint (not pre-edit — the history pointer always
+   * tracks the currently-displayed state, so undo/redo can step one entry
+   * at a time). Takes explicit values rather than reading `project` via
+   * closure so callers can compute the next state once and use it for both
+   * `setProject` and this push, without the staleness/StrictMode-double-
+   * invoke risk of pushing from inside a `setProject` updater function.
+   */
+  const pushHistorySnapshot = useCallback(
+    (layers: SpriteLayer[], afi: number, ali: number) => {
+      const entry: HistoryEntry = {
+        layers: snapshotLayers(layers),
+        activeFrameIndex: afi,
+        activeLayerIndex: ali,
+      };
+      historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+      historyRef.current.push(entry);
+      if (historyRef.current.length > MAX_HISTORY) historyRef.current.shift();
+      historyIndexRef.current = historyRef.current.length - 1;
+    },
+    [],
+  );
+
+  /** Seed the undo baseline once, from the sprite's true initial state. */
+  useEffect(() => {
+    historyRef.current = [{ layers: snapshotLayers(project.layers), activeFrameIndex: 0, activeLayerIndex: 0 }];
+    historyIndexRef.current = 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyHistoryEntry = useCallback((entry: HistoryEntry) => {
+    setProject((prev) => ({ ...prev, layers: snapshotLayers(entry.layers) }));
+    setActiveFrameIndex(entry.activeFrameIndex);
+    setActiveLayerIndex(entry.activeLayerIndex);
+    forceRender();
+  }, [forceRender]);
 
   const undo = useCallback(() => {
     if (historyIndexRef.current <= 0) return;
     historyIndexRef.current--;
     const entry = historyRef.current[historyIndexRef.current];
-    if (!entry) return;
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((layer) => ({
-        ...layer,
-        frames: layer.frames.map((frame, fi) => {
-          const snap = entry.layerSnapshots.find((s) => s.layerId === layer.id && s.frameIndex === fi);
-          return snap ? { ...frame, pixels: new Uint32Array(snap.pixels) } : frame;
-        }),
-      })),
-    }));
-    setActiveFrameIndex(entry.activeFrameIndex);
-    setActiveLayerIndex(entry.activeLayerIndex);
-    forceRender();
-  }, [forceRender]);
+    if (entry) applyHistoryEntry(entry);
+  }, [applyHistoryEntry]);
 
   const redo = useCallback(() => {
     if (historyIndexRef.current >= historyRef.current.length - 1) return;
     historyIndexRef.current++;
     const entry = historyRef.current[historyIndexRef.current];
-    if (!entry) return;
+    if (entry) applyHistoryEntry(entry);
+  }, [applyHistoryEntry]);
+
+  /** Discrete edits (fill, shape commit) — SpriteCanvas has already mutated pixels by the time this fires, so this captures the post-edit state. */
+  const handlePixelsChanged = useCallback(() => {
+    pushHistorySnapshot(project.layers, activeFrameIndex, activeLayerIndex);
+    forceRender();
+  }, [pushHistorySnapshot, project.layers, activeFrameIndex, activeLayerIndex, forceRender]);
+
+  /** Freehand strokes push their checkpoint at stroke END (post-edit) — nothing needed at stroke start. */
+  const handleStrokeBegin = useCallback(() => {}, []);
+
+  const handleStrokeEnd = useCallback(() => {
+    pushHistorySnapshot(project.layers, activeFrameIndex, activeLayerIndex);
+    forceRender();
+  }, [pushHistorySnapshot, project.layers, activeFrameIndex, activeLayerIndex, forceRender]);
+
+  const insertBlankFrame = useCallback(() => {
+    const nextLayers = insertBlankExposure(project.layers, activeFrameIndex, project.width, project.height);
+    const nextFrameIndex = activeFrameIndex + 1;
+    setProject((prev) => ({ ...prev, layers: nextLayers }));
+    pushHistorySnapshot(nextLayers, nextFrameIndex, activeLayerIndex);
+    setActiveFrameIndex(nextFrameIndex);
+  }, [project.layers, project.width, project.height, activeFrameIndex, activeLayerIndex, pushHistorySnapshot]);
+
+  const duplicateFrame = useCallback(() => {
+    const nextLayers = duplicateExposure(project.layers, activeFrameIndex);
+    const nextFrameIndex = activeFrameIndex + 1;
+    setProject((prev) => ({ ...prev, layers: nextLayers }));
+    pushHistorySnapshot(nextLayers, nextFrameIndex, activeLayerIndex);
+    setActiveFrameIndex(nextFrameIndex);
+  }, [project.layers, activeFrameIndex, activeLayerIndex, pushHistorySnapshot]);
+
+  const deleteFrame = useCallback(() => {
+    if ((project.layers[0]?.exposures.length ?? 0) <= 1) return;
+    const nextLayers = deleteExposure(project.layers, activeFrameIndex);
+    const nextFrameIndex = Math.max(0, activeFrameIndex - 1);
+    setProject((prev) => ({ ...prev, layers: nextLayers }));
+    pushHistorySnapshot(nextLayers, nextFrameIndex, activeLayerIndex);
+    setActiveFrameIndex(nextFrameIndex);
+  }, [project.layers, activeFrameIndex, activeLayerIndex, pushHistorySnapshot]);
+
+  const reorderFrame = useCallback(
+    (from: number, to: number) => {
+      const nextLayers = moveExposure(project.layers, from, to);
+      setProject((prev) => ({ ...prev, layers: nextLayers }));
+      pushHistorySnapshot(nextLayers, to, activeLayerIndex);
+      setActiveFrameIndex(to);
+    },
+    [project.layers, activeLayerIndex, pushHistorySnapshot],
+  );
+
+  /** Point the active layer's active slot at an existing pool frame — reuse, not a new copy. */
+  const reuseFrame = useCallback(
+    (hexId: string) => {
+      const nextLayers = project.layers.map((layer, i) =>
+        i === activeLayerIndex ? reuseExposure(layer, activeFrameIndex, hexId) : layer,
+      );
+      setProject((prev) => ({ ...prev, layers: nextLayers }));
+      pushHistorySnapshot(nextLayers, activeFrameIndex, activeLayerIndex);
+      forceRender();
+    },
+    [project.layers, activeLayerIndex, activeFrameIndex, pushHistorySnapshot, forceRender],
+  );
+
+  const addLayer = useCallback(() => {
+    const count = project.layers[0]?.exposures.length ?? 1;
+    // A fresh layer starts blank everywhere via ONE reused pool frame across
+    // every position, rather than N separate blank frame objects.
+    const hexId = "000";
+    const newLayer: SpriteLayer = {
+      id: nextSpriteId(),
+      name: `LAYER ${project.layers.length + 1}`,
+      opacity: 1,
+      visible: true,
+      frames: [createFrame(nextSpriteId(), project.width, project.height, hexId)],
+      exposures: Array.from({ length: count }, () => hexId),
+    };
+    const nextLayers = [...project.layers, newLayer];
+    const nextLayerIndex = project.layers.length;
+    setProject((prev) => ({ ...prev, layers: nextLayers }));
+    pushHistorySnapshot(nextLayers, activeFrameIndex, nextLayerIndex);
+    setActiveLayerIndex(nextLayerIndex);
+  }, [project.layers, activeFrameIndex, pushHistorySnapshot]);
+
+  const toggleLayerVisibility = useCallback((idx: number) => {
     setProject((prev) => ({
       ...prev,
-      layers: prev.layers.map((layer) => ({
-        ...layer,
-        frames: layer.frames.map((frame, fi) => {
-          const snap = entry.layerSnapshots.find((s) => s.layerId === layer.id && s.frameIndex === fi);
-          return snap ? { ...frame, pixels: new Uint32Array(snap.pixels) } : frame;
-        }),
-      })),
+      layers: prev.layers.map((l, i) => (i === idx ? { ...l, visible: !l.visible } : l)),
     }));
-    setActiveFrameIndex(entry.activeFrameIndex);
-    setActiveLayerIndex(entry.activeLayerIndex);
     forceRender();
   }, [forceRender]);
 
-  const handlePixelsChanged = useCallback(() => {
-    saveHistory();
-    forceRender();
-  }, [saveHistory, forceRender]);
+  const handleDeleteLayer = useCallback(
+    (index: number) => {
+      if (project.layers.length <= 1) return;
+      const nextLayers = deleteLayer(project.layers, index);
+      const nextLayerIndex = Math.min(activeLayerIndex, project.layers.length - 2);
+      setProject((prev) => ({ ...prev, layers: nextLayers }));
+      pushHistorySnapshot(nextLayers, activeFrameIndex, nextLayerIndex);
+      setActiveLayerIndex(nextLayerIndex);
+    },
+    [project.layers, activeFrameIndex, activeLayerIndex, pushHistorySnapshot],
+  );
 
-  /** Freehand: snapshot once before paint; refresh chrome after stroke. */
-  const handleStrokeBegin = useCallback(() => {
-    saveHistory();
-  }, [saveHistory]);
+  const handleReorderLayer = useCallback(
+    (from: number, to: number) => {
+      const nextLayers = moveLayer(project.layers, from, to);
+      setProject((prev) => ({ ...prev, layers: nextLayers }));
+      pushHistorySnapshot(nextLayers, activeFrameIndex, to);
+      setActiveLayerIndex(to);
+    },
+    [project.layers, activeFrameIndex, pushHistorySnapshot],
+  );
 
-  const handleStrokeEnd = useCallback(() => {
+  const handleRenameLayer = useCallback(
+    (index: number, name: string) => {
+      const nextLayers = project.layers.map((l, i) => (i === index ? { ...l, name } : l));
+      setProject((prev) => ({ ...prev, layers: nextLayers }));
+      pushHistorySnapshot(nextLayers, activeFrameIndex, activeLayerIndex);
+    },
+    [project.layers, activeFrameIndex, activeLayerIndex, pushHistorySnapshot],
+  );
+
+  /** Continuous drag control — not undo-tracked, same as other live settings (pen size, zoom). */
+  const handleLayerOpacity = useCallback((index: number, opacity: number) => {
+    setProject((prev) => ({
+      ...prev,
+      layers: prev.layers.map((l, i) => (i === index ? { ...l, opacity } : l)),
+    }));
     forceRender();
   }, [forceRender]);
 
@@ -451,10 +676,18 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         return;
       }
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z") { e.preventDefault(); undo(); return; }
-        if (e.key === "y") { e.preventDefault(); redo(); return; }
+        const k = e.key.toLowerCase();
+        if (k === "z") { e.preventDefault(); undo(); return; }
+        if (k === "y") { e.preventDefault(); redo(); return; }
       }
-      const count = project.layers[0]?.frames.length ?? 1;
+      // Shift+F/Shift+D checked before tool-hotkey matching below — bare "D"
+      // is the dither tool's key, and e.key.toLowerCase() doesn't care about
+      // Shift, so these must win first or Shift+D would silently switch tools.
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === "f") { e.preventDefault(); insertBlankFrame(); return; }
+        if (e.key.toLowerCase() === "d") { e.preventDefault(); duplicateFrame(); return; }
+      }
+      const count = project.layers[0]?.exposures.length ?? 1;
       // Frame navigation: , prev · . next · w first
       if (e.key === "," && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -505,82 +738,55 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFocused, undo, redo, togglePlayback, project.layers]);
+  }, [isFocused, undo, redo, togglePlayback, project.layers, insertBlankFrame, duplicateFrame]);
 
   useEffect(() => {
     if (!playing) return;
-    const count = project.layers[0]?.frames.length ?? 1;
-    const interval = setInterval(() => setPreviewFrame((f) => (f + 1) % count), 1000 / Math.max(1, project.fps));
+    const count = project.layers[0]?.exposures.length ?? 1;
+    const mode = project.loopMode;
+    const interval = setInterval(() => {
+      setPreviewFrame((f) => {
+        if (count <= 1) return 0;
+        switch (mode) {
+          case "oneshot": {
+            const next = f + 1;
+            if (next >= count) {
+              setPlaying(false);
+              return count - 1;
+            }
+            return next;
+          }
+          case "pingpong": {
+            let next = f + pingPongDirRef.current;
+            if (next >= count) {
+              pingPongDirRef.current = -1;
+              next = Math.max(0, count - 2);
+            } else if (next < 0) {
+              pingPongDirRef.current = 1;
+              next = count > 1 ? 1 : 0;
+            }
+            return next;
+          }
+          case "random": {
+            let next = Math.floor(Math.random() * count);
+            if (next === f) next = (next + 1) % count;
+            return next;
+          }
+          case "loop":
+          default:
+            return (f + 1) % count;
+        }
+      });
+    }, 1000 / Math.max(1, project.fps));
     return () => clearInterval(interval);
-  }, [playing, project.fps, project.layers]);
-
-  const addFrame = useCallback(() => {
-    saveHistory();
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((layer) => ({
-        ...layer,
-        frames: [...layer.frames, createFrame(nextSpriteId(), prev.width, prev.height)],
-      })),
-    }));
-    setActiveFrameIndex((prev) => prev + 1);
-  }, [saveHistory]);
-
-  const duplicateFrame = useCallback(() => {
-    saveHistory();
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((layer) => {
-        const src = layer.frames[activeFrameIndex];
-        if (!src) return layer;
-        const frames = [...layer.frames];
-        frames.splice(activeFrameIndex + 1, 0, cloneFrame(src, nextSpriteId()));
-        return { ...layer, frames };
-      }),
-    }));
-    setActiveFrameIndex((i) => i + 1);
-  }, [activeFrameIndex, saveHistory]);
-
-  const deleteFrame = useCallback(() => {
-    if ((project.layers[0]?.frames.length ?? 0) <= 1) return;
-    saveHistory();
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((layer) => ({
-        ...layer,
-        frames: layer.frames.filter((_, i) => i !== activeFrameIndex),
-      })),
-    }));
-    setActiveFrameIndex((i) => Math.max(0, i - 1));
-  }, [activeFrameIndex, project.layers, saveHistory]);
-
-  const addLayer = useCallback(() => {
-    saveHistory();
-    const count = project.layers[0]?.frames.length ?? 1;
-    const newLayer: SpriteLayer = {
-      id: nextSpriteId(),
-      name: `LAYER ${project.layers.length + 1}`,
-      opacity: 1,
-      visible: true,
-      frames: Array.from({ length: count }, () => createFrame(nextSpriteId(), project.width, project.height)),
-    };
-    setProject((prev) => ({ ...prev, layers: [...prev.layers, newLayer] }));
-    setActiveLayerIndex(project.layers.length);
-  }, [project, saveHistory]);
-
-  const toggleLayerVisibility = useCallback((idx: number) => {
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((l, i) => (i === idx ? { ...l, visible: !l.visible } : l)),
-    }));
-    forceRender();
-  }, [forceRender]);
+  }, [playing, project.fps, project.layers, project.loopMode]);
 
   const exportSpriteSheet = useCallback(() => {
-    downloadCanvasAsPng(renderSpriteSheet(project, project.layers[0]?.frames.length ?? 1, 1), `${project.name}_sheet.png`);
+    downloadCanvasAsPng(renderSpriteSheet(project, project.layers[0]?.exposures.length ?? 1, 1), `${project.name}_sheet.png`);
   }, [project]);
 
   const exportFrames = useCallback(() => { downloadFramesAsZip(project, 1); }, [project]);
+  const exportBundle = useCallback(() => { void downloadAnimationBundle(project, 1); }, [project]);
   const handlePaletteClick = useCallback((hex: string) => { setPrimaryColor(hexToPackedColor(hex)); }, []);
   const handleColorPicked = useCallback((c: PackedColor) => { setPrimaryColor(c); }, []);
 
@@ -604,17 +810,35 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         );
         if (!ok) return;
       }
-      saveHistory();
-      setProject((prev) => resizeProject(prev, nw, nh));
+      const resized = resizeProject(project, nw, nh);
+      setProject(resized);
+      pushHistorySnapshot(resized.layers, activeFrameIndex, activeLayerIndex);
       // Fit large plates into the view (sub-1× zoom allowed)
       setZoom(clampPixelZoom(fitPixelZoom(nw, nh, 720, 520)));
       forceRender();
     },
-    [project.width, project.height, saveHistory, forceRender],
+    [project, activeFrameIndex, activeLayerIndex, pushHistorySnapshot, forceRender],
   );
 
-  const frameCount = project.layers[0]?.frames.length ?? 1;
+  const frameCount = project.layers[0]?.exposures.length ?? 1;
   const displayFrameIndex = playing ? previewFrame : activeFrameIndex;
+
+  /** Onion-skin prev/next tint per timeline position, precomputed once for the Timeline strip. */
+  const onionMarks: OnionMark[] | undefined = useMemo(() => {
+    if (playing || !onionEnabled || frameCount <= 1) return undefined;
+    const marks: OnionMark[] = Array.from({ length: frameCount }, () => ({ isPrev: false, isNext: false }));
+    for (let d = 1; d <= ONION_RANGE; d++) {
+      const prevOp = prevOpacities[d - 1] ?? 0;
+      const nextOp = nextOpacities[d - 1] ?? 0;
+      let prev = activeFrameIndex - d;
+      if (prev < 0) prev = onionLoopWrap ? ((prev % frameCount) + frameCount) % frameCount : -1;
+      let next = activeFrameIndex + d;
+      if (next >= frameCount) next = onionLoopWrap ? next % frameCount : -1;
+      if (prev >= 0 && prev !== activeFrameIndex && prevOp > 0.001) marks[prev]!.isPrev = true;
+      if (next >= 0 && next !== activeFrameIndex && nextOp > 0.001) marks[next]!.isNext = true;
+    }
+    return marks;
+  }, [playing, onionEnabled, frameCount, activeFrameIndex, prevOpacities, nextOpacities, onionLoopWrap]);
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -664,6 +888,61 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
    *   −3 … −1 | 0 (locked 100%) | +1 … +3
    * Vertical opacity bars; left = past, right = future.
    */
+  const ditherColorBContent = (
+    <div
+      style={{
+        padding: 0,
+        backgroundColor: "#1a1a1a",
+        border: "1px solid #555",
+        width: "min(92vw, 160px)",
+        fontFamily: "var(--dm-font-primary)",
+        imageRendering: "pixelated",
+        boxShadow: "4px 4px 0 #000",
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "5px 8px",
+          borderBottom: "1px solid #333",
+          background: "#222",
+        }}
+      >
+        <span style={{ fontSize: 8, color: "#ddd", letterSpacing: 1 }}>DITHER COLOR B</span>
+        <button
+          type="button"
+          onClick={() => setShowDitherColorB(false)}
+          style={{
+            border: "1px solid #555",
+            background: "#111",
+            color: "#aaa",
+            fontFamily: "inherit",
+            fontSize: 9,
+            width: 18,
+            height: 16,
+            cursor: "pointer",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          title="Close"
+        >
+          ×
+        </button>
+      </div>
+      <div style={{ padding: 8 }}>
+        <PixelColorPicker
+          value={packedColorToHex(ditherColorB)}
+          onChange={(hex) => setDitherColorB(hexToPackedColor(hex))}
+          width={128}
+        />
+      </div>
+    </div>
+  );
+
   const onionOptionsContent = (
     <div
       style={{
@@ -1121,23 +1400,78 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
       </div>
 
       {activeTool === "dither" && (
-        <div style={{ ...grid4, borderTop: "1px solid #333" }}>
-          {DITHER_PATTERNS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setDitherPattern(p.id)}
-              style={{ ...toolBtn(ditherPattern === p.id), fontSize: 5, minHeight: 22 }}
-              title={p.title}
-            >
-              {p.label}
+        <div style={{ borderTop: "1px solid #333", padding: 4, display: "flex", flexDirection: "column", gap: 4 }}>
+          {/* Tone bar + kernel swatches — same visual language as Shotlist's dither panel */}
+          <div style={{ display: "flex", gap: 3, height: 108 }}>
+            <DitherToneBar
+              coverage={ditherCoverage}
+              onChange={setDitherCoverage}
+              pattern={ditherPattern}
+              colorA={primaryColor}
+              colorB={ditherColorB}
+              ox={ditherOx}
+              oy={ditherOy}
+              width={22}
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+              {DITHER_PATTERNS.map((p) => (
+                <DitherSwatchButton
+                  key={p.id}
+                  pattern={p.id}
+                  active={ditherPattern === p.id}
+                  coverage={ditherCoverage}
+                  colorA={primaryColor}
+                  colorB={ditherColorB}
+                  ox={ditherOx}
+                  oy={ditherOy}
+                  onClick={() => setDitherPattern(p.id)}
+                  title={p.title}
+                />
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", fontSize: 6, color: "#666", letterSpacing: 1 }}>
+            {Math.round(ditherCoverage * 100)}% TONE
+          </div>
+
+          <div style={grid4}>
+            <button type="button" onClick={() => setDitherOx((v) => (v + 1) % 8)} style={toolBtn(false)} title="Dither phase X">
+              OX {ditherOx}
             </button>
-          ))}
-          <button type="button" onClick={() => setDitherOx((v) => (v + 1) % 8)} style={{ ...toolBtn(false), gridColumn: "span 2" }} title="Dither phase X">
-            OX {ditherOx}
-          </button>
-          <button type="button" onClick={() => setDitherOy((v) => (v + 1) % 8)} style={{ ...toolBtn(false), gridColumn: "span 2" }} title="Dither phase Y">
-            OY {ditherOy}
+            <button type="button" onClick={() => setDitherOy((v) => (v + 1) % 8)} style={toolBtn(false)} title="Dither phase Y">
+              OY {ditherOy}
+            </button>
+            <button
+              type="button"
+              disabled
+              style={{ ...toolBtn(false), backgroundColor: packedColorToHex(primaryColor), color: "#fff", textShadow: "0 0 2px #000, 0 0 2px #000", cursor: "default" }}
+              title="Color A = current brush color"
+            >
+              A
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDitherColorB((v) => !v)}
+              style={{
+                ...toolBtn(false),
+                backgroundColor: packedColorToHex(ditherColorB),
+                border: showDitherColorB ? "1px solid #ffff00" : "1px solid #333",
+                color: "#fff",
+                textShadow: "0 0 2px #000, 0 0 2px #000",
+              }}
+              title="Dither color B"
+            >
+              B
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDitherTwoTone((v) => !v)}
+            style={{ ...toolBtn(ditherTwoTone), width: "100%" }}
+            title="Paint both A and B colors (instead of A-density over existing content)"
+          >
+            {ditherTwoTone ? "A+B TWO-TONE" : "A ONLY (DENSITY)"}
           </button>
         </div>
       )}
@@ -1199,6 +1533,29 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <button onClick={() => setProject((p) => ({ ...p, fps: Math.max(1, p.fps - 1) }))} style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}>-</button>
             <span style={{ fontSize: 7, color: "#888", minWidth: 16, textAlign: "center" }}>{project.fps}</span>
             <button onClick={() => setProject((p) => ({ ...p, fps: Math.min(60, p.fps + 1) }))} style={{ border: "1px solid #333", background: "#000", color: "#888", fontSize: 7, cursor: "pointer", padding: "0 3px" }}>+</button>
+          </div>
+        </div>
+        <div style={{ marginTop: 3 }}>
+          <span style={{ fontSize: 7, color: "#555", display: "block", marginBottom: 2 }}>LOOP</span>
+          <div style={{ ...grid4, border: "1px solid #333" }}>
+            {(
+              [
+                { id: "oneshot", label: "1×" },
+                { id: "loop", label: "LOOP" },
+                { id: "pingpong", label: "PING" },
+                { id: "random", label: "RND" },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setProject((p) => ({ ...p, loopMode: m.id }))}
+                style={{ ...toolBtn(project.loopMode === m.id), fontSize: 5 }}
+                title={`Loop mode: ${m.label}`}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -1338,22 +1695,22 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           })}
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto" style={{ padding: 4 }}>
-        <div className="flex items-center justify-between mb-1">
-          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1 }}>LAYERS</span>
-          <button onClick={addLayer} style={{ border: "1px solid #555", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, padding: "1px 4px", cursor: "pointer" }}>+</button>
-        </div>
-        {project.layers.map((layer, i) => (
-          <div key={layer.id} onClick={() => setActiveLayerIndex(i)} style={{ padding: "2px 4px", backgroundColor: i === activeLayerIndex ? "#1a1a1a" : "transparent", borderLeft: i === activeLayerIndex ? "2px solid #fff" : "2px solid transparent", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: 1 }}>
-            <span style={{ fontSize: 7, color: i === activeLayerIndex ? "#fff" : "#555" }}>{layer.name}</span>
-            <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(i); }} style={{ border: "none", background: "transparent", color: layer.visible ? "#888" : "#333", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>{layer.visible ? "V" : "-"}</button>
-          </div>
-        ))}
-      </div>
+      <LayerPanel
+        layers={project.layers}
+        activeLayerIndex={activeLayerIndex}
+        onSelect={setActiveLayerIndex}
+        onToggleVisibility={toggleLayerVisibility}
+        onAdd={addLayer}
+        onDelete={handleDeleteLayer}
+        onRename={handleRenameLayer}
+        onOpacityChange={handleLayerOpacity}
+        onReorder={handleReorderLayer}
+      />
       <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
         <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>EXPORT</span>
         <button onClick={exportFrames} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>PNG ZIP</button>
-        <button onClick={exportSpriteSheet} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>SHEET</button>
+        <button onClick={exportSpriteSheet} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>SHEET</button>
+        <button onClick={exportBundle} title="Export hex-named PNGs per layer + JSON playback manifest" style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>BUNDLE</button>
       </div>
     </div>
   );
@@ -1538,67 +1895,205 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   );
 
   const timelineContent = (
-    <div className="flex items-center overflow-x-auto" style={{ minHeight: 48, padding: 4 }}>
-      {/* Desktop timeline play control */}
-      <button
-        type="button"
-        onClick={togglePlayback}
-        title={playing ? "Pause" : "Play"}
-        style={{
-          flexShrink: 0,
-          width: 36,
-          height: 36,
-          marginRight: 6,
-          border: playing ? "1px solid #fff" : "1px solid #555",
-          background: playing ? "#fff" : "#000",
-          color: playing ? "#000" : "#888",
-          fontFamily: "var(--dm-font-primary)",
-          fontSize: 12,
-          cursor: "pointer",
-        }}
-      >
-        {playing ? "||" : ">"}
-      </button>
-
-      {Array.from({ length: frameCount }, (_, i) => {
-        let isOnionPrev = false;
-        let isOnionNext = false;
-        if (!playing && onionEnabled && frameCount > 1 && i !== activeFrameIndex) {
-          for (let d = 1; d <= ONION_RANGE; d++) {
-            const prevOp = prevOpacities[d - 1] ?? 0;
-            const nextOp = nextOpacities[d - 1] ?? 0;
-            let prev = activeFrameIndex - d;
-            if (prev < 0) prev = onionLoopWrap ? ((prev % frameCount) + frameCount) % frameCount : -1;
-            let next = activeFrameIndex + d;
-            if (next >= frameCount) next = onionLoopWrap ? next % frameCount : -1;
-            if (prev === i && prevOp > 0.001) isOnionPrev = true;
-            if (next === i && nextOp > 0.001) isOnionNext = true;
-          }
-        }
-        return (
-          <FrameThumbnail
-            key={i}
-            frame={compositeFrame(project.layers, i, project.width, project.height)}
-            index={i}
-            isActive={i === displayFrameIndex}
-            onClick={() => { setPlaying(false); setActiveFrameIndex(i); }}
-            spriteWidth={project.width}
-            spriteHeight={project.height}
-            isOnionPrev={isOnionPrev}
-            isOnionNext={isOnionNext}
-          />
-        );
-      })}
-      <div className="flex gap-1 ml-2">
-        <button onClick={addFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 14, cursor: "pointer" }}>+</button>
-        <button onClick={duplicateFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>DUP</button>
-        {frameCount > 1 && <button onClick={deleteFrame} style={{ width: 36, height: 36, border: "1px solid #333", background: "#000", color: "#555", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer" }}>DEL</button>}
-      </div>
-    </div>
+    <Timeline
+      layers={project.layers}
+      activeLayerIndex={activeLayerIndex}
+      activeFrameIndex={activeFrameIndex}
+      displayFrameIndex={displayFrameIndex}
+      spriteWidth={project.width}
+      spriteHeight={project.height}
+      playing={playing}
+      orientation={timelineOrientation}
+      renderTick={renderTick}
+      xsheetSnapshot={handoff?.xsheetSnapshot}
+      onionMarks={onionMarks}
+      onSelectFrame={(i) => { setPlaying(false); setActiveFrameIndex(i); }}
+      onSelectLayer={setActiveLayerIndex}
+      onTogglePlayback={togglePlayback}
+      onInsertBlank={insertBlankFrame}
+      onDuplicate={duplicateFrame}
+      onDelete={deleteFrame}
+      onReorder={reorderFrame}
+      onReuse={reuseFrame}
+    />
   );
 
+  const setupModal = needsSetup ? (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 100,
+        background: "rgba(0,0,0,0.96)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div
+        style={{
+          padding: 0,
+          backgroundColor: "#1a1a1a",
+          border: "1px solid #555",
+          width: "min(92vw, 280px)",
+          fontFamily: "var(--dm-font-primary)",
+          imageRendering: "pixelated",
+          boxShadow: "4px 4px 0 #000",
+        }}
+      >
+        <div
+          style={{
+            padding: "5px 8px",
+            borderBottom: "1px solid #333",
+            background: "#222",
+          }}
+        >
+          <span style={{ fontSize: 8, color: "#ffff00", letterSpacing: 1 }}>NEW ANIMATION</span>
+        </div>
+
+        <div style={{ padding: 8 }}>
+          <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 3 }}>
+            NAME
+          </div>
+          <input
+            type="text"
+            value={setupName}
+            onChange={(e) => setSetupName(e.target.value)}
+            placeholder="UNTITLED"
+            autoFocus
+            style={{
+              width: "100%",
+              height: 26,
+              background: "#000",
+              color: "#fff",
+              border: "1px solid #555",
+              fontFamily: "inherit",
+              fontSize: 9,
+              padding: "0 6px",
+              outline: "none",
+              marginBottom: 10,
+              boxSizing: "border-box",
+            }}
+          />
+
+          <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 3 }}>
+            SIZE — PRESETS
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 0,
+              border: "1px solid #333",
+              marginBottom: 8,
+            }}
+          >
+            {CANVAS_SIZE_PRESETS.map((p) => {
+              const on = setupW === p.w && setupH === p.h;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setSetupW(p.w);
+                    setSetupH(p.h);
+                  }}
+                  style={{
+                    height: 24,
+                    border: "1px solid #222",
+                    background: on ? "#fff" : "#000",
+                    color: on ? "#000" : "#888",
+                    fontFamily: "inherit",
+                    fontSize: 6,
+                    letterSpacing: 0,
+                    cursor: "pointer",
+                    padding: "0 4px",
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 6, color: "#555", letterSpacing: 1, marginBottom: 3 }}>
+            CUSTOM
+          </div>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 14 }}>
+            <input
+              type="number"
+              min={1}
+              max={4096}
+              value={setupW}
+              onChange={(e) => setSetupW(Number(e.target.value) || 1)}
+              title="Width"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: 24,
+                background: "#000",
+                color: "#fff",
+                border: "1px solid #555",
+                fontFamily: "inherit",
+                fontSize: 8,
+                padding: "0 6px",
+                outline: "none",
+              }}
+            />
+            <span style={{ fontSize: 8, color: "#555" }}>×</span>
+            <input
+              type="number"
+              min={1}
+              max={4096}
+              value={setupH}
+              onChange={(e) => setSetupH(Number(e.target.value) || 1)}
+              title="Height"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: 24,
+                background: "#000",
+                color: "#fff",
+                border: "1px solid #555",
+                fontFamily: "inherit",
+                fontSize: 8,
+                padding: "0 6px",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = setupName.trim() || "UNTITLED";
+              applyCanvasSize(setupW, setupH);
+              setProject((p) => ({ ...p, name }));
+              setNeedsSetup(false);
+            }}
+            style={{
+              width: "100%",
+              height: 28,
+              border: "1px solid #ffff00",
+              background: "#ffff00",
+              color: "#000",
+              fontFamily: "inherit",
+              fontSize: 8,
+              letterSpacing: 1,
+              cursor: "pointer",
+            }}
+          >
+            START DRAWING
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: "#000", fontFamily: "var(--dm-font-primary)", fontSize: 9, imageRendering: "pixelated", color: "#fff" }}>
+    <div ref={rootRef} className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: "#000", fontFamily: "var(--dm-font-primary)", fontSize: 9, imageRendering: "pixelated", color: "#fff", position: "relative" }}>
+      {setupModal}
       {embeddedMode ? (
         <div className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0" style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}>
           <span style={{ color: "#ffff00", letterSpacing: 2 }}>{embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}</span>
@@ -1700,6 +2195,24 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             <button type="button" style={headerBtn(playing)} onClick={togglePlayback} title="Play / Pause (P)">
               {playing ? "||" : ">"}
             </button>
+            <button
+              type="button"
+              style={headerBtn(timelineOrientationMode !== "auto")}
+              onClick={cycleTimelineOrientationMode}
+              title={
+                timelineOrientationMode === "auto"
+                  ? "Timeline: AUTO (follows window shape) — click to pin FILM"
+                  : timelineOrientationMode === "horizontal"
+                    ? "Timeline: pinned FILM (bottom strip) — click to pin X-SHEET"
+                    : "Timeline: pinned X-SHEET (right column) — click to return to AUTO"
+              }
+            >
+              {timelineOrientationMode === "auto"
+                ? `AUTO · ${timelineOrientation === "vertical" ? "X-SHEET" : "FILM"}`
+                : timelineOrientationMode === "vertical"
+                  ? "X-SHEET"
+                  : "FILM"}
+            </button>
           </div>
         </div>
       )}
@@ -1746,6 +2259,9 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
               ditherOx={ditherOx}
               ditherOy={ditherOy}
               ditherPattern={ditherPattern}
+              ditherCoverage={ditherCoverage}
+              ditherTwoTone={ditherTwoTone}
+              ditherColorB={ditherColorB}
               zoom={zoom}
               onZoomChange={setZoom}
               onPixelsChanged={handlePixelsChanged}
@@ -1765,6 +2281,11 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
             {showSizeSettings && !collapse && (
               <div style={{ position: "absolute", top: 8, right: 8, zIndex: 40 }}>
                 {sizeSettingsContent}
+              </div>
+            )}
+            {showDitherColorB && !collapse && (
+              <div style={{ position: "absolute", top: 8, left: 8, zIndex: 40 }}>
+                {ditherColorBContent}
               </div>
             )}
             {collapse && (
@@ -1804,12 +2325,18 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                     {sizeSettingsContent}
                   </div>
                 )}
+                {showDitherColorB && (
+                  <div style={{ position: "absolute", bottom: 50, left: "50%", transform: "translateX(-50%)", zIndex: 43, maxWidth: "min(92vw, 240px)" }}>
+                    {ditherColorBContent}
+                  </div>
+                )}
               </>
             )}
           </div>
 
-          {/* Timeline strip — between L/R rails, under canvas; drag handle to show/hide */}
-          {!collapse && (
+          {/* Horizontal filmstrip — between L/R rails, under canvas; drag handle to show/hide.
+              Vertical (X-Sheet) mode instead renders in the thin right-side column below. */}
+          {!collapse && timelineOrientation === "horizontal" && (
             <>
               <div
                 role="separator"
@@ -1829,7 +2356,7 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                 }
                 style={{
                   flexShrink: 0,
-                  height: 10,
+                  height: 36,
                   cursor: "ns-resize",
                   touchAction: "none",
                   background: "#0a0a0a",
@@ -1837,30 +2364,46 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   borderBottom: timelineHeight > 0 ? "1px solid #222" : "1px solid #333",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
+                  justifyContent: "space-between",
+                  padding: "0 6px",
+                  gap: 8,
                   userSelect: "none",
                 }}
               >
-                <div
-                  style={{
-                    width: 36,
-                    height: 3,
-                    background: timelineHeight > 0 ? "#555" : "#ffff00",
-                    borderRadius: 0,
-                  }}
-                />
-                <span style={{ fontSize: 6, color: "#666", letterSpacing: 1 }}>
-                  {timelineHeight > 0 ? "TIMELINE" : "TIMELINE · DRAG UP"}
+                <span style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: 20,
+                      height: 3,
+                      background: timelineHeight > 0 ? "#555" : "#ffff00",
+                      borderRadius: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 6, color: "#666", letterSpacing: 1 }}>
+                    {timelineHeight > 0 ? "TIMELINE" : "DRAG UP"}
+                  </span>
                 </span>
+                {/* Frame controls live in this bar (not beside frame 1 in the
+                    scrolling strip) — stop the drag from starting under a click here. */}
                 <div
-                  style={{
-                    width: 36,
-                    height: 3,
-                    background: timelineHeight > 0 ? "#555" : "#ffff00",
-                    borderRadius: 0,
-                  }}
-                />
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  style={{ display: "flex", alignItems: "center" }}
+                >
+                  <TimelineToolbar
+                    playing={playing}
+                    frameCount={frameCount}
+                    activePool={project.layers[activeLayerIndex]?.frames ?? []}
+                    spriteWidth={project.width}
+                    spriteHeight={project.height}
+                    renderTick={renderTick}
+                    onTogglePlayback={togglePlayback}
+                    onInsertBlank={insertBlankFrame}
+                    onDuplicate={duplicateFrame}
+                    onDelete={deleteFrame}
+                    onReuse={reuseFrame}
+                  />
+                </div>
               </div>
               {timelineHeight > 0 && (
                 <div
@@ -1876,16 +2419,18 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   {timelineContent}
                 </div>
               )}
-              <div
-                className="flex items-center justify-between px-2 py-0.5 border-t flex-shrink-0"
-                style={{ borderColor: "#1a1a1a", minHeight: 18 }}
-              >
-                <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
-                  ,/. frame · 2-tap undo · 3-tap redo · pinch/twist · P play
-                </span>
-                <span style={{ fontSize: 7, color: "#555" }}>☦</span>
-              </div>
             </>
+          )}
+          {!collapse && (
+            <div
+              className="flex items-center justify-between px-2 py-0.5 border-t flex-shrink-0"
+              style={{ borderColor: "#1a1a1a", minHeight: 18 }}
+            >
+              <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>
+                ,/. frame · 2-tap undo · 3-tap redo · pinch/twist · P play
+              </span>
+              <span style={{ fontSize: 7, color: "#555" }}>☦</span>
+            </div>
           )}
         </div>
 
@@ -1905,12 +2450,55 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           </div>
         )}
 
+        {/* Vertical (X-Sheet) mode: thin dedicated column to the right of the
+            preview/color/export rail, per user request — never crammed into
+            that already-dense rail. Left-edge handle resizes its width. */}
+        {!collapse && timelineOrientation === "vertical" && (
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Drag to resize X-Sheet width"
+              title="Drag to resize · double-click to reset"
+              onPointerDown={onXsheetHandlePointerDown}
+              onPointerMove={onXsheetHandlePointerMove}
+              onPointerUp={onXsheetHandlePointerUp}
+              onPointerCancel={onXsheetHandlePointerUp}
+              onDoubleClick={() => setXsheetWidth(XSHEET_DEFAULT)}
+              style={{
+                flexShrink: 0,
+                width: 8,
+                cursor: "ew-resize",
+                touchAction: "none",
+                background: "#0a0a0a",
+                borderLeft: "1px solid #333",
+                borderRight: "1px solid #222",
+                userSelect: "none",
+              }}
+            />
+            <div
+              className="flex flex-col flex-shrink-0"
+              style={{
+                borderColor: "#1a1a1a",
+                width: xsheetWidth,
+                alignSelf: "stretch",
+                height: "100%",
+                minHeight: 0,
+                overflow: "hidden",
+                background: "#000",
+              }}
+            >
+              {timelineContent}
+            </div>
+          </>
+        )}
+
         {collapse && (
           <>
             <CornerPanel id="tools" corner="top-left" label="TOOL">{toolsContent}</CornerPanel>
             <CornerPanel id="side" corner="top-right" label="CLR">{sideContent}</CornerPanel>
             <CornerPanel id="frames" corner="bottom-left" label="FRM">{timelineContent}</CornerPanel>
-            <button type="button" style={{ ...mobileFrameBtn, left: 44 }} onClick={(e) => { e.stopPropagation(); addFrame(); }}>+</button>
+            <button type="button" style={{ ...mobileFrameBtn, left: 44 }} onClick={(e) => { e.stopPropagation(); insertBlankFrame(); }}>+</button>
             <button type="button" style={{ ...mobileFrameBtn, left: 84 }} onClick={(e) => { e.stopPropagation(); duplicateFrame(); }}>DUP</button>
             <button
               type="button"
@@ -1953,6 +2541,33 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
                   title="Image size settings"
                 >
                   {project.width}×{project.height} · SIZE…
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cycleTimelineOrientationMode();
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    border: "1px solid #333",
+                    background: timelineOrientationMode !== "auto" ? "#fff" : "#000",
+                    color: timelineOrientationMode !== "auto" ? "#000" : "#aaa",
+                    fontFamily: "inherit",
+                    fontSize: 8,
+                    padding: "3px 4px",
+                    cursor: "pointer",
+                    marginBottom: 4,
+                  }}
+                  title="Cycle timeline layout: AUTO / FILM / X-SHEET"
+                >
+                  {timelineOrientationMode === "auto"
+                    ? `AUTO MODE (${timelineOrientation === "vertical" ? "X-SHEET" : "FILMSTRIP"})`
+                    : timelineOrientationMode === "vertical"
+                      ? "X-SHEET MODE"
+                      : "FILMSTRIP MODE"}
                 </button>
                 <div>FRM {displayFrameIndex + 1}/{frameCount}</div>
                 <div>SZ {penSize} · {activeTool.toUpperCase()}</div>
@@ -2112,39 +2727,146 @@ function OnionTintBar({
   );
 }
 
-function FrameThumbnail({
-  frame, index, isActive, onClick, spriteWidth, spriteHeight, isOnionPrev, isOnionNext,
+/**
+ * Dither tone/density bar — colored port of Shotlist's vertical tone strip
+ * (drag: top=solid A, bottom=solid B), showing the real A/B colors instead
+ * of mono ink/bg.
+ */
+function DitherToneBar({
+  coverage,
+  onChange,
+  pattern,
+  colorA,
+  colorB,
+  ox,
+  oy,
+  width = 22,
 }: {
-  frame: import("@/types/sprite").SpriteFrame;
-  index: number;
-  isActive: boolean;
-  onClick: () => void;
-  spriteWidth: number;
-  spriteHeight: number;
-  isOnionPrev?: boolean;
-  isOnionNext?: boolean;
+  coverage: number;
+  onChange: (v: number) => void;
+  pattern: DitherPatternId;
+  colorA: PackedColor;
+  colorB: PackedColor;
+  ox: number;
+  oy: number;
+  width?: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    canvas.width = spriteWidth;
-    canvas.height = spriteHeight;
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, spriteWidth, spriteHeight);
-    ctx.drawImage(frameToCanvas(frame, 1), 0, 0);
-  }, [frame, spriteWidth, spriteHeight]);
+    renderDitherGradientStripColor(ctx, width, 96, pattern, colorA, colorB, { ox, oy });
+  }, [pattern, colorA, colorB, ox, oy, width]);
 
-  let borderColor = isActive ? "#ffffff" : "#333333";
-  if (!isActive && isOnionPrev) borderColor = "#b850ff";
-  if (!isActive && isOnionNext) borderColor = "#3cdc78";
+  const setFromY = (clientY: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const t = 1 - (clientY - rect.top) / Math.max(1, rect.height);
+    onChange(Math.min(1, Math.max(0, t)));
+  };
 
   return (
-    <div onClick={onClick} style={{ flexShrink: 0, marginRight: 3, cursor: "pointer", border: isActive ? "2px solid #ffffff" : `1px solid ${borderColor}`, backgroundColor: "#0a0a0a", padding: 2 }}>
-      <canvas ref={canvasRef} style={{ width: 32, height: 32, imageRendering: "pixelated", display: "block" }} />
-      <div style={{ fontFamily: "var(--dm-font-primary)", fontSize: 6, color: isActive ? "#fff" : isOnionPrev ? "#b850ff" : isOnionNext ? "#3cdc78" : "#555", textAlign: "center", marginTop: 1 }}>{index + 1}</div>
+    <div
+      ref={ref}
+      title="Tone: top=solid A · bottom=solid B"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        setFromY(e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons !== 1) return;
+        setFromY(e.clientY);
+      }}
+      style={{
+        position: "relative",
+        width,
+        height: "100%",
+        border: "1px solid #333",
+        cursor: "ns-resize",
+        flexShrink: 0,
+        overflow: "hidden",
+        touchAction: "none",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ width: "100%", height: "100%", display: "block", imageRendering: "pixelated", pointerEvents: "none" }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: `${(1 - coverage) * 100}%`,
+          height: 2,
+          background: "#ffff00",
+          transform: "translateY(-1px)",
+          pointerEvents: "none",
+          boxShadow: "0 0 0 1px #000",
+        }}
+      />
     </div>
   );
 }
+
+/** One dither kernel swatch button — colored port of Shotlist's ToneSwatch pattern preview. */
+function DitherSwatchButton({
+  pattern,
+  active,
+  coverage,
+  colorA,
+  colorB,
+  ox,
+  oy,
+  onClick,
+  title,
+}: {
+  pattern: DitherPatternId;
+  active: boolean;
+  coverage: number;
+  colorA: PackedColor;
+  colorB: PackedColor;
+  ox: number;
+  oy: number;
+  onClick: () => void;
+  title: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    renderDitherToneSwatch(ctx, 16, pattern, coverage, colorA, colorB, ox, oy);
+  }, [pattern, coverage, colorA, colorB, ox, oy]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      style={{
+        flex: "1 1 0",
+        minHeight: 0,
+        padding: 0,
+        border: active ? "1px solid #ffff00" : "1px solid #333",
+        background: "#000",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
+      <canvas ref={canvasRef} style={{ width: 16, height: 16, imageRendering: "pixelated", display: "block" }} />
+    </button>
+  );
+}
+

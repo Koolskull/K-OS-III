@@ -62,6 +62,7 @@ import EnEffectCommands from "@/lib/doc/articles/en/effect-commands";
 import EnSlimentologika from "@/lib/doc/articles/en/slimentologika";
 import EnPerInstrumentVisuals from "@/lib/doc/articles/en/per-instrument-visuals";
 import EnSceneVM from "@/lib/doc/articles/en/scene-vm";
+import EnKoolDrawTimeline from "@/lib/doc/articles/en/kooldraw-timeline";
 import EnDmpitFormat from "@/lib/doc/articles/en/dmpit-format";
 import EnTheRules from "@/lib/doc/articles/en/the-rules";
 import EnGlossary from "@/lib/doc/articles/en/glossary";
@@ -657,6 +658,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     slimentologika: EnSlimentologika,
     "per-instrument-visuals": EnPerInstrumentVisuals,
     "scene-vm": EnSceneVM,
+    "kooldraw-timeline": EnKoolDrawTimeline,
     "dmpit-format": EnDmpitFormat,
     "the-rules": EnTheRules,
     glossary: EnGlossary,

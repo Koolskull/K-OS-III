@@ -147,7 +147,13 @@ For deeper technical references, see the docs index further down this README.
 
 ### KOOLDRAW — Pixel Art & Animation
 
-KoolDraw is a Piskel-inspired pixel art and animation app. Tools include pen, soft paint, eraser, fill, line, and rectangle. Manage layers and animation frames. Export as PNG sequences or sprite sheets for use in Datamoshpit visual layers.
+KoolDraw is a Piskel-inspired pixel art and animation app. Tools include pen, soft paint, eraser, fill, line, and rectangle. Export as PNG sequences or sprite sheets for use in Datamoshpit visual layers.
+
+**Timeline & layers** (see [`docs/doc/en/kooldraw-timeline`](./src/lib/doc/articles/en/kooldraw-timeline.tsx) in-app for the full manual page):
+
+- Every frame gets a permanent **3-digit hex id** (`000`–`FFF`). Layers keep a drawing *pool* (every distinct drawing) separate from the timeline's *exposure track* (which pool drawing plays at each position) — so a drawing can be **reused** at multiple non-contiguous points in the sequence (Clip Studio Paint / OpenToonz style) without duplicating pixel data. `Shift+F` inserts a new blank frame, `Shift+D` duplicates the active one into an independent copy; the **REUSE** picker points a slot at an existing drawing instead.
+- Layers and frames both drag-reorder in place (press-and-drag, same interaction as the color picker/knob controls — not browser drag-and-drop), with an `Alt+↑`/`Alt+↓` keyboard path on a focused layer row. Layers also support delete, rename, and an opacity knob.
+- The timeline toggles between a **horizontal filmstrip** (docked under the canvas) and a **vertical X-Sheet-style grid** (rows = frames top-to-bottom, columns = layers, docked in a thin column beside the preview/color/export rail) — the same row order OpenToonz and Tahoma2D use for their Xsheet panel. A header button cycles **AUTO → FILM → X-SHEET**: AUTO follows the window's own shape live (taller-than-wide → filmstrip, wider-than-tall → X-Sheet column); FILM/X-SHEET pin an explicit choice. Opening a shot from Shotlist pins X-Sheet mode and mirrors that shot's fps/duration/row layout.
 
 On phones the editor uses the **Corner-Collapsible Panels** pattern (toolbars and side panels collapse into the four screen corners + a full-canvas “zen” mode). See [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md).
 

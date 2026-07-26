@@ -66,14 +66,14 @@ function FollowWindowBody({
   width: number;
   height: number;
 }) {
-  const { manifest, frame, activeInstrumentId } = useInstrumentSceneVM(engine, project);
+  const { manifest, frame, activeInstrumentId, positionOverride } = useInstrumentSceneVM(engine, project);
   const instLabel =
     activeInstrumentId !== null
       ? `INST ${activeInstrumentId.toString(16).toUpperCase().padStart(2, "0")}`
       : "IDLE";
   return (
     <>
-      <SceneVMPlayer manifest={manifest} frame={frame} width={width} height={height} debug />
+      <SceneVMPlayer manifest={manifest} frame={frame} width={width} height={height} debug positionOverride={positionOverride} />
       <FooterRow left={`FOLLOW: ${instLabel}`} right={`FRAME: ${String(frame).padStart(4, "0")}`} />
     </>
   );

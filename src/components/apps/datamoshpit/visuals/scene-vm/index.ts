@@ -41,5 +41,7 @@ export type {
   NoiseChannel,
   LayerNoiseConfig,
   NoiseKeyframe,
+  PositionOverride,
 } from "./lib/types";
 export { TIMELINE_FPS } from "./lib/types";
+export { parseSpriteBundleZip } from "./lib/sprite-bundle";

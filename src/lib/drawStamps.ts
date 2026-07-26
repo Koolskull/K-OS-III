@@ -344,6 +344,64 @@ export function stampDitherDisk(
 }
 
 /**
+ * Two-tone ordered dither: every pixel in the stamp radius is painted,
+ * `writeA` for cells passing the threshold ("ink") and `writeB` for the
+ * rest ("background") — unlike `stampDitherDisk`, which only ever paints
+ * ink and leaves everything else untouched. Used where the dither pattern
+ * itself should render as two explicit, independently-chosen colors
+ * (KoolDraw's A/B dither) rather than one ink density over existing content.
+ */
+export function stampDitherDiskTwoTone(
+  cx: number,
+  cy: number,
+  opts: DiskStampOpts & {
+    ditherOx: number;
+    ditherOy: number;
+    pattern?: DitherPatternId;
+    /** Gray coverage 0..1 (ordered-dither density). Defaults to pressure. */
+    coverage?: number;
+  },
+  writeA: StampWrite,
+  writeB: StampWrite,
+): void {
+  const pattern = opts.pattern ?? DEFAULT_DITHER_PATTERN;
+  const coverage = Math.min(1, Math.max(0, opts.coverage ?? opts.pressure));
+  const r = Math.max(
+    1,
+    radiusFromPressure(opts.pressure, opts.maxRadius, opts.minRadius ?? 1, opts.curve),
+  );
+
+  if (coverage >= 0.999) {
+    stampSolidDisk(cx, cy, r, writeA);
+    return;
+  }
+  if (coverage <= 0.001) {
+    stampSolidDisk(cx, cy, r, writeB);
+    return;
+  }
+
+  const threshold = coverage * 64;
+  const r2 = r * r;
+  const ox = opts.ditherOx | 0;
+  const oy = opts.ditherOy | 0;
+  const x0 = Math.floor(cx - r);
+  const y0 = Math.floor(cy - r);
+  const x1 = Math.ceil(cx + r);
+  const y1 = Math.ceil(cy + r);
+
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const dx = x + 0.5 - cx;
+      const dy = y + 0.5 - cy;
+      if (dx * dx + dy * dy > r2) continue;
+      const rank = sampleDitherRank(pattern, x, y, ox, oy);
+      if (rank < threshold) writeA(x, y);
+      else writeB(x, y);
+    }
+  }
+}
+
+/**
  * Render a vertical ordered-dither gradient strip (coverage 0 at top → 1 at bottom,
  * or reverse). Used for the density slider preview UI.
  */

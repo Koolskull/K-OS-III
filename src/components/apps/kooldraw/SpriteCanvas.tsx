@@ -26,6 +26,7 @@ import {
   getRectPixels,
   floodFill,
   compositeFrame,
+  getExposedFrame,
   packedColorToRGBA,
   normalizePressure,
   stampFramePressurePen,
@@ -33,6 +34,7 @@ import {
   stampFrameDither,
   stampFrameEraserDisk,
   stampFrameSoftPaint,
+  stampFrameDitherTwoTone,
   clampPixelZoom,
   fitPixelZoom,
   formatPixelZoom,
@@ -118,6 +120,12 @@ interface SpriteCanvasProps {
   ditherOy?: number;
   /** Dither pattern id (opacity / texture variety) */
   ditherPattern?: DitherPatternId;
+  /** Explicit manual density 0..1 (Shotlist-style tone control) — overrides pressure-based coverage. */
+  ditherCoverage?: number;
+  /** Paint both dither colors (colorA at ink cells, ditherColorB at background cells) instead of ink-only density. */
+  ditherTwoTone?: boolean;
+  /** Second dither color, used only when ditherTwoTone is true. */
+  ditherColorB?: PackedColor;
   zoom: number;
   onZoomChange: (zoom: number) => void;
   /** Called after discrete edits (fill, shape commit) — parent should push undo + re-render chrome. */
@@ -210,6 +218,9 @@ export function SpriteCanvas({
   ditherOx = 0,
   ditherOy = 0,
   ditherPattern = "bayer8",
+  ditherCoverage,
+  ditherTwoTone = false,
+  ditherColorB = 0xff000000,
   zoom,
   onZoomChange,
   onPixelsChanged,
@@ -263,6 +274,9 @@ export function SpriteCanvas({
   const ditherOxRef = useRef(ditherOx);
   const ditherOyRef = useRef(ditherOy);
   const ditherPatternRef = useRef(ditherPattern);
+  const ditherCoverageRef = useRef(ditherCoverage);
+  const ditherTwoToneRef = useRef(ditherTwoTone);
+  const ditherColorBRef = useRef(ditherColorB);
   toolRef.current = tool;
   colorRef.current = color;
   penSizeRef.current = penSize;
@@ -270,10 +284,13 @@ export function SpriteCanvas({
   ditherOxRef.current = ditherOx;
   ditherOyRef.current = ditherOy;
   ditherPatternRef.current = ditherPattern;
+  ditherCoverageRef.current = ditherCoverage;
+  ditherTwoToneRef.current = ditherTwoTone;
+  ditherColorBRef.current = ditherColorB;
 
   const viewFrameIndex = displayFrameIndex ?? activeFrameIndex;
   const activeLayer = layers[activeLayerIndex];
-  const activeFrame = activeLayer?.frames[activeFrameIndex];
+  const activeFrame = activeLayer ? getExposedFrame(activeLayer, activeFrameIndex) : undefined;
 
   /** Sub-pixel coords: bitmap space → sprite pixels via offset / drawZoom. */
   const screenToFloatPixel = useCallback(
@@ -366,7 +383,7 @@ export function SpriteCanvas({
       const onion = ensureBuf(onionBufRef);
       const octx = onion.getContext("2d")!;
       const img = octx.createImageData(width, height);
-      const frameCount = layers[0]?.frames.length ?? 0;
+      const frameCount = layers[0]?.exposures.length ?? 0;
       const wrap = !!onionSkin.loopWrap && frameCount > 1;
       const tintAmt = onionSkin.tint ?? 1;
       const resolvePrev = (d: number): number | null => {
@@ -539,17 +556,34 @@ export function SpriteCanvas({
           stampFrameHarsh(activeFrame, fx, fy, c, sizeP, maxR);
           break;
         case "dither":
-          stampFrameDither(
-            activeFrame,
-            fx,
-            fy,
-            c,
-            sizeP,
-            maxR,
-            ditherOxRef.current,
-            ditherOyRef.current,
-            ditherPatternRef.current,
-          );
+          if (ditherTwoToneRef.current) {
+            stampFrameDitherTwoTone(
+              activeFrame,
+              fx,
+              fy,
+              c,
+              ditherColorBRef.current,
+              sizeP,
+              maxR,
+              ditherOxRef.current,
+              ditherOyRef.current,
+              ditherPatternRef.current,
+              ditherCoverageRef.current,
+            );
+          } else {
+            stampFrameDither(
+              activeFrame,
+              fx,
+              fy,
+              c,
+              sizeP,
+              maxR,
+              ditherOxRef.current,
+              ditherOyRef.current,
+              ditherPatternRef.current,
+              ditherCoverageRef.current,
+            );
+          }
           break;
         case "eraser":
           stampFrameEraserDisk(activeFrame, fx, fy, sizeP, maxR);

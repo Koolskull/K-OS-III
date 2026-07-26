@@ -36,7 +36,22 @@ export interface CreativeSession {
    * Target must echo this back unchanged via complete/cancel path.
    */
   ref: Record<string, unknown>;
+  /**
+   * Optional snapshot of the calling app's timeline/exposure-sheet context
+   * at handoff time (e.g. Shotlist sending a shot's fps/duration/row
+   * layout so KoolDraw's vertical timeline can mirror it). A snapshot, not
+   * a live link — the bus is one-shot, so this reflects state as of the
+   * moment the handoff was made.
+   */
+  xsheetSnapshot?: XSheetSnapshot;
   createdAt: number;
+}
+
+/** Generic timeline/exposure-sheet snapshot — kept decoupled from any one app's row shape so the bus stays reusable. */
+export interface XSheetSnapshot {
+  fps: number;
+  durationFrames: number;
+  rows: Array<{ start: number; end: number; label: string }>;
 }
 
 export interface CreativeResult {

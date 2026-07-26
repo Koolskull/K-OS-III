@@ -206,7 +206,7 @@ export const ARTICLES: ArticleMeta[] = [
     slug: "hexadecimal",
     category: "foundations",
     level: "beginner",
-    seeAlso: ["slimentologika", "song-chain-phrase"],
+    seeAlso: ["slimentologika", "song-chain-phrase", "kooldraw-timeline"],
     i18n: {
       en: { title: "Hexadecimal", oneLiner: "Counting in base 16 — and why trackers love it." },
       es: { title: "Hexadecimal", oneLiner: "Contar en base 16 — y por qué a los trackers les encanta." },
@@ -296,6 +296,18 @@ export const ARTICLES: ArticleMeta[] = [
       es: { title: "El Scene VM", oneLiner: "Cómo los visuales se sincronizan con el audio bajo el capó." },
       ja: { title: "Scene VM", oneLiner: "ビジュアルが音と完全同期する仕組み。" },
       zh: { title: "Scene VM", oneLiner: "在底层视觉如何与音频同步运行。" },
+    },
+  },
+  {
+    slug: "kooldraw-timeline",
+    category: "visuals",
+    level: "intermediate",
+    seeAlso: ["hexadecimal", "per-instrument-visuals"],
+    i18n: {
+      en: { title: "KoolDraw's Timeline", oneLiner: "Hex-named reusable frames, layer drag-reorder, and the vertical X-Sheet mode." },
+      es: { title: "La Línea de Tiempo de KoolDraw", oneLiner: "Fotogramas reutilizables con nombre hex, reordenar capas arrastrando, y el modo X-Sheet vertical." },
+      ja: { title: "KoolDrawのタイムライン", oneLiner: "16進数で名付けられた再利用可能なフレーム、レイヤーのドラッグ並べ替え、垂直X-Sheetモード。" },
+      zh: { title: "KoolDraw 时间轴", oneLiner: "十六进制命名的可复用帧、拖拽调整图层顺序，以及垂直 X-Sheet 模式。" },
     },
   },
   {

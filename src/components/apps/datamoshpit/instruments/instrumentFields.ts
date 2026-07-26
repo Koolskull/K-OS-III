@@ -289,10 +289,10 @@ export function getNavigableRows(layout: LayoutRow[]): InstrumentField[][] {
 /* ------------------------------------------------------------------ */
 
 const VISUAL_SOURCES: VisualSource[] = [
-  "none", "color", "image", "video", "shader", "model", "iframe",
+  "none", "color", "image", "sprite", "video", "shader", "model", "iframe",
 ];
 const VISUAL_SOURCE_LABELS: Record<VisualSource, string> = {
-  none: "NONE", color: "COLOR", image: "IMAGE", video: "VIDEO",
+  none: "NONE", color: "COLOR", image: "IMAGE", sprite: "SPRITE", video: "VIDEO",
   shader: "SHADER", model: "MODEL", iframe: "IFRAME",
 };
 
@@ -432,6 +432,45 @@ function visualAssetClearField(): InstrumentField {
   };
 }
 
+/** Read-only display of the currently-loaded sprite bundle */
+function visualSpriteInfoField(): InstrumentField {
+  return {
+    key: "v_sprite_info", label: "BUNDLE",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,
+    display: (i) => {
+      const b = ensureVisual(i).spriteBundle;
+      if (!b) return "[NONE]";
+      const frames = b.layers.reduce((n, l) => n + l.exposures.length, 0);
+      const name = b.name.length > 10 ? b.name.slice(0, 9) + ".." : b.name;
+      return `${name} ${b.layers.length}L/${frames}F`;
+    },
+  };
+}
+
+/** Action: open a .zip file picker and import a KoolDraw animation bundle */
+function visualSpriteLoadField(): InstrumentField {
+  return {
+    key: "v_sprite_load", label: "LOAD",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[PICK BUNDLE .ZIP]",
+  };
+}
+
+/** Action: clear the loaded sprite bundle */
+function visualSpriteClearField(): InstrumentField {
+  return {
+    key: "v_sprite_clear", label: "CLR",
+    min: 0, max: 0, digits: 0,
+    get: () => 0,
+    set: (i) => i,           // side effect handled in DatamoshpitApp
+    display: () => "[X]",
+  };
+}
+
 /** Action: open the InstrumentTimelineEditor modal for fine-grained keyframe authoring */
 function visualTimelineEditField(): InstrumentField {
   return {
@@ -462,6 +501,8 @@ export const VISUAL_ACTION_FIELD_KEYS = new Set([
   "v_asset_load",
   "v_asset_draw",
   "v_asset_clear",
+  "v_sprite_load",
+  "v_sprite_clear",
   "v_timeline_open",
   "v_timeline_clear",
 ]);
@@ -585,6 +626,12 @@ function visualRows(inst: Instrument): LayoutRow[] {
     }
     if (v.assetUrl) {
       rows.push({ type: "fields", fields: [visualAssetClearField()] });
+    }
+  } else if (v.source === "sprite") {
+    rows.push({ type: "fields", fields: [visualSpriteInfoField()] });
+    rows.push({ type: "fields", fields: [visualSpriteLoadField()] });
+    if (v.spriteBundle) {
+      rows.push({ type: "fields", fields: [visualSpriteClearField()] });
     }
   }
 

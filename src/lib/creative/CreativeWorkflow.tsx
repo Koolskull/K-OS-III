@@ -22,9 +22,17 @@ import type {
   CreativeResult,
   CreativeReturn,
   CreativeSession,
+  XSheetSnapshot,
 } from "./types";
 
-export type { CreativeAppId, CreativeAssetKind, CreativeResult, CreativeReturn, CreativeSession };
+export type {
+  CreativeAppId,
+  CreativeAssetKind,
+  CreativeResult,
+  CreativeReturn,
+  CreativeSession,
+  XSheetSnapshot,
+};
 
 let sessionCounter = 0;
 
@@ -39,6 +47,7 @@ export interface HandoffRequest {
   mono?: boolean;
   bg?: "black" | "white";
   ref?: Record<string, unknown>;
+  xsheetSnapshot?: XSheetSnapshot;
 }
 
 interface CreativeWorkflowValue {
@@ -91,6 +100,7 @@ export function CreativeWorkflowProvider({ children, onLaunchApp }: ProviderProp
       mono: req.mono,
       bg: req.bg,
       ref: req.ref ?? {},
+      xsheetSnapshot: req.xsheetSnapshot,
       createdAt: Date.now(),
     };
     setLastReturn(null);

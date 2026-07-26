@@ -17,6 +17,7 @@ dist/
 *.log
 .env
 .env.*
+!.env*.example
 
 # debug
 npm-debug.log*
@@ -51,6 +52,7 @@ dist/
 *.log
 .env
 .env.*
+!.env*.example
 
 # debug
 npm-debug.log*

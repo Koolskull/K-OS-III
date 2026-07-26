@@ -41,6 +41,13 @@ interface Profile {
   is_public: boolean;
 }
 
+interface OwnedNft {
+  contractAddress: string;
+  tokenId: string;
+  name: string | null;
+  image: string | null;
+}
+
 const field: React.CSSProperties = {
   display: "block",
   width: "100%",
@@ -108,6 +115,11 @@ export function AccountApp() {
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const [showNftPicker, setShowNftPicker] = useState(false);
+  const [loadingNfts, setLoadingNfts] = useState(false);
+  const [nftError, setNftError] = useState<string | null>(null);
+  const [nfts, setNfts] = useState<OwnedNft[]>([]);
 
   const refreshSession = useCallback(async () => {
     setLoadingSession(true);
@@ -224,6 +236,36 @@ export function AccountApp() {
     setTimeout(() => setSaveMsg(null), 2500);
   }
 
+  async function openNftPicker() {
+    setShowNftPicker(true);
+    setLoadingNfts(true);
+    setNftError(null);
+    const res = await fetch("/api/nfts");
+    setLoadingNfts(false);
+    if (!res.ok) {
+      const body = (await res.json()) as { error?: string };
+      setNftError(body.error ?? "Failed to load NFTs.");
+      return;
+    }
+    setNfts((await res.json()) as OwnedNft[]);
+  }
+
+  async function pickNftAvatar(nft: OwnedNft) {
+    if (!nft.image) return;
+    setAvatarUrl(nft.image);
+    setShowNftPicker(false);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatar_url: nft.image }),
+    });
+    if (res.ok) {
+      setProfile((await res.json()) as Profile);
+      setSaveMsg("AVATAR SET FROM NFT");
+      setTimeout(() => setSaveMsg(null), 2500);
+    }
+  }
+
   return (
     <div
       className="w-full h-full overflow-y-auto"
@@ -233,6 +275,7 @@ export function AccountApp() {
         fontFamily: "var(--dm-font-primary)",
         imageRendering: "pixelated",
         padding: 16,
+        position: "relative",
       }}
     >
       <div style={{ maxWidth: 320, margin: "0 auto" }}>
@@ -310,7 +353,24 @@ export function AccountApp() {
                 />
 
                 <span style={label}>AVATAR URL</span>
-                <input style={field} value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+                <div style={{ display: "flex", gap: 4, marginTop: 3 }}>
+                  <input
+                    style={{ ...field, marginTop: 0, flex: 1 }}
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                  />
+                  <button type="button" onClick={openNftPicker} style={secondaryBtn}>
+                    USE NFT
+                  </button>
+                </div>
+                {avatarUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    style={{ width: 48, height: 48, objectFit: "cover", border: "1px solid #333", marginTop: 6 }}
+                  />
+                )}
 
                 <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                   <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
@@ -328,6 +388,80 @@ export function AccountApp() {
           </>
         )}
       </div>
+
+      {showNftPicker && (
+        <div
+          onClick={() => setShowNftPicker(false)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 100,
+            background: "rgba(0,0,0,0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 340,
+              maxHeight: "80%",
+              overflowY: "auto",
+              border: "1px solid #555",
+              background: "#0a0a0a",
+              boxShadow: "3px 3px 0 #000",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "5px 8px",
+                borderBottom: "1px solid #333",
+                background: "#1a1a1a",
+              }}
+            >
+              <span style={{ fontSize: 8, color: "#ddd", letterSpacing: 1 }}>CHOOSE NFT AVATAR</span>
+              <button onClick={() => setShowNftPicker(false)} style={{ ...secondaryBtn, height: 18, padding: "0 6px" }}>
+                ×
+              </button>
+            </div>
+            <div style={{ padding: 8 }}>
+              {loadingNfts ? (
+                <div style={{ fontSize: 8, color: "#666", letterSpacing: 1 }}>LOADING…</div>
+              ) : nftError ? (
+                <div style={{ fontSize: 7, color: "#ff6666", letterSpacing: 0.5 }}>{nftError.toUpperCase()}</div>
+              ) : nfts.length === 0 ? (
+                <div style={{ fontSize: 8, color: "#666", letterSpacing: 1 }}>NO NFTS FOUND IN THIS WALLET.</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                  {nfts.map((nft) => (
+                    <button
+                      key={`${nft.contractAddress}-${nft.tokenId}`}
+                      onClick={() => pickNftAvatar(nft)}
+                      title={nft.name ?? undefined}
+                      style={{
+                        border: "1px solid #333",
+                        background: "#000",
+                        padding: 0,
+                        cursor: "pointer",
+                        aspectRatio: "1",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={nft.image ?? undefined} alt={nft.name ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

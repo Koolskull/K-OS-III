@@ -42,15 +42,17 @@ export function clientToCanvasBitmap(
   const dy = clientY - cy;
 
   if (Math.abs(rot) < 0.01) {
-    // Axis-aligned: linear map using visual rect when ancestor-scaled,
-    // else layout size when rect ≈ layout (no extra CSS scale).
-    const useLayout =
-      Math.abs(rect.width - layoutW) < 0.5 &&
-      Math.abs(rect.height - layoutH) < 0.5;
-    const contentW = useLayout ? layoutW : rect.width;
-    const contentH = useLayout ? layoutH : rect.height;
-    const x = ((clientX - rect.left) / contentW) * bw;
-    const y = ((clientY - rect.top) / contentH) * bh;
+    // Axis-aligned: rect.width/height IS the true on-screen size in the same
+    // coordinate space as clientX/clientY by spec (getBoundingClientRect
+    // reflects every ancestor transform, CSS zoom, etc. — ALWAYS correct
+    // here since rotate(0)/translate() never change an element's own
+    // width/height). Previously this compared rect against canvas.clientWidth
+    // and only trusted rect when they "looked" ancestor-scaled — a heuristic
+    // that silently mismapped clicks whenever clientWidth and rect diverged
+    // for reasons other than a transform:scale ancestor (e.g. page-level CSS
+    // zoom). Trusting rect unconditionally removes that failure mode.
+    const x = ((clientX - rect.left) / rect.width) * bw;
+    const y = ((clientY - rect.top) / rect.height) * bh;
     return { x, y };
   }
 

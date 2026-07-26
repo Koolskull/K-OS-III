@@ -16,6 +16,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { SiweMessage } from "siwe";
+import { getAddress } from "ethers";
 
 interface SessionUser {
   name?: string | null;
@@ -161,8 +162,12 @@ export function AccountApp() {
     setSigningInWallet(true);
     try {
       const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
-      const address = accounts[0];
-      if (!address) throw new Error("No account returned by wallet.");
+      if (!accounts[0]) throw new Error("No account returned by wallet.");
+      // Wallets don't all return the address in EIP-55 checksum casing (some
+      // return all-lowercase or, apparently, all-uppercase) — siwe's parser
+      // requires a valid checksum, so normalize it ourselves rather than
+      // trusting the wallet's casing.
+      const address = getAddress(accounts[0]);
 
       const chainIdHex = (await window.ethereum.request({ method: "eth_chainId" })) as string;
       const chainId = parseInt(chainIdHex, 16);

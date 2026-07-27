@@ -63,3 +63,72 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- PRODEV — production credits & residuals (see docs/ACCOUNTS_SPEC.md § 4.2,
+-- prodev/ARCHITECTURE.md). Real implementation of prodev/src/core/types.ts's
+-- Project/Shot/ChecklistItem model, now keyed to real users instead of
+-- free-form strings. blockchain_ref is unused for now — a future signed-
+-- attestation-log root, once § 4.1's offline design is built.
+-- ─────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS prodev_projects (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  blockchain_ref TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Everyone who can see/edit a project — the owner is implicitly a member
+-- too (added on project creation) so membership checks are always a single
+-- join, not owner-or-member branching everywhere.
+CREATE TABLE IF NOT EXISTS prodev_members (
+  project_id INTEGER NOT NULL REFERENCES prodev_projects(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(20) NOT NULL DEFAULT 'contributor', -- 'owner' | 'contributor'
+  added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (project_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS prodev_shots (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES prodev_projects(id) ON DELETE CASCADE,
+  title VARCHAR(500) NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Nested checklist items, tree via parent_id. A shot's checklist is every
+-- item with that shot_id; nesting is parent_id within the same shot.
+CREATE TABLE IF NOT EXISTS prodev_checklist_items (
+  id SERIAL PRIMARY KEY,
+  shot_id INTEGER NOT NULL REFERENCES prodev_shots(id) ON DELETE CASCADE,
+  parent_id INTEGER REFERENCES prodev_checklist_items(id) ON DELETE CASCADE,
+  title VARCHAR(500) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'todo', -- 'todo' | 'in-progress' | 'done'
+  owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  hours NUMERIC(10,2) NOT NULL DEFAULT 0,
+  contribution_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Linked file paths (ChecklistItem.assets in prodev/src/core/types.ts).
+CREATE TABLE IF NOT EXISTS prodev_checklist_item_assets (
+  item_id INTEGER NOT NULL REFERENCES prodev_checklist_items(id) ON DELETE CASCADE,
+  asset_path TEXT NOT NULL,
+  PRIMARY KEY (item_id, asset_path)
+);
+
+-- The finalized/editable credit split for a shot (Shot.credits in
+-- prodev/src/core/types.ts) — distinct from a checklist item's own
+-- contribution_percent, which is per-task, not the agreed-upon final split.
+CREATE TABLE IF NOT EXISTS prodev_shot_credits (
+  shot_id INTEGER NOT NULL REFERENCES prodev_shots(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  percent NUMERIC(5,2) NOT NULL CHECK (percent >= 0 AND percent <= 100),
+  PRIMARY KEY (shot_id, user_id)
+);

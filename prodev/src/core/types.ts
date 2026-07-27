@@ -1,4 +1,7 @@
-// Core TypeScript interfaces for PRODEV
+// Core TypeScript interfaces for PRODEV — original design skeleton, kept
+// for reference. The real, running data model is db/schema.sql's
+// prodev_* tables plus the row shapes returned by src/app/api/prodev/*
+// (owner/credits key off real users.id there, not free-form strings).
 
 export interface ChecklistItem {
   id: string;

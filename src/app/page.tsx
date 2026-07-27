@@ -43,6 +43,7 @@ import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { AccountApp } from "@/components/apps/account/AccountApp";
 import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
+import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
@@ -59,7 +60,8 @@ type AppId =
   | "shotlist"
   | "skulltext"
   | "account"
-  | "browser";
+  | "browser"
+  | "prodev";
 
 interface OpenWindow {
   id: string;
@@ -81,6 +83,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
   account: { title: "ACCOUNT", width: 420, height: 560 },
   browser: { title: "KOS BROWSER", width: 480, height: 560 },
+  prodev: { title: "PRODEV", width: 820, height: 560 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -231,6 +234,7 @@ export default function KoolskullOS() {
             )}
             {win.appId === "account" && <AccountApp />}
             {win.appId === "browser" && <KOSBrowserApp />}
+            {win.appId === "prodev" && <PRODEVApp />}
           </AppWindow>
         ))}
 

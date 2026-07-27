@@ -15,6 +15,7 @@
  */
 
 import { useState, useCallback, useRef } from "react";
+import { safeFetchJson } from "@/lib/safeFetchJson";
 
 interface SearchResult {
   user_id: number;
@@ -73,19 +74,17 @@ export function KOSBrowserApp() {
   async function runSearch(q: string) {
     const seq = ++requestSeq.current;
     setLoading(true);
-    const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
-    const results = (await res.json()) as SearchResult[];
+    const results = await safeFetchJson<SearchResult[]>(`/api/users/search?q=${encodeURIComponent(q)}`);
     if (seq !== requestSeq.current) return; // stale response
     setLoading(false);
-    navigate({ kind: "search", query: q, results });
+    navigate({ kind: "search", query: q, results: results ?? [] });
   }
 
   async function openProfile(userId: number) {
     setLoading(true);
-    const res = await fetch(`/api/users/${userId}`);
+    const profile = await safeFetchJson<ProfileDetail>(`/api/users/${userId}`);
     setLoading(false);
-    if (!res.ok) return;
-    const profile = (await res.json()) as ProfileDetail;
+    if (!profile) return;
     navigate({ kind: "profile", profile });
   }
 

@@ -44,7 +44,6 @@ import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { AccountApp } from "@/components/apps/account/AccountApp";
 import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
 import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
-import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
@@ -76,7 +75,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
   kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
-  manual: { title: "K-OS MANUAL", width: 880, height: 600 },
+  manual: { title: "2KOOL.TV MANUAL", width: 880, height: 600 },
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
   shotlist: { title: "SHOTLIST", width: 900, height: 640 },
@@ -250,18 +249,6 @@ export default function KoolskullOS() {
           onLaunchApp={launchApp}
         />
 
-        {/* Screen glitch overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            opacity: 0.07,
-            zIndex: 999999,
-            mixBlendMode: "screen",
-          }}
-        />
       </div>
     </CreativeWorkflowProvider>
   );

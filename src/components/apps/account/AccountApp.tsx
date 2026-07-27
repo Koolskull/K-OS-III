@@ -17,6 +17,7 @@ import { useEffect, useState, useCallback } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { SiweMessage } from "siwe";
 import { getAddress } from "ethers";
+import { safeFetchJson } from "@/lib/safeFetchJson";
 
 interface SessionUser {
   name?: string | null;
@@ -123,8 +124,7 @@ export function AccountApp() {
 
   const refreshSession = useCallback(async () => {
     setLoadingSession(true);
-    const res = await fetch("/api/auth/session");
-    const data = await res.json();
+    const data = await safeFetchJson<{ user?: SessionUser }>("/api/auth/session");
     setUser(data?.user ?? null);
     setLoadingSession(false);
   }, []);
@@ -135,9 +135,8 @@ export function AccountApp() {
 
   useEffect(() => {
     if (!user) return;
-    fetch("/api/profile")
-      .then((r) => r.json())
-      .then((p: Profile | null) => {
+    safeFetchJson<Profile | null>("/api/profile")
+      .then((p) => {
         setProfile(p);
         setDisplayName(p?.display_name ?? "");
         setBio(p?.bio ?? "");

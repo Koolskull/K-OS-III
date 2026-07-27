@@ -54,9 +54,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build static export
-        env:
-          K_OS_EXPORT: "true"
-        run: npm run build
+        run: npm run build:export
 
       - name: Patch CSS asset paths for basePath
         # Next.js does NOT auto-prefix url() refs in user CSS files.

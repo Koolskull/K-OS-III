@@ -126,7 +126,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
             cursor: "pointer",
           }}
         >
-          ☦ K-OS
+          ☦ 2KOOL.TV
         </button>
 
         {menuOpen && (

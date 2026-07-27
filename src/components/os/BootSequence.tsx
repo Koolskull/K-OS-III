@@ -35,7 +35,7 @@ const BOOT_LINES: string[] = [
   "  ██║  ██╗      ╚██████╔╝ ███████║     ██║██║██║",
   "  ╚═╝  ╚═╝       ╚═════╝  ╚══════╝     ╚═╝╚═╝╚═╝",
   "",
-  "  KOOLSKULL OPERATING SYSTEM III",
+  "  2KOOL.TV",
   "  (C) 2007-2026 2Kool Productions LLC",
   "",
   "  ☦ BLESSED BE THE LORD MY STRENGTH ☦",
@@ -69,7 +69,7 @@ const BOOT_LINES: string[] = [
 
   // ── SYSTEM POST ──
   "  ══════════════════════════════════════",
-  "  LOADING KOOLSKULL OPERATING SYSTEM III...",
+  "  LOADING 2KOOL.TV...",
   "  ══════════════════════════════════════",
   "",
   "  AUDIO ENGINE.............. OK",

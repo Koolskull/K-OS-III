@@ -18,20 +18,16 @@ import { signIn, signOut } from "next-auth/react";
 import { SiweMessage } from "siwe";
 import { getAddress } from "ethers";
 import { safeFetchJson } from "@/lib/safeFetchJson";
+import {
+  discoverEip6963Wallets,
+  getWalletConnectProvider,
+  type Eip1193Provider,
+  type Eip6963Detail,
+} from "@/lib/walletProviders";
 
 interface SessionUser {
   name?: string | null;
   id?: string;
-}
-
-interface Eip1193Provider {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-}
-
-declare global {
-  interface Window {
-    ethereum?: Eip1193Provider;
-  }
 }
 
 interface Profile {
@@ -106,8 +102,15 @@ export function AccountApp() {
   const [password, setPassword] = useState("");
   const [signInError, setSignInError] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
-  const [signingInWallet, setSigningInWallet] = useState(false);
+  const [signingInWallet, setSigningInWallet] = useState<string | null>(null); // which wallet uuid/"walletconnect", or null
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [detectedWallets, setDetectedWallets] = useState<Eip6963Detail[]>([]);
+
+  useEffect(() => {
+    return discoverEip6963Wallets((wallet) => {
+      setDetectedWallets((prev) => (prev.some((w) => w.info.uuid === wallet.info.uuid) ? prev : [...prev, wallet]));
+    });
+  }, []);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -164,15 +167,13 @@ export function AccountApp() {
     setUser(null);
   }
 
-  async function handleEthereumSignIn() {
+  /** Shared SIWE flow — works the same regardless of which provider (an
+   *  EIP-6963 wallet, or a connected WalletConnect session) supplied it. */
+  async function signInWithProvider(provider: Eip1193Provider, key: string) {
     setWalletError(null);
-    if (!window.ethereum) {
-      setWalletError("No Ethereum wallet found — install MetaMask or a similar browser wallet.");
-      return;
-    }
-    setSigningInWallet(true);
+    setSigningInWallet(key);
     try {
-      const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
+      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
       if (!accounts[0]) throw new Error("No account returned by wallet.");
       // Wallets don't all return the address in EIP-55 checksum casing (some
       // return all-lowercase or, apparently, all-uppercase) — siwe's parser
@@ -180,7 +181,7 @@ export function AccountApp() {
       // trusting the wallet's casing.
       const address = getAddress(accounts[0]);
 
-      const chainIdHex = (await window.ethereum.request({ method: "eth_chainId" })) as string;
+      const chainIdHex = (await provider.request({ method: "eth_chainId" })) as string;
       const chainId = parseInt(chainIdHex, 16);
 
       const nonceRes = await fetch("/api/ethereum/nonce");
@@ -197,7 +198,7 @@ export function AccountApp() {
       });
       const preparedMessage = siweMessage.prepareMessage();
 
-      const signature = (await window.ethereum.request({
+      const signature = (await provider.request({
         method: "personal_sign",
         params: [preparedMessage, address],
       })) as string;
@@ -211,7 +212,32 @@ export function AccountApp() {
     } catch (err) {
       setWalletError(err instanceof Error ? err.message : "Wallet sign-in failed.");
     } finally {
-      setSigningInWallet(false);
+      setSigningInWallet(null);
+    }
+  }
+
+  function handleEip6963SignIn(wallet: Eip6963Detail) {
+    signInWithProvider(wallet.provider, wallet.info.uuid);
+  }
+
+  function handleBrowserWalletSignIn() {
+    if (!window.ethereum) {
+      setWalletError("No Ethereum wallet found — install MetaMask, Rabby, Rainbow, or use WalletConnect below.");
+      return;
+    }
+    signInWithProvider(window.ethereum, "browser");
+  }
+
+  async function handleWalletConnectSignIn() {
+    setWalletError(null);
+    setSigningInWallet("walletconnect");
+    try {
+      const provider = await getWalletConnectProvider();
+      await provider.connect();
+      await signInWithProvider(provider, "walletconnect");
+    } catch (err) {
+      setWalletError(err instanceof Error ? err.message : "WalletConnect failed.");
+      setSigningInWallet(null);
     }
   }
 
@@ -313,14 +339,43 @@ export function AccountApp() {
               <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
             </div>
 
-            <button
-              type="button"
-              onClick={handleEthereumSignIn}
-              disabled={signingInWallet}
-              style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
-            >
-              {signingInWallet ? "CHECK YOUR WALLET…" : "SIGN IN WITH ETHEREUM"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {detectedWallets.map((wallet) => (
+                <button
+                  key={wallet.info.uuid}
+                  type="button"
+                  onClick={() => handleEip6963SignIn(wallet)}
+                  disabled={signingInWallet !== null}
+                  style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                >
+                  {wallet.info.icon && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={wallet.info.icon} alt="" style={{ width: 14, height: 14 }} />
+                  )}
+                  {signingInWallet === wallet.info.uuid ? "CHECK YOUR WALLET…" : `${wallet.info.name.toUpperCase()}`}
+                </button>
+              ))}
+
+              {detectedWallets.length === 0 && (
+                <button
+                  type="button"
+                  onClick={handleBrowserWalletSignIn}
+                  disabled={signingInWallet !== null}
+                  style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+                >
+                  {signingInWallet === "browser" ? "CHECK YOUR WALLET…" : "BROWSER WALLET"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleWalletConnectSignIn}
+                disabled={signingInWallet !== null}
+                style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+              >
+                {signingInWallet === "walletconnect" ? "CHECK YOUR WALLET…" : "WALLETCONNECT (MOBILE / QR)"}
+              </button>
+            </div>
             {walletError && (
               <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
                 {walletError.toUpperCase()}

@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
-# Build the 2kool.tv static export and mirror it up to DreamHost over FTP.
+# Build the 2kool.tv static export and mirror it up to DreamHost over SFTP
+# (plain FTP is rejected by this account — DreamHost has it SFTP-only).
 # Reads credentials from deploy/.env.ftp (gitignored, never committed) —
 # see deploy/.env.ftp.example. Run from the repo root:
-#   ./deploy/deploy-2kooltv.sh
+#   ./deploy/deploy-2kooltv.sh          # real upload
+#   ./deploy/deploy-2kooltv.sh --dry-run  # preview only, uploads nothing
+#
+# Deliberately NEVER deletes: FTP_REMOTE_DIR (2kool.tv/) already has real,
+# unrelated content on the server (samplepacks/, media/, agents.txt,
+# robots.txt, existing favicons) that this build doesn't produce — a
+# delete-mirror would wipe all of that. This only adds/overwrites files
+# this build actually produces.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+DRY_RUN=""
+if [ "${1:-}" = "--dry-run" ]; then
+  DRY_RUN="--dry-run"
+fi
 
 ENV_FILE="deploy/.env.ftp"
 if [ ! -f "$ENV_FILE" ]; then
@@ -25,11 +38,11 @@ done
 echo "==> Building static export (2KOOL.TV, root path)..."
 npm run build:2kooltv
 
-echo "==> Mirroring out/ to ${FTP_HOST}:${FTP_REMOTE_DIR} ..."
-lftp -u "$FTP_USER,$FTP_PASSWORD" "ftp://$FTP_HOST" <<EOF
-set ftp:ssl-allow yes
-set ssl:verify-certificate no
-mirror -R --delete --verbose out "$FTP_REMOTE_DIR"
+echo "==> Mirroring out/ to ${FTP_HOST}:${FTP_REMOTE_DIR} (SFTP, no delete)${DRY_RUN:+ [DRY RUN]}..."
+lftp -u "$FTP_USER,$FTP_PASSWORD" "sftp://$FTP_HOST" <<EOF
+set net:timeout 15
+set sftp:auto-confirm yes
+mirror -R --verbose $DRY_RUN out "$FTP_REMOTE_DIR"
 bye
 EOF
 

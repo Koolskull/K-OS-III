@@ -105,11 +105,24 @@ export function AccountApp() {
   const [signingInWallet, setSigningInWallet] = useState<string | null>(null); // which wallet uuid/"walletconnect", or null
   const [walletError, setWalletError] = useState<string | null>(null);
   const [detectedWallets, setDetectedWallets] = useState<Eip6963Detail[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [availableProviders, setAvailableProviders] = useState<Record<string, { id: string }> | null>(null);
+  const [emailMode, setEmailMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailName, setEmailName] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     return discoverEip6963Wallets((wallet) => {
       setDetectedWallets((prev) => (prev.some((w) => w.info.uuid === wallet.info.uuid) ? prev : [...prev, wallet]));
     });
+  }, []);
+
+  useEffect(() => {
+    safeFetchJson<Record<string, { id: string }>>("/api/auth/providers").then(setAvailableProviders);
   }, []);
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -159,6 +172,38 @@ export function AccountApp() {
       return;
     }
     await refreshSession();
+  }
+
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailBusy(true);
+    setEmailError(null);
+
+    if (emailMode === "signup") {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: emailPassword, name: emailName }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        setEmailError(body?.error ?? "Registration failed.");
+        setEmailBusy(false);
+        return;
+      }
+    }
+
+    const res = await signIn("email", { email, password: emailPassword, redirect: false });
+    setEmailBusy(false);
+    if (res?.error) {
+      setEmailError(res.error);
+      return;
+    }
+    await refreshSession();
+  }
+
+  function handleOAuthSignIn(providerId: string) {
+    signIn(providerId);
   }
 
   async function handleSignOut() {
@@ -307,81 +352,164 @@ export function AccountApp() {
         {loadingSession ? (
           <div style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>LOADING…</div>
         ) : !user ? (
-          <form onSubmit={handleSignIn}>
-            <span style={{ fontSize: 9, color: "#ddd", letterSpacing: 2 }}>SIGN IN WITH MATRIX</span>
+          <div>
+            <span style={{ fontSize: 9, color: "#ddd", letterSpacing: 2 }}>SIGN IN</span>
 
-            <span style={label}>HOMESERVER</span>
-            <input style={field} value={homeserver} onChange={(e) => setHomeserver(e.target.value)} />
-
-            <span style={label}>MATRIX USERNAME</span>
-            <input
-              style={field}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="@you:matrix.org or just 'you'"
-            />
-
-            <span style={label}>PASSWORD</span>
-            <input style={field} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
-            <button type="submit" disabled={signingIn} style={primaryBtn}>
-              {signingIn ? "SIGNING IN…" : "SIGN IN"}
-            </button>
-            {signInError && (
-              <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
-                {signInError.toUpperCase()}
+            {(availableProviders?.google || availableProviders?.twitter) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                {availableProviders?.google && (
+                  <button
+                    type="button"
+                    onClick={() => handleOAuthSignIn("google")}
+                    style={{ ...primaryBtn, marginTop: 0 }}
+                  >
+                    CONTINUE WITH GOOGLE
+                  </button>
+                )}
+                {availableProviders?.twitter && (
+                  <button
+                    type="button"
+                    onClick={() => handleOAuthSignIn("twitter")}
+                    style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #fff" }}
+                  >
+                    CONTINUE WITH X
+                  </button>
+                )}
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0" }}>
               <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
               <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR</span>
               <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {detectedWallets.map((wallet) => (
-                <button
-                  key={wallet.info.uuid}
-                  type="button"
-                  onClick={() => handleEip6963SignIn(wallet)}
-                  disabled={signingInWallet !== null}
-                  style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                >
-                  {wallet.info.icon && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={wallet.info.icon} alt="" style={{ width: 14, height: 14 }} />
-                  )}
-                  {signingInWallet === wallet.info.uuid ? "CHECK YOUR WALLET…" : `${wallet.info.name.toUpperCase()}`}
-                </button>
-              ))}
+            <form onSubmit={handleEmailSubmit}>
+              <span style={label}>EMAIL</span>
+              <input style={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
-              {detectedWallets.length === 0 && (
-                <button
-                  type="button"
-                  onClick={handleBrowserWalletSignIn}
-                  disabled={signingInWallet !== null}
-                  style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
-                >
-                  {signingInWallet === "browser" ? "CHECK YOUR WALLET…" : "BROWSER WALLET"}
-                </button>
+              {emailMode === "signup" && (
+                <>
+                  <span style={label}>NAME (OPTIONAL)</span>
+                  <input style={field} value={emailName} onChange={(e) => setEmailName(e.target.value)} />
+                </>
+              )}
+
+              <span style={label}>PASSWORD</span>
+              <input
+                style={field}
+                type="password"
+                value={emailPassword}
+                onChange={(e) => setEmailPassword(e.target.value)}
+              />
+
+              <button type="submit" disabled={emailBusy} style={primaryBtn}>
+                {emailBusy ? "PLEASE WAIT…" : emailMode === "signup" ? "CREATE ACCOUNT" : "SIGN IN WITH EMAIL"}
+              </button>
+              {emailError && (
+                <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                  {emailError.toUpperCase()}
+                </div>
               )}
 
               <button
                 type="button"
-                onClick={handleWalletConnectSignIn}
-                disabled={signingInWallet !== null}
-                style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+                onClick={() => {
+                  setEmailMode((m) => (m === "signin" ? "signup" : "signin"));
+                  setEmailError(null);
+                }}
+                style={{ ...secondaryBtn, marginTop: 8, width: "100%", background: "transparent", border: "none", color: "#666" }}
               >
-                {signingInWallet === "walletconnect" ? "CHECK YOUR WALLET…" : "WALLETCONNECT (MOBILE / QR)"}
+                {emailMode === "signin" ? "NEED AN ACCOUNT? CREATE ONE" : "ALREADY HAVE AN ACCOUNT? SIGN IN"}
               </button>
-            </div>
-            {walletError && (
-              <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
-                {walletError.toUpperCase()}
-              </div>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              style={{ ...secondaryBtn, width: "100%", marginTop: 16, background: "transparent" }}
+            >
+              {showAdvanced ? "▾ HIDE MORE OPTIONS" : "▸ MORE SIGN-IN OPTIONS (MATRIX / WALLET)"}
+            </button>
+
+            {showAdvanced && (
+              <form onSubmit={handleSignIn} style={{ marginTop: 12, borderTop: "1px solid #333", paddingTop: 12 }}>
+                <span style={{ fontSize: 8, color: "#888", letterSpacing: 2 }}>SIGN IN WITH MATRIX</span>
+
+                <span style={label}>HOMESERVER</span>
+                <input style={field} value={homeserver} onChange={(e) => setHomeserver(e.target.value)} />
+
+                <span style={label}>MATRIX USERNAME</span>
+                <input
+                  style={field}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="@you:matrix.org or just 'you'"
+                />
+
+                <span style={label}>PASSWORD</span>
+                <input style={field} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+
+                <button type="submit" disabled={signingIn} style={{ ...primaryBtn, background: "#000", color: "#fff", border: "1px solid #555" }}>
+                  {signingIn ? "SIGNING IN…" : "SIGN IN"}
+                </button>
+                {signInError && (
+                  <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                    {signInError.toUpperCase()}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0" }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
+                  <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {detectedWallets.map((wallet) => (
+                    <button
+                      key={wallet.info.uuid}
+                      type="button"
+                      onClick={() => handleEip6963SignIn(wallet)}
+                      disabled={signingInWallet !== null}
+                      style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                    >
+                      {wallet.info.icon && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={wallet.info.icon} alt="" style={{ width: 14, height: 14 }} />
+                      )}
+                      {signingInWallet === wallet.info.uuid ? "CHECK YOUR WALLET…" : `${wallet.info.name.toUpperCase()}`}
+                    </button>
+                  ))}
+
+                  {detectedWallets.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={handleBrowserWalletSignIn}
+                      disabled={signingInWallet !== null}
+                      style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+                    >
+                      {signingInWallet === "browser" ? "CHECK YOUR WALLET…" : "BROWSER WALLET"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleWalletConnectSignIn}
+                    disabled={signingInWallet !== null}
+                    style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
+                  >
+                    {signingInWallet === "walletconnect" ? "CHECK YOUR WALLET…" : "WALLETCONNECT (MOBILE / QR)"}
+                  </button>
+                </div>
+                {walletError && (
+                  <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                    {walletError.toUpperCase()}
+                  </div>
+                )}
+              </form>
             )}
-          </form>
+          </div>
         ) : (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>

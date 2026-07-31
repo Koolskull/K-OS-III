@@ -157,6 +157,10 @@ KoolDraw is a Piskel-inspired pixel art and animation app. Tools include pen, so
 
 On phones the editor uses the **Corner-Collapsible Panels** pattern (toolbars and side panels collapse into the four screen corners + a full-canvas “zen” mode). See [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md).
 
+**Saved projects & asset library:** projects can be saved to your account (PROJECT panel → SAVE / SAVE AS NEW / OPEN EXISTING) instead of only living in the current tab. Saving registers the project in a shared **asset library** — ProDev and Shotlist can attach it to a shot, with an EDIT button that deep-links straight back into KoolDraw with that project loaded.
+
+**Planned:** a vector pen tool in the spirit of classic Flash / Wick Editor — freehand strokes becoming editable, scalable vector shapes alongside KoolDraw's current pixel-art tools. Large, separate feature; tracked as future work, not built yet.
+
 ### TILEMAP — Dual-Plane Level Painter (New)
 
 A bare-bones but capable tilemap editor aimed at Sega Genesis / Mega Drive style levels:

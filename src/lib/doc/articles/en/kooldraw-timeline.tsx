@@ -145,6 +145,48 @@ export default function KoolDrawTimeline() {
         refresh the snapshot.
       </P>
 
+      <H2>Saving projects & the asset library</H2>
+      <P>
+        KoolDraw projects can be saved to your account instead of only ever
+        living in the current browser tab. The <Strong>PROJECT</Strong>{" "}
+        panel's <Strong>SAVE</Strong> button stores the whole animation —
+        every layer, every pool drawing, loop mode, palette — and{" "}
+        <Strong>SAVE AS NEW</Strong> branches off a copy without touching the
+        original. <Strong>OPEN EXISTING PROJECT</Strong>, offered on the
+        mandatory name/size screen when you launch KoolDraw fresh, lists
+        everything you've saved.
+      </P>
+      <P>
+        Saving also registers the project in your{" "}
+        <Strong>asset library</Strong> — the same shared pool ProDev and
+        Shotlist draw from. Open a Shotlist shot's <Strong>ASSETS</Strong>{" "}
+        panel and any saved KoolDraw project shows up there, ready to attach;
+        an attached drawing gets an <Strong>EDIT</Strong> button that jumps
+        straight back into KoolDraw with that exact project loaded. This is
+        how a drawing made for one shot stays reachable from ProDev and
+        Shotlist without re-exporting or re-uploading it by hand.
+      </P>
+      <Aside title="Save format" variant="tip">
+        Saved projects use the same hex-id/layer/JSON bundle structure as the{" "}
+        <Strong>BUNDLE</Strong> export button below — the same format
+        Datamoshpit's Scene VM already knows how to read.
+      </Aside>
+
+      <H2>Planned: a vector pen tool</H2>
+      <P>
+        KoolDraw's tools are all raster (pixel) today. A future update plans
+        a <Strong>vector mode</Strong> alongside it — a pen tool in the
+        spirit of classic Macromedia Flash / the open-source Wick Editor,
+        where a drawn stroke becomes an editable vector shape (fillable,
+        scalable without going blocky) instead of a fixed set of colored
+        pixels. This is a genuinely large, separate feature — turning a
+        freehand stroke into a clean vector shape in real time is its own
+        design problem, distinct from KoolDraw's current pixel-art engine —
+        so it's tracked as future work, not built yet. The asset library
+        above is the intended home for vector drawings too, once this
+        lands, alongside raster KoolDraw projects.
+      </P>
+
       <H3>Quick reference</H3>
       <CodeBlock label="KoolDraw timeline shortcuts">
 {`Shift+F   New blank frame (new hex id)

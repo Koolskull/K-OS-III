@@ -150,7 +150,18 @@ const STATUS_COLOR: Record<ChecklistItemRow["status"], string> = {
   done: "#00ff88",
 };
 
-export function PRODEVApp() {
+interface ShotlistSequenceSummary {
+  id: number;
+  name: string;
+  fps: number;
+}
+
+interface PRODEVAppProps {
+  /** Open Shotlist pre-loaded with this saved sequence. */
+  onOpenShotlistSequence?: (sequenceId: number) => void;
+}
+
+export function PRODEVApp({ onOpenShotlistSequence }: PRODEVAppProps = {}) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [newProjectName, setNewProjectName] = useState("");
@@ -200,6 +211,17 @@ export function PRODEVApp() {
     if (selectedProjectId != null) loadProject(selectedProjectId);
     else setProject(null);
   }, [selectedProjectId, loadProject]);
+
+  const [linkedSequences, setLinkedSequences] = useState<ShotlistSequenceSummary[]>([]);
+  useEffect(() => {
+    if (selectedProjectId == null) {
+      setLinkedSequences([]);
+      return;
+    }
+    safeFetchJson<ShotlistSequenceSummary[]>(`/api/shotlist/sequences?projectId=${selectedProjectId}`).then(
+      (data) => setLinkedSequences(data ?? []),
+    );
+  }, [selectedProjectId]);
 
   const loadItems = useCallback(async (shotId: number) => {
     const res = await fetch(`/api/prodev/checklist-items?shotId=${shotId}`);
@@ -515,6 +537,22 @@ export function PRODEVApp() {
               ADD SHOT
             </button>
           </form>
+
+          {linkedSequences.length > 0 && (
+            <div style={{ padding: 6, borderTop: "1px solid #333" }}>
+              <div style={{ fontSize: 6, color: "#666", letterSpacing: 1, marginBottom: 4 }}>SHOTLIST</div>
+              {linkedSequences.map((seq) => (
+                <button
+                  key={seq.id}
+                  onClick={() => onOpenShotlistSequence?.(seq.id)}
+                  disabled={!onOpenShotlistSequence}
+                  style={{ ...smallBtn, width: "100%", marginBottom: 2, textAlign: "left" }}
+                >
+                  OPEN "{seq.name}"
+                </button>
+              ))}
+            </div>
+          )}
 
           <div style={{ padding: 6, borderTop: "1px solid #333" }}>
             <div style={{ fontSize: 6, color: "#666", letterSpacing: 1, marginBottom: 4 }}>MEMBERS</div>

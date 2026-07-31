@@ -97,14 +97,18 @@ export default function KoolskullOS() {
   const [focusedWindowId, setFocusedWindowId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(1);
   const [chatLaunch, setChatLaunch] = useState<KChatLaunchOpts | undefined>(undefined);
+  const [shotlistLaunch, setShotlistLaunch] = useState<{ sequenceId: number } | undefined>(undefined);
 
-  const launchApp = useCallback((appId: string, chatOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string }) => {
+  const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number }) => {
     const id = appId as AppId;
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
 
-    if (id === "chat" && chatOpts) {
-      setChatLaunch(chatOpts);
+    if (id === "chat" && launchOpts) {
+      setChatLaunch(launchOpts as KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string });
+    }
+    if (id === "shotlist" && launchOpts && "sequenceId" in launchOpts) {
+      setShotlistLaunch(launchOpts);
     }
 
     // If app is already open, focus it
@@ -234,7 +238,7 @@ export default function KoolskullOS() {
               <TilemapApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "shotlist" && (
-              <ShotlistApp isFocused={win.id === focusedWindowId} />
+              <ShotlistApp isFocused={win.id === focusedWindowId} launchSequenceId={shotlistLaunch?.sequenceId} />
             )}
             {win.appId === "skulltext" && (
               <SkullTextApp isFocused={win.id === focusedWindowId} />
@@ -245,7 +249,9 @@ export default function KoolskullOS() {
                 onMessage={(opts) => launchApp("chat", opts)}
               />
             )}
-            {win.appId === "prodev" && <PRODEVApp />}
+            {win.appId === "prodev" && (
+              <PRODEVApp onOpenShotlistSequence={(sequenceId) => launchApp("shotlist", { sequenceId })} />
+            )}
             {win.appId === "chat" && <KChatApp launch={chatLaunch} />}
           </AppWindow>
         ))}

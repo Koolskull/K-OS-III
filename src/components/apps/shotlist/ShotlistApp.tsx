@@ -30,6 +30,7 @@ import {
   type ShotBg,
 } from "./monoDraw";
 import { useCreativeWorkflow } from "@/lib/creative";
+import { safeFetchJson } from "@/lib/safeFetchJson";
 import {
   btn,
   createEmptyXFrame,
@@ -86,7 +87,32 @@ type EditorState =
   | { mode: "pick-upgrade"; shotId: number }
   | { mode: "draw"; shotId: number; isNew: boolean }
   | { mode: "xsheet"; shotId: number }
-  | { mode: "export" };
+  | { mode: "export" }
+  | { mode: "sequences" }
+  | { mode: "assets"; shotId: number };
+
+interface SequenceSummary {
+  id: number;
+  name: string;
+  fps: number;
+  project_id: number | null;
+  project_name: string | null;
+  updated_at: string;
+}
+
+interface ProdevProjectOption {
+  id: number;
+  name: string;
+}
+
+interface LibraryAsset {
+  id: number;
+  kind: "kooldraw_project" | "datamoshpit_render" | "image" | "audio";
+  title: string;
+  thumbnail_url: string | null;
+  file_path: string | null;
+  created_at: string;
+}
 
 function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
   return { id: uid(), name, fps: 24, shots: [] };
@@ -94,17 +120,19 @@ function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
 
 interface ShotlistAppProps {
   isFocused?: boolean;
+  /** Auto-load this saved sequence on mount/change — e.g. "OPEN IN SHOTLIST" from PRODEV. */
+  launchSequenceId?: number;
 }
 
-export default function ShotlistApp({ isFocused = true }: ShotlistAppProps) {
+export default function ShotlistApp({ isFocused = true, launchSequenceId }: ShotlistAppProps) {
   return (
     <CornerHost storageKey="kos-shotlist-chrome" style={{ background: "#000000" }}>
-      <ShotlistInner isFocused={isFocused} />
+      <ShotlistInner isFocused={isFocused} launchSequenceId={launchSequenceId} />
     </CornerHost>
   );
 }
 
-function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
+function ShotlistInner({ isFocused = true, launchSequenceId }: ShotlistAppProps) {
   const chrome = useCornerChromeOptional();
   const isNarrow = chrome?.isNarrow ?? false;
   const workflow = useCreativeWorkflow();
@@ -121,6 +149,225 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
   const [pickBg, setPickBg] = useState<ShotBg>("white");
   /** Shot info dialog while drawing (lower-right toggle) */
   const [shotInfoOpen, setShotInfoOpen] = useState(false);
+
+  /* ---- Persistence (Postgres save/load — explicit, not autosave) ---- */
+  const [serverSequenceId, setServerSequenceId] = useState<number | null>(null);
+  const [linkedProjectId, setLinkedProjectId] = useState<number | null>(null);
+  const [shotServerIds, setShotServerIds] = useState<Record<number, number>>({});
+  const [deletedShotServerIds, setDeletedShotServerIds] = useState<number[]>([]);
+  const [savingSequence, setSavingSequence] = useState(false);
+  const [sequencesList, setSequencesList] = useState<SequenceSummary[]>([]);
+  const [loadingSequences, setLoadingSequences] = useState(false);
+  const [prodevProjects, setProdevProjects] = useState<ProdevProjectOption[]>([]);
+
+  /* ---- Asset library / per-shot attachments ---- */
+  const [libraryAssets, setLibraryAssets] = useState<LibraryAsset[]>([]);
+  const [attachedAssets, setAttachedAssets] = useState<LibraryAsset[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+
+  const openSequencesPicker = useCallback(async () => {
+    setEditor({ mode: "sequences" });
+    setLoadingSequences(true);
+    const [seqs, projects] = await Promise.all([
+      safeFetchJson<SequenceSummary[]>("/api/shotlist/sequences"),
+      safeFetchJson<ProdevProjectOption[]>("/api/prodev/projects"),
+    ]);
+    setSequencesList(seqs ?? []);
+    setProdevProjects(projects ?? []);
+    setLoadingSequences(false);
+  }, []);
+
+  const loadSequence = useCallback(async (id: number) => {
+    const data = await safeFetchJson<{
+      id: number;
+      name: string;
+      fps: number;
+      project_id: number | null;
+      shots: Array<{
+        id: number;
+        prodev_shot_id: number | null;
+        title: string;
+        description: string;
+        duration_frames: number;
+        audio_notes: string;
+        bg: ShotBg;
+        orientation: PlateOrientation;
+        plate_w: number;
+        plate_h: number;
+        thumbnail_url: string | null;
+        has_committed_thumbnail: boolean;
+        xsheet: XFrame[];
+        status: Shot["status"];
+        sort_order: number;
+      }>;
+    }>(`/api/shotlist/sequences/${id}`);
+    if (!data) {
+      setStatusLine("Failed to load sequence");
+      return;
+    }
+    const idMap: Record<number, number> = {};
+    const shots: Shot[] = data.shots.map((s) => {
+      const localId = uid();
+      idMap[localId] = s.id;
+      return {
+        id: localId,
+        title: s.title,
+        description: s.description,
+        durationFrames: s.duration_frames,
+        audioNotes: s.audio_notes,
+        bg: s.bg,
+        orientation: s.orientation,
+        plateW: s.plate_w,
+        plateH: s.plate_h,
+        thumbnail: s.thumbnail_url,
+        hasCommittedThumbnail: s.has_committed_thumbnail,
+        xsheet: s.xsheet.length ? s.xsheet : [createEmptyXFrame()],
+        status: s.status,
+      };
+    });
+    setSequence({ id: uid(), name: data.name, fps: data.fps, shots });
+    setServerSequenceId(data.id);
+    setLinkedProjectId(data.project_id);
+    setShotServerIds(idMap);
+    setDeletedShotServerIds([]);
+    setSelectedShotId(null);
+    setEditor({ mode: "closed" });
+    setStatusLine(`Loaded "${data.name}" (${shots.length} shots)`);
+  }, []);
+
+  useEffect(() => {
+    if (launchSequenceId != null) loadSequence(launchSequenceId);
+    // Only re-run when the launch target itself changes (e.g. a new
+    // "OPEN IN SHOTLIST" click) — loadSequence is stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchSequenceId]);
+
+  const createNewSequenceOnServer = useCallback(async () => {
+    setSequence(createEmptySequence());
+    setServerSequenceId(null);
+    setLinkedProjectId(null);
+    setShotServerIds({});
+    setDeletedShotServerIds([]);
+    setSelectedShotId(null);
+    setEditor({ mode: "closed" });
+    setStatusLine("New sequence (unsaved)");
+  }, []);
+
+  const saveSequence = useCallback(async () => {
+    setSavingSequence(true);
+    try {
+      let seqId = serverSequenceId;
+      if (seqId == null) {
+        const created = await safeFetchJson<{ id: number }>("/api/shotlist/sequences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: sequence.name, fps: sequence.fps, projectId: linkedProjectId }),
+        });
+        if (!created) throw new Error("Failed to create sequence");
+        seqId = created.id;
+        setServerSequenceId(seqId);
+      } else {
+        await fetch(`/api/shotlist/sequences/${seqId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: sequence.name, fps: sequence.fps, project_id: linkedProjectId }),
+        });
+      }
+
+      for (const removedId of deletedShotServerIds) {
+        await fetch(`/api/shotlist/shots/${removedId}`, { method: "DELETE" });
+      }
+      setDeletedShotServerIds([]);
+
+      const nextIdMap: Record<number, number> = {};
+      for (let i = 0; i < sequence.shots.length; i++) {
+        const shot = sequence.shots[i];
+        const payload = {
+          title: shot.title,
+          description: shot.description,
+          duration_frames: shot.durationFrames,
+          audio_notes: shot.audioNotes,
+          bg: shot.bg,
+          orientation: shot.orientation,
+          plate_w: shot.plateW,
+          plate_h: shot.plateH,
+          thumbnail_url: shot.thumbnail,
+          has_committed_thumbnail: shot.hasCommittedThumbnail,
+          xsheet: shot.xsheet,
+          status: shot.status,
+          sort_order: i,
+        };
+        const existingServerId = shotServerIds[shot.id];
+        if (existingServerId != null) {
+          await fetch(`/api/shotlist/shots/${existingServerId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          nextIdMap[shot.id] = existingServerId;
+        } else {
+          const created = await safeFetchJson<{ id: number }>(`/api/shotlist/sequences/${seqId}/shots`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (created) nextIdMap[shot.id] = created.id;
+        }
+      }
+      setShotServerIds(nextIdMap);
+      setStatusLine(`Saved "${sequence.name}"`);
+    } catch {
+      setStatusLine("Save failed");
+    } finally {
+      setSavingSequence(false);
+    }
+  }, [serverSequenceId, sequence, linkedProjectId, shotServerIds, deletedShotServerIds]);
+
+  const openAssetsPanel = useCallback(
+    async (shotId: number) => {
+      setEditor({ mode: "assets", shotId });
+      setLoadingAssets(true);
+      const serverShotId = shotServerIds[shotId];
+      const [library, attached] = await Promise.all([
+        safeFetchJson<LibraryAsset[]>("/api/assets"),
+        serverShotId != null
+          ? safeFetchJson<LibraryAsset[]>(`/api/shotlist/shots/${serverShotId}/assets`)
+          : Promise.resolve([]),
+      ]);
+      setLibraryAssets(library ?? []);
+      setAttachedAssets(attached ?? []);
+      setLoadingAssets(false);
+    },
+    [shotServerIds],
+  );
+
+  const attachAsset = useCallback(
+    async (shotId: number, assetId: number) => {
+      const serverShotId = shotServerIds[shotId];
+      if (serverShotId == null) {
+        setStatusLine("Save the sequence before attaching assets");
+        return;
+      }
+      await fetch(`/api/shotlist/shots/${serverShotId}/assets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assetId }),
+      });
+      const attached = await safeFetchJson<LibraryAsset[]>(`/api/shotlist/shots/${serverShotId}/assets`);
+      setAttachedAssets(attached ?? []);
+    },
+    [shotServerIds],
+  );
+
+  const detachAsset = useCallback(
+    async (shotId: number, assetId: number) => {
+      const serverShotId = shotServerIds[shotId];
+      if (serverShotId == null) return;
+      await fetch(`/api/shotlist/shots/${serverShotId}/assets/${assetId}`, { method: "DELETE" });
+      setAttachedAssets((prev) => prev.filter((a) => a.id !== assetId));
+    },
+    [shotServerIds],
+  );
 
   /* Creative bus return */
   useEffect(() => {
@@ -349,10 +596,19 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       ...prev,
       shots: prev.shots.filter((s) => s.id !== selectedShotId),
     }));
+    const removedServerId = shotServerIds[selectedShotId];
+    if (removedServerId != null) {
+      setDeletedShotServerIds((prev) => [...prev, removedServerId]);
+      setShotServerIds((prev) => {
+        const next = { ...prev };
+        delete next[selectedShotId];
+        return next;
+      });
+    }
     if (expandedShotId === selectedShotId) setExpandedShotId(null);
     setSelectedShotId(null);
-    setStatusLine("Shot removed");
-  }, [selectedShotId, expandedShotId]);
+    setStatusLine("Shot removed (save to persist deletion)");
+  }, [selectedShotId, expandedShotId, shotServerIds]);
 
   const toggleExpand = useCallback((id: number) => {
     setExpandedShotId((prev) => (prev === id ? null : id));
@@ -807,6 +1063,14 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <button
         type="button"
         style={btn()}
+        onClick={() => selectedShotId != null && openAssetsPanel(selectedShotId)}
+        disabled={selectedShotId == null}
+      >
+        ASSETS
+      </button>
+      <button
+        type="button"
+        style={btn()}
         onClick={deleteSelectedShot}
         disabled={selectedShotId == null}
       >
@@ -817,6 +1081,13 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           {expandedShotId === selectedShot.id ? "COLLAPSE" : "EXPAND"}
         </button>
       )}
+      <div style={{ height: 1, background: "#333", margin: "4px 0" }} />
+      <button type="button" style={btn()} onClick={openSequencesPicker}>
+        SEQUENCES…
+      </button>
+      <button type="button" style={btn()} onClick={saveSequence} disabled={savingSequence}>
+        {savingSequence ? "SAVING…" : "SAVE"}
+      </button>
     </div>
   );
 
@@ -1168,6 +1439,148 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       />
     ) : null;
 
+  const modalOverlayStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 200,
+    background: "rgba(0,0,0,0.85)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  };
+  const modalPanelStyle: React.CSSProperties = {
+    width: 320,
+    maxHeight: "80%",
+    overflowY: "auto",
+    border: "1px solid #333",
+    background: "#0a0a0a",
+    boxShadow: "3px 3px 0 #000",
+  };
+  const modalHeaderStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "5px 8px",
+    borderBottom: "1px solid #333",
+    background: "#1a1a1a",
+  };
+
+  const sequencesWorkspace =
+    editor.mode === "sequences" ? (
+      <div onClick={() => setEditor({ mode: "closed" })} style={modalOverlayStyle}>
+        <div onClick={(e) => e.stopPropagation()} style={modalPanelStyle}>
+          <div style={modalHeaderStyle}>
+            <span style={{ fontSize: 10, color: "#ddd", letterSpacing: 1 }}>SEQUENCES</span>
+            <button onClick={() => setEditor({ mode: "closed" })} style={btn()}>
+              ×
+            </button>
+          </div>
+          <div style={{ padding: 8 }}>
+            <button type="button" style={{ ...btn(true), width: "100%", marginBottom: 8 }} onClick={createNewSequenceOnServer}>
+              + NEW SEQUENCE
+            </button>
+            {loadingSequences ? (
+              <div style={{ fontSize: 10, color: "#666" }}>LOADING…</div>
+            ) : sequencesList.length === 0 ? (
+              <div style={{ fontSize: 10, color: "#666" }}>NO SAVED SEQUENCES YET.</div>
+            ) : (
+              sequencesList.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => loadSequence(s.id)}
+                  style={{ ...btn(), width: "100%", textAlign: "left", marginBottom: 4 }}
+                >
+                  {s.name} · {s.fps}FPS
+                  {s.project_name && <div style={{ fontSize: 8, color: "#888" }}>↳ {s.project_name}</div>}
+                </button>
+              ))
+            )}
+
+            <div style={{ height: 1, background: "#333", margin: "10px 0" }} />
+            <div style={{ fontSize: 9, color: "#888", letterSpacing: 1, marginBottom: 4 }}>
+              LINK CURRENT SEQUENCE TO PRODEV PROJECT
+            </div>
+            <select
+              value={linkedProjectId ?? ""}
+              onChange={(e) => setLinkedProjectId(e.target.value ? Number(e.target.value) : null)}
+              style={{ ...fieldStyle, marginTop: 0 }}
+            >
+              <option value="">— NONE —</option>
+              {prodevProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  const assetsWorkspace =
+    editor.mode === "assets" ? (
+      <div onClick={() => setEditor({ mode: "closed" })} style={modalOverlayStyle}>
+        <div onClick={(e) => e.stopPropagation()} style={modalPanelStyle}>
+          <div style={modalHeaderStyle}>
+            <span style={{ fontSize: 10, color: "#ddd", letterSpacing: 1 }}>SHOT ASSETS</span>
+            <button onClick={() => setEditor({ mode: "closed" })} style={btn()}>
+              ×
+            </button>
+          </div>
+          <div style={{ padding: 8 }}>
+            {loadingAssets ? (
+              <div style={{ fontSize: 10, color: "#666" }}>LOADING…</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 9, color: "#888", letterSpacing: 1, marginBottom: 4 }}>ATTACHED</div>
+                {attachedAssets.length === 0 ? (
+                  <div style={{ fontSize: 9, color: "#666", marginBottom: 8 }}>NONE YET.</div>
+                ) : (
+                  attachedAssets.map((a) => (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontSize: 9, color: "#ccc", flex: 1 }}>
+                        [{a.kind.toUpperCase()}] {a.title}
+                      </span>
+                      <button
+                        type="button"
+                        style={btn()}
+                        onClick={() => editor.mode === "assets" && detachAsset(editor.shotId, a.id)}
+                      >
+                        REMOVE
+                      </button>
+                    </div>
+                  ))
+                )}
+
+                <div style={{ height: 1, background: "#333", margin: "10px 0" }} />
+                <div style={{ fontSize: 9, color: "#888", letterSpacing: 1, marginBottom: 4 }}>LIBRARY</div>
+                {libraryAssets.length === 0 ? (
+                  <div style={{ fontSize: 9, color: "#666" }}>
+                    NOTHING IN YOUR LIBRARY YET — SAVE A KOOLDRAW PROJECT OR DATAMOSHPIT RENDER TO SEE IT HERE.
+                  </div>
+                ) : (
+                  libraryAssets
+                    .filter((a) => !attachedAssets.some((x) => x.id === a.id))
+                    .map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        style={{ ...btn(), width: "100%", textAlign: "left", marginBottom: 4 }}
+                        onClick={() => editor.mode === "assets" && attachAsset(editor.shotId, a.id)}
+                      >
+                        [{a.kind.toUpperCase()}] {a.title}
+                      </button>
+                    ))
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div
       style={{
@@ -1243,6 +1656,8 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         {drawWorkspace}
         {xsheetWorkspace}
         {exportWorkspace}
+        {sequencesWorkspace}
+        {assetsWorkspace}
       </div>
 
       {editor.mode === "closed" && (

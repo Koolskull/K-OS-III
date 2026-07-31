@@ -38,3 +38,29 @@ export async function isChecklistItemMember(itemId: number, userId: string): Pro
   );
   return (result.rowCount ?? 0) > 0;
 }
+
+/** Does this user own this Shotlist sequence? (single-owner, unlike PRODEV's multi-member projects.) */
+export async function isSequenceOwner(sequenceId: number, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT 1 FROM shotlist_sequences WHERE id = $1 AND owner_id = $2`,
+    [sequenceId, userId],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+/** Does this user own the sequence that this Shotlist shot belongs to? */
+export async function isShotlistShotOwner(shotId: number, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT 1 FROM shotlist_shots sh
+     JOIN shotlist_sequences seq ON seq.id = sh.sequence_id
+     WHERE sh.id = $1 AND seq.owner_id = $2`,
+    [shotId, userId],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+/** Does this user own this library asset? */
+export async function isAssetOwner(assetId: number, userId: string): Promise<boolean> {
+  const result = await pool.query(`SELECT 1 FROM user_assets WHERE id = $1 AND owner_id = $2`, [assetId, userId]);
+  return (result.rowCount ?? 0) > 0;
+}

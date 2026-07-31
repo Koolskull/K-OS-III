@@ -68,3 +68,28 @@ export async function deleteUploadedAsset(urlPath: string): Promise<void> {
   if (!abs.startsWith(UPLOAD_ROOT)) return; // guard against path traversal
   await unlink(abs).catch(() => {});
 }
+
+// Datamoshpit "bounce to file" renders — MediaRecorder output (webm), not
+// arbitrary user-supplied files, so the type/extension are fixed rather than
+// user-chosen. Generous but capped size (audio, or audio+video muxed webm).
+const MAX_RENDER_BYTES = 150 * 1024 * 1024;
+
+export async function saveRenderFile(kind: "audio" | "video", file: File): Promise<{ urlPath: string; mimeType: string }> {
+  if (file.size === 0) throw new UploadError("Empty recording.");
+  if (file.size > MAX_RENDER_BYTES) {
+    throw new UploadError(`Render too large (max ${Math.round(MAX_RENDER_BYTES / (1024 * 1024))}MB).`);
+  }
+  const mimeType = file.type || "audio/webm";
+  if (!mimeType.startsWith("audio/") && !mimeType.startsWith("video/")) {
+    throw new UploadError("Unsupported render type.");
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "renders");
+  await mkdir(dir, { recursive: true });
+  const ext = mimeType.startsWith("video/") ? "webm" : "webm"; // MediaRecorder output for both kinds today
+  const filename = `${randomUUID()}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(path.join(dir, filename), buffer);
+
+  return { urlPath: `/uploads/renders/${filename}`, mimeType };
+}

@@ -26,6 +26,7 @@ export class AudioEngine {
   private initialized = false;
   private masterGain: Tone.Volume;
   private channels: Map<number, Tone.Channel> = new Map();
+  private recordingDest: MediaStreamAudioDestinationNode | null = null;
 
   private constructor() {
     this.masterGain = new Tone.Volume(-6).toDestination();
@@ -47,6 +48,24 @@ export class AudioEngine {
 
   isReady(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * A live tap of the full mix, for "bounce to file" (see
+   * src/lib/datamoshpit/renderCapture.ts) — MediaRecorder records this
+   * MediaStream in real time while the song plays. Not an instant offline
+   * render: GranularEngine's grain scheduling is setInterval-driven
+   * (real-time only), so a true OfflineAudioContext bounce isn't reliably
+   * correct for granular instruments — capturing the live signal sidesteps
+   * that entirely without touching the scheduler.
+   */
+  getRecordingStream(): MediaStream {
+    if (!this.recordingDest) {
+      const ctx = Tone.getContext().rawContext as unknown as AudioContext;
+      this.recordingDest = ctx.createMediaStreamDestination();
+      this.masterGain.connect(this.recordingDest);
+    }
+    return this.recordingDest.stream;
   }
 
   getChannel(index: number): Tone.Channel {

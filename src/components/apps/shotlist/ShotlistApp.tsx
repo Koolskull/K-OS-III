@@ -112,6 +112,7 @@ interface LibraryAsset {
   thumbnail_url: string | null;
   file_path: string | null;
   kooldraw_project_id: number | null;
+  datamoshpit_render_id: number | null;
   created_at: string;
 }
 
@@ -1554,6 +1555,16 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                         >
                           EDIT
                         </button>
+                      )}
+                      {a.kind === "datamoshpit_render" && a.datamoshpit_render_id != null && (
+                        <a
+                          href={`/render/${a.datamoshpit_render_id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ ...btn(), display: "inline-block", textDecoration: "none", textAlign: "center" }}
+                        >
+                          PLAY
+                        </a>
                       )}
                       <button
                         type="button"

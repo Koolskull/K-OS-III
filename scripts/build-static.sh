@@ -5,23 +5,36 @@
 # exportable (auth, Postgres, cookies — none of which can be). Since the
 # static build (GitHub Pages, or an FTP-only host like this project's
 # DreamHost 2kool.tv deploy) never needs those routes at all — no server to
-# run them on — temporarily move src/app/api out of the tree for the
-# duration of the static build, then always restore it, even on failure.
+# run them on — temporarily move src/app/api (and any other DB-backed
+# dynamic routes, e.g. src/app/render) OUT OF src/app entirely for the
+# duration of the static build, then always restore them, even on failure.
+#
+# Backups must land outside src/app — Next's app router discovers routes by
+# directory name, so a backup dir merely renamed *within* src/app (e.g.
+# src/app/api.bak) is still picked up as a route and the export still fails.
 set -euo pipefail
 
-API_DIR="src/app/api"
-BACKUP_DIR=".build-static-api-backup"
+DYNAMIC_DIRS=("src/app/api" "src/app/render")
+BACKUP_ROOT=".build-static-backup"
 
-if [ -d "$API_DIR" ]; then
-  rm -rf "$BACKUP_DIR"
-  mv "$API_DIR" "$BACKUP_DIR"
-fi
+rm -rf "$BACKUP_ROOT"
+mkdir -p "$BACKUP_ROOT"
+
+for dir in "${DYNAMIC_DIRS[@]}"; do
+  if [ -d "$dir" ]; then
+    mv "$dir" "$BACKUP_ROOT/$(basename "$dir")"
+  fi
+done
 
 restore() {
-  if [ -d "$BACKUP_DIR" ]; then
-    rm -rf "$API_DIR"
-    mv "$BACKUP_DIR" "$API_DIR"
-  fi
+  for dir in "${DYNAMIC_DIRS[@]}"; do
+    base="$(basename "$dir")"
+    if [ -d "$BACKUP_ROOT/$base" ]; then
+      rm -rf "$dir"
+      mv "$BACKUP_ROOT/$base" "$dir"
+    fi
+  done
+  rm -rf "$BACKUP_ROOT"
 }
 trap restore EXIT
 

@@ -259,13 +259,35 @@ CREATE TABLE IF NOT EXISTS kooldraw_projects (
 CREATE INDEX IF NOT EXISTS kooldraw_projects_owner ON kooldraw_projects(owner_id);
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- DATAMOSHPIT RENDERS — bounce-to-file output (real-time capture, see
+-- src/lib/datamoshpit/renderCapture.ts + src/engine/audio/AudioEngine.ts's
+-- getRecordingStream). Stored on disk (public/uploads/, like plain asset
+-- uploads), not as bytea — these can be multi-minute audio/video files.
+-- Playable standalone at /render/[id] (script-free <audio>/<video> tag),
+-- embeddable same-origin via a plain <iframe>.
+-- ─────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS datamoshpit_renders (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  kind VARCHAR(10) NOT NULL, -- 'audio' | 'video'
+  file_path TEXT NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  duration_seconds NUMERIC(10,2) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS datamoshpit_renders_owner ON datamoshpit_renders(owner_id);
+-- Per-user rate limiting (N renders/hour) checks recent rows here directly —
+-- no separate rate-limit table needed.
+CREATE INDEX IF NOT EXISTS datamoshpit_renders_owner_created ON datamoshpit_renders(owner_id, created_at);
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- ASSET LIBRARY — unified per-user registry of importable creative output
 -- (KoolDraw drawings, Datamoshpit renders, plain image/audio uploads),
 -- attachable to a Shotlist shot so any app focused on that shot can offer
 -- it. `kind` selects which of the type-specific columns is set; exactly one
 -- of kooldraw_project_id/datamoshpit_render_id/file_path is non-null.
--- datamoshpit_render_id is added later (ALTER TABLE) once
--- datamoshpit_renders exists (Phase 4).
 -- ─────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS user_assets (
@@ -276,6 +298,7 @@ CREATE TABLE IF NOT EXISTS user_assets (
   thumbnail_url TEXT,
   file_path TEXT, -- server-stored path, for plain image/audio uploads
   kooldraw_project_id INTEGER REFERENCES kooldraw_projects(id) ON DELETE CASCADE,
+  datamoshpit_render_id INTEGER REFERENCES datamoshpit_renders(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS user_assets_owner ON user_assets(owner_id);

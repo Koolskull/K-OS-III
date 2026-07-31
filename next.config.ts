@@ -80,6 +80,19 @@ const nextConfig: NextConfig = {
           { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
+      // /render/[id] is script-free by design (see the page's own comment) —
+      // lock it down with a CSP that forbids any script execution at all,
+      // and explicitly allow same-origin framing so <iframe src="/render/id">
+      // embeds keep working (the global default stays unset elsewhere).
+      {
+        source: "/render/:id",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'self'; script-src 'none'; media-src 'self'; style-src 'unsafe-inline'; frame-ancestors *",
+          },
+        ],
+      },
     ];
   },
 };

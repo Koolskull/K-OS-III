@@ -38,6 +38,7 @@ const ICONS: DesktopIcon[] = [
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
   { id: "account", label: "ACCOUNT", glyph: "☺" },
   { id: "browser", label: "KOS BROWSER", glyph: "@" },
+  { id: "chat", label: "K-CHAT", glyph: "✉" },
   { id: "prodev", label: "PRODEV", glyph: "%" },
   // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
 ];

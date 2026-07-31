@@ -44,6 +44,7 @@ import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { AccountApp } from "@/components/apps/account/AccountApp";
 import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
 import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
+import { KChatApp, type KChatLaunchOpts } from "@/components/apps/chat/KChatApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
@@ -60,7 +61,8 @@ type AppId =
   | "skulltext"
   | "account"
   | "browser"
-  | "prodev";
+  | "prodev"
+  | "chat";
 
 interface OpenWindow {
   id: string;
@@ -83,6 +85,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   account: { title: "ACCOUNT", width: 420, height: 560 },
   browser: { title: "KOS BROWSER", width: 480, height: 560 },
   prodev: { title: "PRODEV", width: 820, height: 560 },
+  chat: { title: "K-CHAT", width: 520, height: 480 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -93,11 +96,16 @@ export default function KoolskullOS() {
   const [windows, setWindows] = useState<OpenWindow[]>([]);
   const [focusedWindowId, setFocusedWindowId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(1);
+  const [chatLaunch, setChatLaunch] = useState<KChatLaunchOpts | undefined>(undefined);
 
-  const launchApp = useCallback((appId: string) => {
+  const launchApp = useCallback((appId: string, chatOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string }) => {
     const id = appId as AppId;
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
+
+    if (id === "chat" && chatOpts) {
+      setChatLaunch(chatOpts);
+    }
 
     // If app is already open, focus it
     const existing = windows.find((w) => w.appId === id);
@@ -232,8 +240,13 @@ export default function KoolskullOS() {
               <SkullTextApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "account" && <AccountApp />}
-            {win.appId === "browser" && <KOSBrowserApp />}
+            {win.appId === "browser" && (
+              <KOSBrowserApp
+                onMessage={(opts) => launchApp("chat", opts)}
+              />
+            )}
             {win.appId === "prodev" && <PRODEVApp />}
+            {win.appId === "chat" && <KChatApp launch={chatLaunch} />}
           </AppWindow>
         ))}
 

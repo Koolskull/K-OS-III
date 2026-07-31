@@ -24,6 +24,7 @@ import {
   type Eip1193Provider,
   type Eip6963Detail,
 } from "@/lib/walletProviders";
+import { ProfileBlocksEditor } from "@/components/apps/account/ProfileBlocksEditor";
 
 interface SessionUser {
   name?: string | null;
@@ -36,6 +37,17 @@ interface Profile {
   bio: string | null;
   avatar_url: string | null;
   is_public: boolean;
+  show_email?: boolean;
+  show_ethereum?: boolean;
+  show_matrix?: boolean;
+  show_ens?: boolean;
+  ens_name?: string | null;
+}
+
+interface LinkedMethod {
+  provider: string;
+  providerAccountId: string;
+  label: string;
 }
 
 interface OwnedNft {
@@ -130,8 +142,25 @@ export function AccountApp() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isPublic, setIsPublic] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showEthereum, setShowEthereum] = useState(false);
+  const [showMatrix, setShowMatrix] = useState(false);
+  const [showEns, setShowEns] = useState(false);
+  const [ensName, setEnsName] = useState<string | null>(null);
+  const [ensBusy, setEnsBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const [linked, setLinked] = useState<LinkedMethod[]>([]);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [showLinkMatrix, setShowLinkMatrix] = useState(false);
+  const [showLinkEmail, setShowLinkEmail] = useState(false);
+  const [linkHomeserver, setLinkHomeserver] = useState("https://matrix.org");
+  const [linkMatrixUser, setLinkMatrixUser] = useState("");
+  const [linkMatrixPass, setLinkMatrixPass] = useState("");
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linkEmailPass, setLinkEmailPass] = useState("");
 
   const [showNftPicker, setShowNftPicker] = useState(false);
   const [loadingNfts, setLoadingNfts] = useState(false);
@@ -149,17 +178,27 @@ export function AccountApp() {
     refreshSession();
   }, [refreshSession]);
 
+  const refreshLinked = useCallback(async () => {
+    const data = await safeFetchJson<{ methods?: LinkedMethod[] }>("/api/account/linked");
+    setLinked(data?.methods ?? []);
+  }, []);
+
   useEffect(() => {
     if (!user) return;
-    safeFetchJson<Profile | null>("/api/profile")
-      .then((p) => {
-        setProfile(p);
-        setDisplayName(p?.display_name ?? "");
-        setBio(p?.bio ?? "");
-        setAvatarUrl(p?.avatar_url ?? "");
-        setIsPublic(p?.is_public ?? false);
-      });
-  }, [user]);
+    safeFetchJson<Profile | null>("/api/profile").then((p) => {
+      setProfile(p);
+      setDisplayName(p?.display_name ?? "");
+      setBio(p?.bio ?? "");
+      setAvatarUrl(p?.avatar_url ?? "");
+      setIsPublic(p?.is_public ?? false);
+      setShowEmail(p?.show_email ?? false);
+      setShowEthereum(p?.show_ethereum ?? false);
+      setShowMatrix(p?.show_matrix ?? false);
+      setShowEns(p?.show_ens ?? false);
+      setEnsName(p?.ens_name ?? null);
+    });
+    refreshLinked();
+  }, [user, refreshLinked]);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -293,17 +332,151 @@ export function AccountApp() {
     const res = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ display_name: displayName, bio, avatar_url: avatarUrl, is_public: isPublic }),
+      body: JSON.stringify({
+        display_name: displayName,
+        bio,
+        avatar_url: avatarUrl,
+        is_public: isPublic,
+        show_email: showEmail,
+        show_ethereum: showEthereum,
+        show_matrix: showMatrix,
+        show_ens: showEns,
+      }),
     });
     setSaving(false);
     if (res.ok) {
       const p = (await res.json()) as Profile;
       setProfile(p);
+      setEnsName(p.ens_name ?? null);
       setSaveMsg("SAVED");
     } else {
       setSaveMsg("FAILED TO SAVE");
     }
     setTimeout(() => setSaveMsg(null), 2500);
+  }
+
+  async function refreshEns() {
+    setEnsBusy(true);
+    setSaveMsg(null);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_ens: true }),
+    });
+    setEnsBusy(false);
+    if (res.ok) {
+      const p = (await res.json()) as Profile;
+      setProfile(p);
+      setEnsName(p.ens_name ?? null);
+      setSaveMsg(p.ens_name ? `ENS: ${p.ens_name}` : "NO ENS FOUND FOR LINKED WALLET");
+    } else {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      setSaveMsg((body?.error ?? "ENS REFRESH FAILED").toUpperCase());
+    }
+    setTimeout(() => setSaveMsg(null), 3000);
+  }
+
+  async function linkEthereumWithProvider(provider: Eip1193Provider) {
+    setLinkError(null);
+    setLinkBusy(true);
+    try {
+      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+      if (!accounts[0]) throw new Error("No account returned by wallet.");
+      const address = getAddress(accounts[0]);
+      const chainIdHex = (await provider.request({ method: "eth_chainId" })) as string;
+      const chainId = parseInt(chainIdHex, 16);
+      const nonceRes = await fetch("/api/ethereum/nonce");
+      const { nonce } = (await nonceRes.json()) as { nonce: string };
+      const siweMessage = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: "Link Ethereum wallet to K-OS III account.",
+        uri: window.location.origin,
+        version: "1",
+        chainId,
+        nonce,
+      });
+      const preparedMessage = siweMessage.prepareMessage();
+      const signature = (await provider.request({
+        method: "personal_sign",
+        params: [preparedMessage, address],
+      })) as string;
+      const res = await fetch("/api/account/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: "ethereum", message: preparedMessage, signature }),
+      });
+      const body = (await res.json().catch(() => null)) as { error?: string; methods?: LinkedMethod[] } | null;
+      if (!res.ok) {
+        setLinkError(body?.error ?? "Link failed.");
+        return;
+      }
+      setLinked(body?.methods ?? []);
+    } catch (err) {
+      setLinkError(err instanceof Error ? err.message : "Wallet link failed.");
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
+  async function handleLinkMatrix(e: React.FormEvent) {
+    e.preventDefault();
+    setLinkBusy(true);
+    setLinkError(null);
+    const res = await fetch("/api/account/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "matrix",
+        homeserver: linkHomeserver,
+        username: linkMatrixUser,
+        password: linkMatrixPass,
+      }),
+    });
+    const body = (await res.json().catch(() => null)) as { error?: string; methods?: LinkedMethod[] } | null;
+    setLinkBusy(false);
+    if (!res.ok) {
+      setLinkError(body?.error ?? "Matrix link failed.");
+      return;
+    }
+    setLinked(body?.methods ?? []);
+    setShowLinkMatrix(false);
+    setLinkMatrixPass("");
+  }
+
+  async function handleLinkEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setLinkBusy(true);
+    setLinkError(null);
+    const res = await fetch("/api/account/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method: "email", email: linkEmail, password: linkEmailPass }),
+    });
+    const body = (await res.json().catch(() => null)) as { error?: string; methods?: LinkedMethod[] } | null;
+    setLinkBusy(false);
+    if (!res.ok) {
+      setLinkError(body?.error ?? "Email link failed.");
+      return;
+    }
+    setLinked(body?.methods ?? []);
+    setShowLinkEmail(false);
+    setLinkEmailPass("");
+  }
+
+  async function handleUnlink(m: LinkedMethod) {
+    setLinkError(null);
+    const res = await fetch("/api/account/link", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: m.provider, providerAccountId: m.providerAccountId }),
+    });
+    const body = (await res.json().catch(() => null)) as { error?: string; methods?: LinkedMethod[] } | null;
+    if (!res.ok) {
+      setLinkError(body?.error ?? "Unlink failed.");
+      return;
+    }
+    setLinked(body?.methods ?? []);
   }
 
   async function openNftPicker() {
@@ -559,6 +732,32 @@ export function AccountApp() {
                   PUBLIC PROFILE
                 </label>
 
+                <div style={{ marginTop: 10, borderTop: "1px solid #222", paddingTop: 8 }}>
+                  <span style={{ fontSize: 7, color: "#666", letterSpacing: 1 }}>CONTACT VISIBILITY (PUBLIC)</span>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input type="checkbox" checked={showEmail} onChange={(e) => setShowEmail(e.target.checked)} />
+                    SHOW EMAIL
+                  </label>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input type="checkbox" checked={showEthereum} onChange={(e) => setShowEthereum(e.target.checked)} />
+                    SHOW ETHEREUM / ENS ADDRESSES
+                  </label>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input type="checkbox" checked={showMatrix} onChange={(e) => setShowMatrix(e.target.checked)} />
+                    SHOW MATRIX ID
+                  </label>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input type="checkbox" checked={showEns} onChange={(e) => setShowEns(e.target.checked)} />
+                    SHOW ENS NAME
+                  </label>
+                  <div style={{ fontSize: 7, color: "#666", marginTop: 6 }}>
+                    ENS: {ensName ?? "(none cached)"}
+                  </div>
+                  <button type="button" style={{ ...secondaryBtn, marginTop: 6 }} disabled={ensBusy} onClick={refreshEns}>
+                    {ensBusy ? "RESOLVING…" : "REFRESH ENS FROM WALLET"}
+                  </button>
+                </div>
+
                 <button type="submit" disabled={saving} style={primaryBtn}>
                   {saving ? "SAVING…" : "SAVE PROFILE"}
                 </button>
@@ -567,6 +766,101 @@ export function AccountApp() {
                 )}
               </form>
             </div>
+
+            <div style={{ borderTop: "1px solid #333", paddingTop: 10, marginTop: 14 }}>
+              <span style={{ fontSize: 8, color: "#888", letterSpacing: 2 }}>CONNECTED IDENTITIES</span>
+              <div style={{ fontSize: 6, color: "#555", marginTop: 4, letterSpacing: 0.5, lineHeight: 1.4 }}>
+                OPTIONAL. LINK WALLET, MATRIX, OR EMAIL TO THIS ACCOUNT. CHAT RAILS STAY SEPARATE (WALLET/ENS ≠ MATRIX).
+              </div>
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                {linked.length === 0 ? (
+                  <div style={{ fontSize: 7, color: "#666" }}>NO LINKED METHODS LOADED.</div>
+                ) : (
+                  linked.map((m) => (
+                    <div
+                      key={`${m.provider}:${m.providerAccountId}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 6,
+                        border: "1px solid #333",
+                        padding: "4px 6px",
+                      }}
+                    >
+                      <span style={{ fontSize: 7, color: "#ccc", wordBreak: "break-all" }}>
+                        {m.provider.toUpperCase()}: {m.label}
+                      </span>
+                      <button type="button" style={secondaryBtn} onClick={() => handleUnlink(m)}>
+                        UNLINK
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                <button
+                  type="button"
+                  disabled={linkBusy}
+                  style={{ ...secondaryBtn, width: "100%" }}
+                  onClick={() => {
+                    if (detectedWallets[0]) linkEthereumWithProvider(detectedWallets[0].provider);
+                    else if (window.ethereum) linkEthereumWithProvider(window.ethereum);
+                    else setLinkError("No wallet found — install MetaMask/Rabby or use WalletConnect sign-in first.");
+                  }}
+                >
+                  {linkBusy ? "LINKING…" : "LINK ETHEREUM WALLET"}
+                </button>
+                <button type="button" style={{ ...secondaryBtn, width: "100%" }} onClick={() => setShowLinkMatrix((v) => !v)}>
+                  {showLinkMatrix ? "▾ CANCEL MATRIX LINK" : "▸ LINK MATRIX"}
+                </button>
+                {showLinkMatrix && (
+                  <form onSubmit={handleLinkMatrix}>
+                    <span style={label}>HOMESERVER</span>
+                    <input style={field} value={linkHomeserver} onChange={(e) => setLinkHomeserver(e.target.value)} />
+                    <span style={label}>MATRIX USERNAME</span>
+                    <input style={field} value={linkMatrixUser} onChange={(e) => setLinkMatrixUser(e.target.value)} />
+                    <span style={label}>PASSWORD</span>
+                    <input
+                      style={field}
+                      type="password"
+                      value={linkMatrixPass}
+                      onChange={(e) => setLinkMatrixPass(e.target.value)}
+                    />
+                    <button type="submit" disabled={linkBusy} style={{ ...primaryBtn, marginTop: 8 }}>
+                      {linkBusy ? "VERIFYING…" : "VERIFY & LINK MATRIX"}
+                    </button>
+                  </form>
+                )}
+                <button type="button" style={{ ...secondaryBtn, width: "100%" }} onClick={() => setShowLinkEmail((v) => !v)}>
+                  {showLinkEmail ? "▾ CANCEL EMAIL LINK" : "▸ LINK EMAIL + PASSWORD"}
+                </button>
+                {showLinkEmail && (
+                  <form onSubmit={handleLinkEmail}>
+                    <span style={label}>EMAIL</span>
+                    <input style={field} type="email" value={linkEmail} onChange={(e) => setLinkEmail(e.target.value)} />
+                    <span style={label}>PASSWORD (MIN 8)</span>
+                    <input
+                      style={field}
+                      type="password"
+                      value={linkEmailPass}
+                      onChange={(e) => setLinkEmailPass(e.target.value)}
+                    />
+                    <button type="submit" disabled={linkBusy} style={{ ...primaryBtn, marginTop: 8 }}>
+                      {linkBusy ? "LINKING…" : "LINK EMAIL"}
+                    </button>
+                  </form>
+                )}
+              </div>
+              {linkError && (
+                <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                  {linkError.toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {profile && <ProfileBlocksEditor />}
           </>
         )}
       </div>

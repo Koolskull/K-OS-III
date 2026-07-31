@@ -34,11 +34,14 @@ Plans changed from the original "email/password baseline" once actually scoped �
 - **Ethereum sign-in** (`src/lib/ethereum-auth.ts`) — Sign-In With Ethereum (EIP-4361), verified via the `siwe` reference package (never hand-rolled signature recovery, per [`K_WALLET_SPEC.md`](./K_WALLET_SPEC.md) § 7's non-negotiable). Works with any EIP-1193 wallet (MetaMask, etc.) via `window.ethereum` directly — no WalletConnect/wagmi dependency yet, kept deliberately minimal for v0.
 - **NFT avatars** (`src/lib/alchemy.ts`, `/api/nfts`) — a signed-in Ethereum account can pick one of its owned NFTs as a profile picture, via Alchemy's NFT API (server-side only; the API key never reaches the browser).
 - **Public profile search** (`/api/users/search`, `/api/users/[id]`, the "KOS Browser" app) — search and view profiles their owners have explicitly made public.
-- Both providers converge on the same `users`/`accounts`/`profiles` Postgres schema (`db/schema.sql`) — a user could in principle link both a Matrix and an Ethereum identity to one account, though the UI doesn't yet expose linking a second method to an already-signed-in account.
+- All identity providers converge on the same `users`/`accounts`/`profiles` Postgres schema (`db/schema.sql`).
+- **Optional multi-method linking** — a signed-in user can attach additional methods (Ethereum SIWE, Matrix verify, email+password) via `/api/account/link` and the Account app's CONNECTED IDENTITIES section. Linking is **never required**; wallet-only / Matrix-only / email-only accounts are valid forever. No forced recovery nudge.
+- **Contact visibility** — `profiles.show_email` / `show_ethereum` / `show_matrix` / **`show_ens`** (default off). Public profiles only expose contact fields the owner toggled on. ENS is cached on `profiles.ens_name` after refresh from a linked wallet (spoof-checked).
+- **Profile modules** (Elementor-simple) — `profile_blocks` + `/api/profile/blocks`, server-sanitized: text, image, gif, YouTube, allowlisted iframes, **`nft`**, **`nft_gallery`**. NFT modules require Alchemy ownership proof against linked wallets. No user HTML.
 - **Monero sign-in** remains genuinely unsolved — no off-the-shelf "Monero SIWE" to reach for, same as originally noted. Still open, still real design work.
-- [`CHAT_SPEC.md`](./CHAT_SPEC.md)'s Farcaster adapter plan is still the natural fit for the social/timeline layer (§ 4.3) once that's built, separate from this sign-in work.
+- Chat is dual-rail (wallet/ENS encrypted vs Matrix separate) — see [`CHAT_SPEC.md`](./CHAT_SPEC.md). Linking identities to one portfolio does **not** merge chat protocols.
 
-**Open question for the team:** account recovery — a wallet-only or Matrix-only user has no fallback if they lose access to that identity. Worth deciding whether linking a second method becomes a required nudge, not just an option.
+**Account recovery:** optional second method is available; it is not a required nudge (product choice).
 
 ---
 

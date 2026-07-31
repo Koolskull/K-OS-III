@@ -25,7 +25,8 @@ When the first wallet PR adds dependencies, it should populate the table below:
 
 | Library | Version | Purpose | Audited? | Reviewer | Added in PR | Notes |
 |---|---|---|---|---|---|---|
-| *(none yet)* | | | | | | |
+| `ethers` | (see package.json) | SIWE peer + ENS resolve / JsonRpcProvider | Widely used; not a KDF/keystore | TBD | accounts + chat | Already used for SIWE; ENS reverse/forward lookup only |
+| `@xmtp/browser-sdk` | *(not installed yet)* | Encrypted wallet/ENS DMs | Pin only after review | TBD | — | Wire in `src/lib/chat/wallet-messaging.ts` `tryCreateXmtpClient` when ready |
 
 ### Planned (per `K_WALLET_SPEC.md` v0)
 

@@ -68,14 +68,16 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
 
   async headers() {
-    // No-op under static export — kept for dev mode where SharedArrayBuffer
-    // / WASM threading may want these. GitHub Pages strips them anyway.
+    // credentialless (not require-corp): keeps COOP isolation for many
+    // WASM cases while allowing third-party profile embeds (YouTube, etc.)
+    // that do not send CORP. require-corp globally blocked those iframes.
+    // No-op under static export; GitHub Pages strips custom headers anyway.
     return [
       {
         source: "/(.*)",
         headers: [
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
     ];

@@ -197,6 +197,15 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
                       >
                         KOS BROWSER
                       </button>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("chat");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        K-CHAT
+                      </button>
                       <button onClick={handleSignOut} style={menuActionBtn}>
                         SIGN OUT
                       </button>

@@ -12,10 +12,13 @@
  *   with real back-button history, like an actual browser. Only ever shows
  *   profiles their owner has explicitly made public (profiles.is_public),
  *   or your own regardless. See docs/ACCOUNTS_SPEC.md.
+ *
+ *   Message CTAs open separate chat rails (wallet/ENS vs Matrix) — never mixed.
  */
 
 import { useState, useCallback, useRef } from "react";
 import { safeFetchJson } from "@/lib/safeFetchJson";
+import { ProfileBlocksView, type PublicProfileBlock } from "@/components/apps/browser/ProfileBlocks";
 
 interface SearchResult {
   user_id: number;
@@ -30,7 +33,15 @@ interface ProfileDetail {
   bio: string | null;
   avatar_url: string | null;
   is_public: boolean;
-  matrix_id: string;
+  matrix_id: string | null;
+  ens_name?: string | null;
+  contacts?: {
+    email: string | null;
+    ethereum: string[];
+    matrix: string[];
+    ens?: string | null;
+  };
+  blocks?: PublicProfileBlock[];
 }
 
 type View = { kind: "search"; query: string; results: SearchResult[] } | { kind: "profile"; profile: ProfileDetail };
@@ -47,7 +58,24 @@ const barBtn: React.CSSProperties = {
   flexShrink: 0,
 };
 
-export function KOSBrowserApp() {
+const ctaBtn: React.CSSProperties = {
+  height: 22,
+  padding: "0 8px",
+  border: "1px solid #555",
+  background: "#000",
+  color: "#ccc",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 7,
+  letterSpacing: 1,
+  cursor: "pointer",
+};
+
+export function KOSBrowserApp({
+  onMessage,
+}: {
+  /** Open K-CHAT on a specific rail with optional peer handle. */
+  onMessage?: (opts: { rail: "wallet" | "matrix"; peerHandle: string }) => void;
+}) {
   const [history, setHistory] = useState<View[]>([{ kind: "search", query: "", results: [] }]);
   const [historyIdx, setHistoryIdx] = useState(0);
   const [addressBar, setAddressBar] = useState("");
@@ -203,11 +231,84 @@ export function KOSBrowserApp() {
                 style={{ width: 64, height: 64, objectFit: "cover", border: "1px solid #333", marginBottom: 8 }}
               />
             )}
-            <div style={{ fontSize: 11, letterSpacing: 1 }}>{current.profile.display_name || current.profile.matrix_id}</div>
-            <div style={{ fontSize: 7, color: "#666", marginBottom: 10 }}>{current.profile.matrix_id}</div>
-            {current.profile.bio && (
-              <div style={{ fontSize: 8, color: "#ccc", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{current.profile.bio}</div>
+            <div style={{ fontSize: 11, letterSpacing: 1 }}>
+              {current.profile.display_name ||
+                current.profile.ens_name ||
+                current.profile.contacts?.ens ||
+                current.profile.matrix_id ||
+                `USER ${current.profile.user_id}`}
+            </div>
+            {(current.profile.ens_name || current.profile.contacts?.ens) && (
+              <div style={{ fontSize: 7, color: "#8f8", marginTop: 4, letterSpacing: 1 }}>
+                {current.profile.ens_name || current.profile.contacts?.ens}
+              </div>
             )}
+            {current.profile.bio && (
+              <div style={{ fontSize: 8, color: "#ccc", whiteSpace: "pre-wrap", lineHeight: 1.5, marginTop: 8 }}>
+                {current.profile.bio}
+              </div>
+            )}
+
+            {(current.profile.contacts?.email ||
+              (current.profile.contacts?.ethereum?.length ?? 0) > 0 ||
+              (current.profile.contacts?.matrix?.length ?? 0) > 0) && (
+              <div style={{ marginTop: 12, borderTop: "1px solid #333", paddingTop: 8 }}>
+                <div style={{ fontSize: 7, color: "#666", letterSpacing: 1, marginBottom: 6 }}>CONTACT</div>
+                {current.profile.contacts?.email && (
+                  <div style={{ fontSize: 7, color: "#aaa", marginBottom: 4 }}>EMAIL: {current.profile.contacts.email}</div>
+                )}
+                {current.profile.contacts?.ethereum?.map((addr) => (
+                  <div key={addr} style={{ fontSize: 7, color: "#aaa", marginBottom: 4, wordBreak: "break-all" }}>
+                    ETH: {addr}
+                  </div>
+                ))}
+                {current.profile.contacts?.matrix?.map((mx) => (
+                  <div key={mx} style={{ fontSize: 7, color: "#aaa", marginBottom: 4, wordBreak: "break-all" }}>
+                    MATRIX: {mx}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {onMessage && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+                {((current.profile.contacts?.ethereum?.length ?? 0) > 0 ||
+                  current.profile.contacts?.ens ||
+                  current.profile.ens_name) && (
+                  <button
+                    type="button"
+                    style={ctaBtn}
+                    onClick={() =>
+                      onMessage({
+                        rail: "wallet",
+                        peerHandle:
+                          current.profile.contacts?.ens ||
+                          current.profile.ens_name ||
+                          current.profile.contacts!.ethereum[0],
+                      })
+                    }
+                  >
+                    MESSAGE WALLET / ENS
+                  </button>
+                )}
+                {(current.profile.contacts?.matrix?.length ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    style={ctaBtn}
+                    onClick={() =>
+                      onMessage({
+                        rail: "matrix",
+                        peerHandle: current.profile.contacts!.matrix[0],
+                      })
+                    }
+                  >
+                    MESSAGE ON MATRIX
+                  </button>
+                )}
+              </div>
+            )}
+
+            <ProfileBlocksView blocks={current.profile.blocks ?? []} />
           </div>
         )}
       </div>

@@ -60,9 +60,58 @@ CREATE TABLE IF NOT EXISTS profiles (
   bio TEXT,
   avatar_url TEXT,
   is_public BOOLEAN NOT NULL DEFAULT false,
+  -- Per-field contact visibility on public profiles (off by default).
+  -- Whole-profile is_public is still the master switch.
+  show_email BOOLEAN NOT NULL DEFAULT false,
+  show_ethereum BOOLEAN NOT NULL DEFAULT false,
+  show_matrix BOOLEAN NOT NULL DEFAULT false,
+  -- Cached primary ENS; only set if it reverse/forward-resolves to a linked wallet.
+  ens_name VARCHAR(255),
+  show_ens BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Custom public profile content: text, image/gif URLs, YouTube (video id only),
+-- allowlisted iframes. All payloads are server-sanitized (src/lib/profile-sanitize.ts).
+CREATE TABLE IF NOT EXISTS profile_blocks (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  block_type VARCHAR(32) NOT NULL, -- 'text' | 'image' | 'gif' | 'youtube' | 'iframe'
+  payload JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS profile_blocks_user_sort ON profile_blocks(user_id, sort_order);
+
+-- Lightweight server notes (NOT Matrix, NOT XMTP). Text-only, 48h TTL.
+-- No images/videos. Keep the K-OS server thin — real chat lives on Matrix/XMTP.
+CREATE TABLE IF NOT EXISTS chat_ephemeral_threads (
+  id SERIAL PRIMARY KEY,
+  kind VARCHAR(16) NOT NULL DEFAULT 'dm', -- 'dm' | 'group'
+  title VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS chat_ephemeral_members (
+  thread_id INTEGER NOT NULL REFERENCES chat_ephemeral_threads(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (thread_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_ephemeral_messages (
+  id SERIAL PRIMARY KEY,
+  thread_id INTEGER NOT NULL REFERENCES chat_ephemeral_threads(id) ON DELETE CASCADE,
+  sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS chat_ephemeral_messages_thread_exp
+  ON chat_ephemeral_messages(thread_id, expires_at);
+CREATE INDEX IF NOT EXISTS chat_ephemeral_messages_expires
+  ON chat_ephemeral_messages(expires_at);
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- PRODEV — production credits & residuals (see docs/ACCOUNTS_SPEC.md § 4.2,

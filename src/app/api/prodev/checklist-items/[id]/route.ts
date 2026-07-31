@@ -9,6 +9,17 @@ interface ItemPatch {
   hours?: number;
   contribution_percent?: number;
   parent_id?: number | null;
+  scheduled_at?: string | null;
+  completed_at?: string | null;
+}
+
+/** ISO 8601 string -> Date, or null/undefined pass-through. Rejects anything unparseable. */
+function parseTimestamp(raw: string | null | undefined): Date | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) throw new Error("Invalid timestamp");
+  return d;
 }
 
 const STATUSES = new Set(["todo", "in-progress", "done"]);
@@ -30,6 +41,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const contributionPercent = typeof body.contribution_percent === "number" ? body.contribution_percent : undefined;
   const parentId = body.parent_id === null ? null : body.parent_id != null ? Number(body.parent_id) : undefined;
 
+  let scheduledAt: Date | null | undefined;
+  let completedAt: Date | null | undefined;
+  try {
+    scheduledAt = parseTimestamp(body.scheduled_at);
+    completedAt = parseTimestamp(body.completed_at);
+  } catch {
+    return NextResponse.json({ error: "Invalid scheduled_at/completed_at" }, { status: 400 });
+  }
+
   const result = await pool.query(
     `UPDATE prodev_checklist_items SET
        title = COALESCE($2, title),
@@ -38,9 +58,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
        hours = COALESCE($6, hours),
        contribution_percent = COALESCE($7, contribution_percent),
        parent_id = CASE WHEN $8::boolean THEN $9 ELSE parent_id END,
+       scheduled_at = CASE WHEN $10::boolean THEN $11 ELSE scheduled_at END,
+       completed_at = CASE WHEN $12::boolean THEN $13 ELSE completed_at END,
        updated_at = now()
      WHERE id = $1
-     RETURNING id, parent_id, title, status, owner_id, hours, contribution_percent, sort_order`,
+     RETURNING id, parent_id, title, status, owner_id, hours, contribution_percent, sort_order, scheduled_at, completed_at`,
     [
       itemId,
       title,
@@ -51,6 +73,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       contributionPercent,
       parentId !== undefined,
       parentId ?? null,
+      scheduledAt !== undefined,
+      scheduledAt ?? null,
+      completedAt !== undefined,
+      completedAt ?? null,
     ],
   );
   return NextResponse.json(result.rows[0]);

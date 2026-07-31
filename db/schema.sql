@@ -161,9 +161,28 @@ CREATE TABLE IF NOT EXISTS prodev_checklist_items (
   hours NUMERIC(10,2) NOT NULL DEFAULT 0,
   contribution_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
   sort_order INTEGER NOT NULL DEFAULT 0,
+  -- Goal vs. actual completion, so early/late can be computed
+  -- (completed_at - scheduled_at). `status` stays the source of truth for
+  -- done/not-done; completed_at is just a timestamp of when.
+  scheduled_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Clock-in/clock-out sessions against a checklist item. An open entry
+-- (clock_out IS NULL) is "currently clocked in". Logged hours = sum of
+-- (clock_out - clock_in) across all entries for an item, shown alongside
+-- (not replacing) the manual `hours` estimate above.
+CREATE TABLE IF NOT EXISTS prodev_time_entries (
+  id SERIAL PRIMARY KEY,
+  checklist_item_id INTEGER NOT NULL REFERENCES prodev_checklist_items(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  clock_in TIMESTAMPTZ NOT NULL DEFAULT now(),
+  clock_out TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS prodev_time_entries_item ON prodev_time_entries(checklist_item_id);
+CREATE INDEX IF NOT EXISTS prodev_time_entries_open ON prodev_time_entries(user_id, checklist_item_id) WHERE clock_out IS NULL;
 
 -- Linked file paths (ChecklistItem.assets in prodev/src/core/types.ts).
 CREATE TABLE IF NOT EXISTS prodev_checklist_item_assets (

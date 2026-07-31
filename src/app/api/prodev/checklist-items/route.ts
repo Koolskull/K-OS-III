@@ -15,6 +15,7 @@ export async function GET(req: Request) {
   const [items, assets] = await Promise.all([
     pool.query(
       `SELECT i.id, i.parent_id, i.title, i.status, i.owner_id, i.hours, i.contribution_percent, i.sort_order,
+              i.scheduled_at, i.completed_at,
               COALESCE(p.display_name, u.name) AS owner_name
        FROM prodev_checklist_items i
        LEFT JOIN users u ON u.id = i.owner_id
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
   const result = await pool.query(
     `INSERT INTO prodev_checklist_items (shot_id, parent_id, title, sort_order)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, parent_id, title, status, owner_id, hours, contribution_percent, sort_order`,
+     RETURNING id, parent_id, title, status, owner_id, hours, contribution_percent, sort_order, scheduled_at, completed_at`,
     [shotId, parentId, title, maxOrder.rows[0].next],
   );
   return NextResponse.json({ ...result.rows[0], owner_name: null, assets: [] }, { status: 201 });

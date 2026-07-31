@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { safeFetchJson } from "@/lib/safeFetchJson";
 
 interface ProjectSummary {
   id: number;
@@ -56,6 +57,16 @@ interface ChecklistItemRow {
   contribution_percent: number;
   sort_order: number;
   assets: string[];
+  scheduled_at: string | null;
+  completed_at: string | null;
+}
+
+interface TimeEntry {
+  id: number;
+  user_id: number;
+  user_name: string | null;
+  clock_in: string;
+  clock_out: string | null;
 }
 
 interface Credit {
@@ -99,6 +110,35 @@ const smallField: React.CSSProperties = {
   outline: "none",
 };
 
+/** "3H EARLY" / "1D 2H LATE" — null if either timestamp is missing. */
+function formatEarlyLate(scheduledAt: string | null, completedAt: string | null): { text: string; late: boolean } | null {
+  if (!scheduledAt || !completedAt) return null;
+  const diffMs = new Date(completedAt).getTime() - new Date(scheduledAt).getTime();
+  const late = diffMs > 0;
+  const absMin = Math.round(Math.abs(diffMs) / 60000);
+  const days = Math.floor(absMin / 1440);
+  const hours = Math.floor((absMin % 1440) / 60);
+  const mins = absMin % 60;
+  const parts = [days ? `${days}D` : null, hours ? `${hours}H` : null, !days && mins ? `${mins}M` : null].filter(Boolean);
+  const text = `${parts.length ? parts.join(" ") : "0M"} ${late ? "LATE" : "EARLY"}`;
+  return { text, late };
+}
+
+function formatHoursMinutes(totalSeconds: number): string {
+  const totalMin = Math.round(totalSeconds / 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}H ${m}M`;
+}
+
+/** <input type="datetime-local"> wants "YYYY-MM-DDTHH:mm" in local time, not an ISO string. */
+function toDatetimeLocal(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const STATUS_LABEL: Record<ChecklistItemRow["status"], string> = {
   todo: "TODO",
   "in-progress": "DOING",
@@ -126,6 +166,19 @@ export function PRODEVApp() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [creditDraft, setCreditDraft] = useState<Record<number, string>>({});
   const [creditMsg, setCreditMsg] = useState<string | null>(null);
+
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [detailItemId, setDetailItemId] = useState<number | null>(null);
+  const [scheduleDraft, setScheduleDraft] = useState("");
+  const [timeEntries, setTimeEntries] = useState<{ entries: TimeEntry[]; totalSeconds: number } | null>(null);
+  const [clockBusy, setClockBusy] = useState(false);
+
+  useEffect(() => {
+    safeFetchJson<{ user?: { id?: string } }>("/api/auth/session").then((data) => {
+      const id = data?.user?.id;
+      setMyUserId(id ? Number(id) : null);
+    });
+  }, []);
 
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
@@ -256,6 +309,47 @@ export function PRODEVApp() {
     patchItem(item.id, { status: next });
   }
 
+  function openDetail(item: ChecklistItemRow) {
+    setDetailItemId(item.id);
+    setScheduleDraft(toDatetimeLocal(item.scheduled_at));
+    setTimeEntries(null);
+    loadTimeEntries(item.id);
+  }
+
+  async function loadTimeEntries(itemId: number) {
+    const data = await safeFetchJson<{ entries: TimeEntry[]; totalSeconds: number }>(
+      `/api/prodev/time-entries?checklistItemId=${itemId}`,
+    );
+    setTimeEntries(data ?? { entries: [], totalSeconds: 0 });
+  }
+
+  async function saveSchedule(itemId: number) {
+    const iso = scheduleDraft ? new Date(scheduleDraft).toISOString() : null;
+    await patchItem(itemId, { scheduled_at: iso });
+  }
+
+  async function markDone(itemId: number) {
+    await patchItem(itemId, { status: "done", completed_at: new Date().toISOString() });
+  }
+
+  async function clockIn(itemId: number) {
+    setClockBusy(true);
+    await fetch("/api/prodev/time-entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checklistItemId: itemId }),
+    });
+    await loadTimeEntries(itemId);
+    setClockBusy(false);
+  }
+
+  async function clockOut(entryId: number, itemId: number) {
+    setClockBusy(true);
+    await fetch(`/api/prodev/time-entries/${entryId}`, { method: "PATCH" });
+    await loadTimeEntries(itemId);
+    setClockBusy(false);
+  }
+
   async function saveCredits() {
     if (!selectedShotId) return;
     const entries = Object.entries(creditDraft)
@@ -301,8 +395,19 @@ export function PRODEVApp() {
                 {STATUS_LABEL[item.status]}
               </button>
               <span style={{ fontSize: 8, color: "#eee", flex: 1 }}>{item.title}</span>
+              {(() => {
+                const earlyLate = formatEarlyLate(item.scheduled_at, item.completed_at);
+                return earlyLate ? (
+                  <span style={{ fontSize: 6, color: earlyLate.late ? "#ff6666" : "#00ff88", flexShrink: 0 }}>
+                    {earlyLate.text}
+                  </span>
+                ) : null;
+              })()}
               <span style={{ fontSize: 6, color: "#666", flexShrink: 0 }}>{item.owner_name ?? "UNASSIGNED"}</span>
               <span style={{ fontSize: 6, color: "#666", flexShrink: 0 }}>{item.hours}H</span>
+              <button onClick={() => openDetail(item)} title="Schedule / clock in-out" style={{ ...smallBtn, width: 16 }}>
+                ⏱
+              </button>
               <button onClick={() => addItem(item.id)} title="Add sub-item" style={{ ...smallBtn, width: 16 }}>
                 +
               </button>
@@ -490,6 +595,115 @@ export function PRODEVApp() {
           </>
         )}
       </div>
+
+      {detailItemId != null &&
+        (() => {
+          const item = items.find((i) => i.id === detailItemId);
+          if (!item) return null;
+          const myOpenEntry = timeEntries?.entries.find((e) => e.user_id === myUserId && e.clock_out === null);
+          const earlyLate = formatEarlyLate(item.scheduled_at, item.completed_at);
+          return (
+            <div
+              onClick={() => setDetailItemId(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 100,
+                background: "rgba(0,0,0,0.85)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{ ...panel, width: 280, maxHeight: "80%", overflowY: "auto", boxShadow: "3px 3px 0 #000" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "5px 8px",
+                    borderBottom: "1px solid #333",
+                    background: "#1a1a1a",
+                  }}
+                >
+                  <span style={{ fontSize: 8, color: "#ddd", letterSpacing: 1 }}>{item.title.toUpperCase()}</span>
+                  <button onClick={() => setDetailItemId(null)} style={{ ...smallBtn, height: 18, padding: "0 6px" }}>
+                    ×
+                  </button>
+                </div>
+
+                <div style={{ padding: 10 }}>
+                  <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginBottom: 3 }}>SCHEDULED (GOAL)</div>
+                  <input
+                    type="datetime-local"
+                    value={scheduleDraft}
+                    onChange={(e) => setScheduleDraft(e.target.value)}
+                    style={{ ...smallField, width: "100%" }}
+                  />
+                  <button onClick={() => saveSchedule(item.id)} style={{ ...smallBtn, width: "100%", marginTop: 4 }}>
+                    SAVE SCHEDULE
+                  </button>
+
+                  <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginTop: 10 }}>COMPLETED</div>
+                  <div style={{ fontSize: 8, color: "#ccc", marginTop: 3 }}>
+                    {item.completed_at ? new Date(item.completed_at).toLocaleString() : "NOT YET"}
+                  </div>
+                  {earlyLate && (
+                    <div style={{ fontSize: 7, color: earlyLate.late ? "#ff6666" : "#00ff88", marginTop: 2 }}>
+                      {earlyLate.text}
+                    </div>
+                  )}
+                  {!item.completed_at && (
+                    <button onClick={() => markDone(item.id)} style={{ ...smallBtn, width: "100%", marginTop: 4 }}>
+                      MARK DONE NOW
+                    </button>
+                  )}
+
+                  <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginTop: 10 }}>TIME TRACKING</div>
+                  {timeEntries == null ? (
+                    <div style={{ fontSize: 7, color: "#666", marginTop: 3 }}>LOADING…</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 8, color: "#ccc", marginTop: 3 }}>
+                        LOGGED: {formatHoursMinutes(timeEntries.totalSeconds)}
+                      </div>
+                      <button
+                        disabled={clockBusy}
+                        onClick={() =>
+                          myOpenEntry ? clockOut(myOpenEntry.id, item.id) : clockIn(item.id)
+                        }
+                        style={{
+                          ...smallBtn,
+                          width: "100%",
+                          marginTop: 4,
+                          background: myOpenEntry ? "#ff6666" : "#000",
+                          color: myOpenEntry ? "#000" : "#ccc",
+                        }}
+                      >
+                        {myOpenEntry ? "CLOCK OUT" : "CLOCK IN"}
+                      </button>
+                      {timeEntries.entries.length > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          {timeEntries.entries.map((e) => (
+                            <div key={e.id} style={{ fontSize: 6, color: "#666", marginBottom: 2 }}>
+                              {e.user_name ?? `USER ${e.user_id}`} — {new Date(e.clock_in).toLocaleString()}
+                              {" → "}
+                              {e.clock_out ? new Date(e.clock_out).toLocaleString() : "…"}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }

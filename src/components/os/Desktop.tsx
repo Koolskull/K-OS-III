@@ -15,6 +15,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
@@ -24,6 +25,8 @@ interface DesktopIcon {
   id: string;
   label: string;
   glyph: string;
+  /** No local-only mode — pointless (and hidden) without /api/*, e.g. a static export. */
+  backendOnly?: boolean;
 }
 
 const ICONS: DesktopIcon[] = [
@@ -36,12 +39,12 @@ const ICONS: DesktopIcon[] = [
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
-  { id: "account", label: "ACCOUNT", glyph: "☺" },
-  { id: "browser", label: "KOS BROWSER", glyph: "@" },
-  { id: "chat", label: "K-CHAT", glyph: "✉" },
-  { id: "prodev", label: "PRODEV", glyph: "%" },
+  { id: "account", label: "ACCOUNT", glyph: "☺", backendOnly: true },
+  { id: "browser", label: "KOS BROWSER", glyph: "@", backendOnly: true },
+  { id: "chat", label: "K-CHAT", glyph: "✉", backendOnly: true },
+  { id: "prodev", label: "PRODEV", glyph: "%", backendOnly: true },
   // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
-];
+].filter((icon) => HAS_BACKEND || !icon.backendOnly);
 
 export function Desktop({ onLaunchApp }: DesktopProps) {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);

@@ -51,6 +51,7 @@ import { InputRouter } from "@/lib/InputRouter";
 import type { InputAction } from "@/lib/InputRouter";
 import { AudioEngine } from "@/engine/audio/AudioEngine";
 import { startRenderCapture, type RenderCapture } from "@/lib/datamoshpit/renderCapture";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 import { TrackerEngine } from "@/engine/tracker/TrackerEngine";
 import {
   findPhraseById,
@@ -1561,37 +1562,41 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
           >
             VM{sceneVmDemoIdx === null ? "" : sceneVmDemoIdx < SCENE_VM_DEMOS.length ? `:${sceneVmDemoIdx + 1}` : ":FLW"}
           </button>
-          <button
-            onClick={toggleBounce}
-            disabled={bounceUploading}
-            title={bouncing ? "Stop and upload the render" : "Bounce to file — records real-time playback"}
-            style={{
-              fontFamily: "var(--dm-font-primary)",
-              fontSize: "8px",
-              color: bouncing ? "#000000" : "#888888",
-              backgroundColor: bouncing ? "#ff3333" : "transparent",
-              border: "1px solid #888888",
-              padding: "0 4px",
-              cursor: "pointer",
-              imageRendering: "pixelated",
-            }}
-          >
-            {bounceUploading ? "UPLOADING…" : bouncing ? "● STOP" : "● REC"}
-          </button>
-          {bounceError && (
-            <span style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#ff6666" }}>
-              {bounceError.toUpperCase()}
-            </span>
-          )}
-          {lastRenderId != null && !bouncing && !bounceUploading && (
-            <a
-              href={`/render/${lastRenderId}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#00ff88" }}
-            >
-              ▶ RENDER #{lastRenderId}
-            </a>
+          {HAS_BACKEND && (
+            <>
+              <button
+                onClick={toggleBounce}
+                disabled={bounceUploading}
+                title={bouncing ? "Stop and upload the render" : "Bounce to file — records real-time playback"}
+                style={{
+                  fontFamily: "var(--dm-font-primary)",
+                  fontSize: "8px",
+                  color: bouncing ? "#000000" : "#888888",
+                  backgroundColor: bouncing ? "#ff3333" : "transparent",
+                  border: "1px solid #888888",
+                  padding: "0 4px",
+                  cursor: "pointer",
+                  imageRendering: "pixelated",
+                }}
+              >
+                {bounceUploading ? "UPLOADING…" : bouncing ? "● STOP" : "● REC"}
+              </button>
+              {bounceError && (
+                <span style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#ff6666" }}>
+                  {bounceError.toUpperCase()}
+                </span>
+              )}
+              {lastRenderId != null && !bouncing && !bounceUploading && (
+                <a
+                  href={`/render/${lastRenderId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#00ff88" }}
+                >
+                  ▶ RENDER #{lastRenderId}
+                </a>
+              )}
+            </>
           )}
           <span
             style={{

@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "next dev -p 5555",
     "build": "next build",
-    "build:export": "NEXT_PUBLIC_BASE_PATH=/K-OS-III ./scripts/build-static.sh",
-    "build:2kooltv": "NEXT_PUBLIC_BASE_PATH= ./scripts/build-static.sh",
+    "build:export": "NEXT_PUBLIC_BASE_PATH=/K-OS-III NEXT_PUBLIC_BRAND=kos3 ./scripts/build-static.sh",
+    "build:2kooltv": "NEXT_PUBLIC_BASE_PATH= NEXT_PUBLIC_BRAND=2kooltv ./scripts/build-static.sh",
     "start": "next start -p 5555",
     "lint": "tsc --noEmit",
     "preview:export": "npm run build:export && cd out && python3 -m http.server 4044"

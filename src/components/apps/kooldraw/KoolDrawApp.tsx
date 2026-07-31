@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/CornerChrome";
 import { PixelKnob } from "@/components/ui/PixelKnob";
 import { PixelColorPicker } from "@/components/ui/PixelColorPicker";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 
 export interface KoolDrawEmbeddedMode {
   initialWidth?: number;
@@ -1780,25 +1781,27 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
         onOpacityChange={handleLayerOpacity}
         onReorder={handleReorderLayer}
       />
-      <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
-        <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>PROJECT</span>
-        <button
-          onClick={() => saveProject(false)}
-          disabled={savingProject}
-          style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}
-        >
-          {savingProject ? "SAVING…" : serverProjectId != null ? "SAVE" : "SAVE PROJECT"}
-        </button>
-        {serverProjectId != null && (
+      {HAS_BACKEND && (
+        <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
+          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>PROJECT</span>
           <button
-            onClick={() => saveProject(true)}
+            onClick={() => saveProject(false)}
             disabled={savingProject}
             style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}
           >
-            SAVE AS NEW
+            {savingProject ? "SAVING…" : serverProjectId != null ? "SAVE" : "SAVE PROJECT"}
           </button>
-        )}
-      </div>
+          {serverProjectId != null && (
+            <button
+              onClick={() => saveProject(true)}
+              disabled={savingProject}
+              style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}
+            >
+              SAVE AS NEW
+            </button>
+          )}
+        </div>
+      )}
       <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
         <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>EXPORT</span>
         <button onClick={exportFrames} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>PNG ZIP</button>
@@ -2180,60 +2183,64 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
             START DRAWING
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              const next = !showOpenExisting;
-              setShowOpenExisting(next);
-              if (next) loadSavedProjectsList();
-            }}
-            style={{
-              width: "100%",
-              height: 22,
-              marginTop: 6,
-              border: "1px solid #555",
-              background: "#000",
-              color: "#888",
-              fontFamily: "inherit",
-              fontSize: 7,
-              letterSpacing: 1,
-              cursor: "pointer",
-            }}
-          >
-            {showOpenExisting ? "▾ HIDE SAVED PROJECTS" : "▸ OPEN EXISTING PROJECT"}
-          </button>
+          {HAS_BACKEND && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !showOpenExisting;
+                  setShowOpenExisting(next);
+                  if (next) loadSavedProjectsList();
+                }}
+                style={{
+                  width: "100%",
+                  height: 22,
+                  marginTop: 6,
+                  border: "1px solid #555",
+                  background: "#000",
+                  color: "#888",
+                  fontFamily: "inherit",
+                  fontSize: 7,
+                  letterSpacing: 1,
+                  cursor: "pointer",
+                }}
+              >
+                {showOpenExisting ? "▾ HIDE SAVED PROJECTS" : "▸ OPEN EXISTING PROJECT"}
+              </button>
 
-          {showOpenExisting && (
-            <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #333" }}>
-              {loadingSavedProjects ? (
-                <div style={{ fontSize: 7, color: "#666", padding: 6 }}>LOADING…</div>
-              ) : savedProjects.length === 0 ? (
-                <div style={{ fontSize: 7, color: "#666", padding: 6 }}>NO SAVED PROJECTS YET.</div>
-              ) : (
-                savedProjects.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => loadProjectById(p.id)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "4px 6px",
-                      border: "none",
-                      borderBottom: "1px solid #1a1a1a",
-                      background: "transparent",
-                      color: "#ccc",
-                      fontFamily: "inherit",
-                      fontSize: 7,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {p.name} — {p.width}×{p.height}
-                  </button>
-                ))
+              {showOpenExisting && (
+                <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #333" }}>
+                  {loadingSavedProjects ? (
+                    <div style={{ fontSize: 7, color: "#666", padding: 6 }}>LOADING…</div>
+                  ) : savedProjects.length === 0 ? (
+                    <div style={{ fontSize: 7, color: "#666", padding: 6 }}>NO SAVED PROJECTS YET.</div>
+                  ) : (
+                    savedProjects.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => loadProjectById(p.id)}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "4px 6px",
+                          border: "none",
+                          borderBottom: "1px solid #1a1a1a",
+                          background: "transparent",
+                          color: "#ccc",
+                          fontFamily: "inherit",
+                          fontSize: 7,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {p.name} — {p.width}×{p.height}
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>

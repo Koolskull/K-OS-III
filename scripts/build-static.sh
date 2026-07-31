@@ -38,4 +38,7 @@ restore() {
 }
 trap restore EXIT
 
-K_OS_EXPORT=true NEXT_PUBLIC_BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-}" next build
+K_OS_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true \
+  NEXT_PUBLIC_BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-}" \
+  NEXT_PUBLIC_BRAND="${NEXT_PUBLIC_BRAND:-kos3}" \
+  next build

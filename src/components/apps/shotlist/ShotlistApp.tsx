@@ -31,6 +31,7 @@ import {
 } from "./monoDraw";
 import { useCreativeWorkflow } from "@/lib/creative";
 import { safeFetchJson } from "@/lib/safeFetchJson";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 import {
   btn,
   createEmptyXFrame,
@@ -1064,14 +1065,16 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
       <button type="button" style={btn()} onClick={openExport}>
         EXPORT
       </button>
-      <button
-        type="button"
-        style={btn()}
-        onClick={() => selectedShotId != null && openAssetsPanel(selectedShotId)}
-        disabled={selectedShotId == null}
-      >
-        ASSETS
-      </button>
+      {HAS_BACKEND && (
+        <button
+          type="button"
+          style={btn()}
+          onClick={() => selectedShotId != null && openAssetsPanel(selectedShotId)}
+          disabled={selectedShotId == null}
+        >
+          ASSETS
+        </button>
+      )}
       <button
         type="button"
         style={btn()}
@@ -1085,13 +1088,17 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
           {expandedShotId === selectedShot.id ? "COLLAPSE" : "EXPAND"}
         </button>
       )}
-      <div style={{ height: 1, background: "#333", margin: "4px 0" }} />
-      <button type="button" style={btn()} onClick={openSequencesPicker}>
-        SEQUENCES…
-      </button>
-      <button type="button" style={btn()} onClick={saveSequence} disabled={savingSequence}>
-        {savingSequence ? "SAVING…" : "SAVE"}
-      </button>
+      {HAS_BACKEND && (
+        <>
+          <div style={{ height: 1, background: "#333", margin: "4px 0" }} />
+          <button type="button" style={btn()} onClick={openSequencesPicker}>
+            SEQUENCES…
+          </button>
+          <button type="button" style={btn()} onClick={saveSequence} disabled={savingSequence}>
+            {savingSequence ? "SAVING…" : "SAVE"}
+          </button>
+        </>
+      )}
     </div>
   );
 

@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { signOut } from "next-auth/react";
+import { BRAND_NAME } from "@/lib/buildFlags";
 
 interface TaskbarWindow {
   id: string;
@@ -126,7 +127,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
             cursor: "pointer",
           }}
         >
-          ☦ 2KOOL.TV
+          ☦ {BRAND_NAME}
         </button>
 
         {menuOpen && (

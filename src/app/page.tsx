@@ -46,6 +46,7 @@ import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
 import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
 import { KChatApp, type KChatLaunchOpts } from "@/components/apps/chat/KChatApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
+import { BRAND_NAME, HAS_BACKEND } from "@/lib/buildFlags";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
@@ -77,7 +78,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
   kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
-  manual: { title: "2KOOL.TV MANUAL", width: 880, height: 600 },
+  manual: { title: `${BRAND_NAME} MANUAL`, width: 880, height: 600 },
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
   shotlist: { title: "SHOTLIST", width: 900, height: 640 },
@@ -88,6 +89,10 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   chat: { title: "K-CHAT", width: 520, height: 480 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
+
+/** No local-only mode exists for these — entirely useless without /api/*, so
+ *  they're hidden from the desktop (see Desktop.tsx) on a static export. */
+const BACKEND_ONLY_APPS = new Set<AppId>(["account", "browser", "prodev", "chat"]);
 
 let windowCounter = 0;
 
@@ -104,6 +109,7 @@ export default function KoolskullOS() {
     const id = appId as AppId;
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
+    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return; // no /api/* in a static export
 
     if (id === "chat" && launchOpts) {
       setChatLaunch(launchOpts as KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string });

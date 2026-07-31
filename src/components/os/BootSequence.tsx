@@ -18,6 +18,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ROSARY_PRAYERS } from "@/data/rosary";
+import { BRAND_NAME } from "@/lib/buildFlags";
 
 interface BootSequenceProps {
   onComplete: () => void;
@@ -35,7 +36,7 @@ const BOOT_LINES: string[] = [
   "  ██║  ██╗      ╚██████╔╝ ███████║     ██║██║██║",
   "  ╚═╝  ╚═╝       ╚═════╝  ╚══════╝     ╚═╝╚═╝╚═╝",
   "",
-  "  2KOOL.TV",
+  `  ${BRAND_NAME}`,
   "  (C) 2007-2026 2Kool Productions LLC",
   "",
   "  ☦ BLESSED BE THE LORD MY STRENGTH ☦",
@@ -69,7 +70,7 @@ const BOOT_LINES: string[] = [
 
   // ── SYSTEM POST ──
   "  ══════════════════════════════════════",
-  "  LOADING 2KOOL.TV...",
+  `  LOADING ${BRAND_NAME}...`,
   "  ══════════════════════════════════════",
   "",
   "  AUDIO ENGINE.............. OK",

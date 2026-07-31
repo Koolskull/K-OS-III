@@ -9,8 +9,33 @@
  */
 
 import { AccountApp } from "@/components/apps/account/AccountApp";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 
 export default function AccountPage() {
+  if (!HAS_BACKEND) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#000",
+          color: "#888",
+          fontFamily: "var(--dm-font-primary)",
+          fontSize: 10,
+          letterSpacing: 1,
+          textAlign: "center",
+          padding: 24,
+        }}
+      >
+        ACCOUNTS AREN&apos;T AVAILABLE IN THIS BUILD.
+        <br />
+        THIS IS THE LOCAL/OFFLINE VERSION OF K-OS III.
+      </div>
+    );
+  }
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <AccountApp />

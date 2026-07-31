@@ -240,13 +240,32 @@ CREATE TABLE IF NOT EXISTS shotlist_shots (
 CREATE INDEX IF NOT EXISTS shotlist_shots_sequence ON shotlist_shots(sequence_id);
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- KOOLDRAW — persisted, individually-addressable projects. project_data is
+-- the exact zip format serializeProjectToBundleZip (src/lib/SpriteUtils.ts)
+-- already produces for the "BUNDLE" export — save/load reuse that same
+-- serializer/deserializer instead of a second data shape.
+-- ─────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS kooldraw_projects (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  thumbnail_url TEXT,
+  project_data BYTEA NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS kooldraw_projects_owner ON kooldraw_projects(owner_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- ASSET LIBRARY — unified per-user registry of importable creative output
 -- (KoolDraw drawings, Datamoshpit renders, plain image/audio uploads),
 -- attachable to a Shotlist shot so any app focused on that shot can offer
 -- it. `kind` selects which of the type-specific columns is set; exactly one
 -- of kooldraw_project_id/datamoshpit_render_id/file_path is non-null.
--- kooldraw_project_id/datamoshpit_render_id columns are added later
--- (ALTER TABLE) once kooldraw_projects/datamoshpit_renders exist.
+-- datamoshpit_render_id is added later (ALTER TABLE) once
+-- datamoshpit_renders exists (Phase 4).
 -- ─────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS user_assets (
@@ -256,6 +275,7 @@ CREATE TABLE IF NOT EXISTS user_assets (
   title VARCHAR(255) NOT NULL,
   thumbnail_url TEXT,
   file_path TEXT, -- server-stored path, for plain image/audio uploads
+  kooldraw_project_id INTEGER REFERENCES kooldraw_projects(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS user_assets_owner ON user_assets(owner_id);

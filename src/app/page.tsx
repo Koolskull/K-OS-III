@@ -98,8 +98,9 @@ export default function KoolskullOS() {
   const [nextZIndex, setNextZIndex] = useState(1);
   const [chatLaunch, setChatLaunch] = useState<KChatLaunchOpts | undefined>(undefined);
   const [shotlistLaunch, setShotlistLaunch] = useState<{ sequenceId: number } | undefined>(undefined);
+  const [kooldrawLaunch, setKooldrawLaunch] = useState<{ projectId: number } | undefined>(undefined);
 
-  const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number }) => {
+  const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number } | { projectId: number }) => {
     const id = appId as AppId;
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
@@ -109,6 +110,9 @@ export default function KoolskullOS() {
     }
     if (id === "shotlist" && launchOpts && "sequenceId" in launchOpts) {
       setShotlistLaunch(launchOpts);
+    }
+    if (id === "kooldraw" && launchOpts && "projectId" in launchOpts) {
+      setKooldrawLaunch(launchOpts);
     }
 
     // If app is already open, focus it
@@ -230,7 +234,7 @@ export default function KoolskullOS() {
             {win.appId === "bible" && <BibleReader />}
             {win.appId === "games" && <GameMenu />}
             {win.appId === "kooldraw" && (
-              <KoolDrawApp isFocused={win.id === focusedWindowId} />
+              <KoolDrawApp isFocused={win.id === focusedWindowId} launchProjectId={kooldrawLaunch?.projectId} />
             )}
             {win.appId === "manual" && <ManualApp />}
             {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
@@ -238,7 +242,11 @@ export default function KoolskullOS() {
               <TilemapApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "shotlist" && (
-              <ShotlistApp isFocused={win.id === focusedWindowId} launchSequenceId={shotlistLaunch?.sequenceId} />
+              <ShotlistApp
+                isFocused={win.id === focusedWindowId}
+                launchSequenceId={shotlistLaunch?.sequenceId}
+                onOpenKoolDrawProject={(projectId) => launchApp("kooldraw", { projectId })}
+              />
             )}
             {win.appId === "skulltext" && (
               <SkullTextApp isFocused={win.id === focusedWindowId} />

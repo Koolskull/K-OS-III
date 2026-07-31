@@ -111,6 +111,7 @@ interface LibraryAsset {
   title: string;
   thumbnail_url: string | null;
   file_path: string | null;
+  kooldraw_project_id: number | null;
   created_at: string;
 }
 
@@ -122,17 +123,19 @@ interface ShotlistAppProps {
   isFocused?: boolean;
   /** Auto-load this saved sequence on mount/change — e.g. "OPEN IN SHOTLIST" from PRODEV. */
   launchSequenceId?: number;
+  /** Deep-link into KoolDraw for a given project id — "EDIT" on an attached kooldraw_project asset. */
+  onOpenKoolDrawProject?: (projectId: number) => void;
 }
 
-export default function ShotlistApp({ isFocused = true, launchSequenceId }: ShotlistAppProps) {
+export default function ShotlistApp({ isFocused = true, launchSequenceId, onOpenKoolDrawProject }: ShotlistAppProps) {
   return (
     <CornerHost storageKey="kos-shotlist-chrome" style={{ background: "#000000" }}>
-      <ShotlistInner isFocused={isFocused} launchSequenceId={launchSequenceId} />
+      <ShotlistInner isFocused={isFocused} launchSequenceId={launchSequenceId} onOpenKoolDrawProject={onOpenKoolDrawProject} />
     </CornerHost>
   );
 }
 
-function ShotlistInner({ isFocused = true, launchSequenceId }: ShotlistAppProps) {
+function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProject }: ShotlistAppProps) {
   const chrome = useCornerChromeOptional();
   const isNarrow = chrome?.isNarrow ?? false;
   const workflow = useCreativeWorkflow();
@@ -1543,6 +1546,15 @@ function ShotlistInner({ isFocused = true, launchSequenceId }: ShotlistAppProps)
                       <span style={{ fontSize: 9, color: "#ccc", flex: 1 }}>
                         [{a.kind.toUpperCase()}] {a.title}
                       </span>
+                      {a.kind === "kooldraw_project" && a.kooldraw_project_id != null && (
+                        <button
+                          type="button"
+                          style={btn()}
+                          onClick={() => onOpenKoolDrawProject?.(a.kooldraw_project_id!)}
+                        >
+                          EDIT
+                        </button>
+                      )}
                       <button
                         type="button"
                         style={btn()}

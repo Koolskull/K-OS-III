@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!(await isShotlistShotOwner(shotId, userId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const result = await pool.query(
-    `SELECT a.id, a.kind, a.title, a.thumbnail_url, a.file_path, a.created_at
+    `SELECT a.id, a.kind, a.title, a.thumbnail_url, a.file_path, a.kooldraw_project_id, a.created_at
      FROM shotlist_shot_assets sa
      JOIN user_assets a ON a.id = sa.asset_id
      WHERE sa.shot_id = $1

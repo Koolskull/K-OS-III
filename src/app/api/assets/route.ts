@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const kind = searchParams.get("kind");
 
   const result = await pool.query(
-    `SELECT id, kind, title, thumbnail_url, file_path, created_at FROM user_assets
+    `SELECT id, kind, title, thumbnail_url, file_path, kooldraw_project_id, created_at FROM user_assets
      WHERE owner_id = $1 AND ($2::text IS NULL OR kind = $2)
      ORDER BY created_at DESC`,
     [userId, kind && ASSET_KINDS.has(kind) ? kind : null],

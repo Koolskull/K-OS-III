@@ -1019,6 +1019,8 @@ export interface AnimationBundleManifest {
   height: number;
   fps: number;
   loopMode: LoopMode;
+  /** Custom color swatches — round-trips through save/load, not derivable from the PNGs. */
+  palette?: string[];
   layers: Array<{
     name: string;
     opacity: number;
@@ -1029,18 +1031,19 @@ export interface AnimationBundleManifest {
 }
 
 /**
- * Export a portable animation bundle recallable elsewhere (e.g. Datamoshpit):
- * one PNG per layer's pool frame, named by its permanent hex id and
- * deduplicated (a frame reused at multiple timeline positions is written
- * once), grouped in `<AnimationName>/<LayerName>/` folders, plus a
- * `<AnimationName>/<AnimationName>.json` manifest with fps/loop mode/each
- * layer's exposure track. Structured like Datamoshpit's own `.dmpit`
- * zip-with-JSON-manifest project format on purpose.
+ * Build the same portable animation bundle recallable elsewhere (e.g.
+ * Datamoshpit, or KoolDraw's own save-to-Postgres): one PNG per layer's pool
+ * frame, named by its permanent hex id and deduplicated (a frame reused at
+ * multiple timeline positions is written once), grouped in
+ * `<AnimationName>/<LayerName>/` folders, plus a
+ * `<AnimationName>/<AnimationName>.json` manifest with fps/loop mode/palette/
+ * each layer's exposure track. Structured like Datamoshpit's own `.dmpit`
+ * zip-with-JSON-manifest project format on purpose. Pixel data round-trips
+ * losslessly (PNG is a lossless raster of the same packed-RGBA pixels
+ * SpriteFrame already stores), so this doubles as a full save format, not
+ * just a one-way export — see loadProjectFromBundleZip below.
  */
-export async function downloadAnimationBundle(
-  project: SpriteProject,
-  scale: number = 1,
-): Promise<void> {
+export async function serializeProjectToBundleZip(project: SpriteProject, scale: number = 1): Promise<Blob> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   const root = sanitizeFileName(project.name);
@@ -1062,6 +1065,7 @@ export async function downloadAnimationBundle(
     height: project.height,
     fps: project.fps,
     loopMode: project.loopMode,
+    palette: project.palette,
     layers: project.layers.map((layer) => ({
       name: layer.name,
       opacity: layer.opacity,
@@ -1071,13 +1075,86 @@ export async function downloadAnimationBundle(
   };
   zip.file(`${root}/${root}.json`, JSON.stringify(manifest, null, 2));
 
-  const content = await zip.generateAsync({ type: "blob" });
+  return zip.generateAsync({ type: "blob" });
+}
+
+export async function downloadAnimationBundle(
+  project: SpriteProject,
+  scale: number = 1,
+): Promise<void> {
+  const content = await serializeProjectToBundleZip(project, scale);
   const url = URL.createObjectURL(content);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${root}.zip`;
+  a.download = `${sanitizeFileName(project.name)}.zip`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Decode a PNG Blob back into a packed-RGBA Uint32Array via an offscreen canvas. */
+async function pngBlobToPixels(blob: Blob): Promise<{ width: number; height: number; pixels: Uint32Array }> {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+  const pixels = new Uint32Array(imageData.data.buffer.slice(0));
+  return { width: bitmap.width, height: bitmap.height, pixels };
+}
+
+/**
+ * Full inverse of serializeProjectToBundleZip — decodes every PNG back into
+ * an editable SpriteFrame (not just a displayable image, unlike Datamoshpit's
+ * own bundle importer at visuals/scene-vm/lib/sprite-bundle.ts, which only
+ * needs base64 dataUrls since it never re-edits pixels).
+ */
+export async function loadProjectFromBundleZip(blob: Blob): Promise<SpriteProject> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(blob);
+
+  const jsonEntry = Object.values(zip.files).find((f) => !f.dir && f.name.toLowerCase().endsWith(".json"));
+  if (!jsonEntry) throw new Error("No animation manifest (.json) found in this bundle.");
+  const manifest = JSON.parse(await jsonEntry.async("string")) as AnimationBundleManifest;
+
+  const slashIdx = jsonEntry.name.lastIndexOf("/");
+  const root = slashIdx >= 0 ? jsonEntry.name.slice(0, slashIdx) : "";
+
+  const layers: SpriteLayer[] = [];
+  for (const l of manifest.layers ?? []) {
+    const layerFolder = sanitizeFileName(l.name);
+    const prefix = root ? `${root}/${layerFolder}/` : `${layerFolder}/`;
+    const uniqueHexIds = Array.from(new Set(l.exposures ?? []));
+
+    const frames: SpriteFrame[] = [];
+    for (const hexId of uniqueHexIds) {
+      const entry = zip.file(`${prefix}${hexId}.png`);
+      if (!entry) continue; // tolerate a missing frame rather than failing the whole import
+      const pngBlob = await entry.async("blob");
+      const { width, height, pixels } = await pngBlobToPixels(pngBlob);
+      frames.push({ id: nextSpriteId(), hexId, width, height, pixels });
+    }
+
+    layers.push({
+      id: nextSpriteId(),
+      name: l.name,
+      opacity: l.opacity,
+      visible: l.visible,
+      frames,
+      exposures: l.exposures ?? [],
+    });
+  }
+
+  return {
+    name: manifest.name,
+    width: manifest.width,
+    height: manifest.height,
+    fps: manifest.fps,
+    loopMode: manifest.loopMode,
+    layers,
+    palette: manifest.palette ?? [],
+  };
 }
 
 /** Export animated GIF using canvas frames */

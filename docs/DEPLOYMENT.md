@@ -133,6 +133,67 @@ The 235 MB `supertux2.data` file exceeds GitHub's 100 MB per-file repo limit. **
 
 ---
 
+## Target 3 — the Node deploy on Vercel (accounts / wallet / Matrix login)
+
+Everything above ships the **static export**, which by design has no `/api/*`
+routes — so no server login of any kind. Wallet (SIWE), Matrix, email+password
+and Google/X sign-in all need the real Node build running somewhere. Decision
+(2026-08): that somewhere is **Vercel**.
+
+Why this works with zero code changes: the app is a stock Next.js server build
+(`npm run build`, no export flags), Postgres already lives in Neon (cloud), and
+Auth.js v5 automatically trusts the request host when it detects Vercel.
+
+### One-time setup (browser/CLI, needs your accounts)
+
+1. **Push the repo to GitHub** (Vercel deploys from the `master` branch).
+2. **vercel.com → Add New → Project → import `K-OS-III`.** Framework preset:
+   Next.js. Build command / output: leave defaults (`next build`). Do NOT set
+   `K_OS_EXPORT` or `NEXT_PUBLIC_STATIC_EXPORT` — this is the server build.
+3. **Environment variables** (Project → Settings → Environment Variables) —
+   copy the values from your local `deploy/.env.production` (gitignored):
+   - `DATABASE_URL` — ⚠ use Neon's **pooled** connection string (the host
+     with `-pooler` in it, from the Neon dashboard). Serverless functions
+     open many short-lived connections; the direct URL will exhaust Neon's
+     connection limit under load.
+   - `AUTH_SECRET`
+   - `ALCHEMY_API_KEY`
+   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (optional — provider is
+     hidden when unset)
+   - `X_CLIENT_ID` / `X_CLIENT_SECRET` (optional, same)
+4. **Deploy**, then sanity-check the preview URL:
+   ```bash
+   curl https://<preview>.vercel.app/api/auth/providers   # JSON, not 404
+   curl https://<preview>.vercel.app/api/ethereum/nonce   # {"nonce":"..."}
+   ```
+5. **Domain.** Two options:
+   - `app.2kool.tv` (or `os.2kool.tv`) → CNAME to `cname.vercel-dns.com` in
+     DreamHost's DNS panel. The static `2kool.tv` stays on DreamHost exactly
+     as is (samplepacks/, media/ untouched). Lowest risk.
+   - Apex `2kool.tv` → point A record at Vercel. ⚠ This takes the whole
+     domain off DreamHost's web server — `2kool.tv/samplepacks/` etc. would
+     404 until migrated (into `public/`, a subdomain like `files.2kool.tv`
+     kept on DreamHost, or Vercel Blob). Don't flip this until that's sorted.
+6. **OAuth + WalletConnect allowlists** — whichever domain you pick:
+   - cloud.reown.com (WalletConnect Cloud) → your project → allowed domains:
+     add the domain.
+   - Google Cloud Console / X Developer Portal → authorized redirect URIs:
+     `https://<domain>/api/auth/callback/google` (and `/twitter`).
+
+### After it's live
+
+- Wallet login flow to verify end-to-end: ACCOUNT → MORE SIGN-IN OPTIONS →
+  wallet button → approve in wallet → signed in. (SIWE nonce comes from
+  `/api/ethereum/nonce`; Auth.js credentials provider `ethereum` verifies.)
+- Any push to `master` auto-redeploys. Preview deployments get their own
+  URLs per PR — note SIWE binds the message to `window.location.host`, so
+  wallet login works on previews too.
+- The DreamHost static deploy (`deploy/deploy-2kooltv.sh`) stays useful as
+  the no-backend fallback; its build hides all account/login UI.
+
+---
+
 ## Local "preview the production build" check
 
 To verify everything works at `/k-os` before pushing:

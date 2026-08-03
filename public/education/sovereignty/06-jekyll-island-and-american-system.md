@@ -19,13 +19,19 @@ A separate but related political-economy tradition — often called the American
 
 ### The 1910 meeting and the Federal Reserve Act
 
-Participants included Senator Nelson Aldrich and representatives of major banking houses. The secrecy of the meeting is not disputed. The public justification that followed emphasized stability and the prevention of bank runs. Griffin and others argue that the structure that emerged centralized power, enabled fractional-reserve expansion under government protection, and shifted losses onto the public while preserving private gain. Mainstream textbooks emphasize the need for a central bank after repeated panics and the subsequent evolution of Fed tools. Both the legislative history and Griffin's book are worth reading side by side.
+According to the Federal Reserve's own historical essay and standard secondary accounts, the core group included Senator Nelson W. Aldrich (chair of the National Monetary Commission), A. Piatt Andrew (Assistant Secretary of the Treasury), Henry P. Davison (J.P. Morgan partner), Frank A. Vanderlip (National City Bank), Paul M. Warburg (Kuhn, Loeb), and Aldrich's secretary Arthur Shelton. The meeting was deliberately secret — framed as a duck-hunting trip, first names only on the train — at the Jekyll Island Club off the Georgia coast, roughly 20–30 November 1910. The product was a plan for a reserve association that fed into the Aldrich Plan and, after political modification, into the Federal Reserve Act of 1913.
+
+The secrecy of the meeting is not disputed. The public justification that followed emphasized stability and the prevention of bank runs after the Panic of 1907. Griffin and others argue that the structure that emerged centralized power, enabled fractional-reserve expansion under government protection, and shifted losses onto the public while preserving private gain. Mainstream textbooks emphasize the need for a central bank after repeated panics and the subsequent evolution of Fed tools. Both the legislative history and Griffin's book are worth reading side by side.
+
+**Primary anchors:** the Federal Reserve Act of 1913 and the contemporary congressional record; accounts of the meeting later acknowledged by participants (including Warburg and Vanderlip) and summarized in Federal Reserve historical materials (e.g. federalreservehistory.org essay "The Meeting at Jekyll Island").
+
+**Dissenting synthesis:** G. Edward Griffin, *The Creature from Jekyll Island* (1994 and later editions) — treats the meeting as the birth of a banking cartel with public powers. Read as a named interpretive account, not as the sole primary document.
 
 ### American System versus oligarchical finance
 
-The American System tradition emphasizes national banking directed toward productive industry, protective tariffs when needed to build capacity, infrastructure, and scientific progress. Its critics of British free-trade orthodoxy and of City of London financial power treat those as historically real forces, not metaphors. The tradition does not require accepting every claim made by any single modern author; it is a frame for reading monetary and industrial history.
+The American System tradition emphasizes national banking directed toward productive industry, protective tariffs when needed to build capacity, infrastructure ("internal improvements"), and scientific progress. Hamilton's *Report on Manufactures* and related Federalist-era arguments, and Henry Clay's later articulation of an "American System," are standard historical reference points for this school. Its critics of British free-trade orthodoxy and of City of London financial power treat those as historically real forces, not metaphors. The tradition does not require accepting every claim made by any single modern author; it is a frame for reading monetary and industrial history.
 
-Susan Kokinda and Barbara Boyd are contemporary public advocates of this frame. They appear in current political commentary (including discussions of industrial policy, data-center and surveillance infrastructure, and the difference between productive credit and speculative finance). They are cited here as named talking heads within one living interpretive tradition, not as sole authorities. Their work is one place a reader can see the American System argument applied to present events.
+Susan Kokinda and Barbara Boyd are contemporary public advocates of this frame (LaRouche / Promethean lineage). They appear in current political commentary — industrial policy, data-center and surveillance infrastructure, productive credit versus speculative finance — and are cited here as named talking heads within one living interpretive tradition, not as sole authorities. Their work is one place a reader can see the American System argument applied to present events.
 
 ### Against single-actor reduction
 
@@ -33,17 +39,35 @@ A working model that treats power as a conglomeration of financial centers, inte
 
 ### How to read this material
 
-- Primary: the Federal Reserve Act and the contemporary congressional record; surviving accounts of the Jekyll Island meeting.
-- Dissenting synthesis: Griffin, *The Creature from Jekyll Island*.
-- American System tradition: historical writings associated with that school, and contemporary applications by named advocates such as Kokinda and Boyd.
-- Mainstream monetary history: standard economic histories of the Fed and of 20th-century central banking.
+1. Primary: Federal Reserve Act (1913) and related congressional materials; Federal Reserve History / participant acknowledgments of the Jekyll meeting.
+2. Dissenting synthesis: Griffin, *The Creature from Jekyll Island*.
+3. American System tradition: Hamilton (*Report on Manufactures*), Clay's American System speeches, and contemporary applications by named advocates such as Kokinda and Boyd.
+4. Mainstream monetary history: standard economic histories of the Fed and of 20th-century central banking.
 
 Compare them. Note where they agree on facts (the meeting happened; the Act passed; the structure concentrates certain powers) and where they diverge on motive and long-term effect. The conclusion remains yours.
 
 ## Sources
 
+**Primary / near-primary**
+
 - Federal Reserve Act of 1913 and related congressional materials.
-- Contemporary and later historical accounts of the Jekyll Island meeting.
+- Federal Reserve History, "The Meeting at Jekyll Island" (Gary Richardson and Jessie Romero) — institutional summary of participants and secrecy.
+- Later participant accounts (e.g. Warburg, Vanderlip) acknowledging the conference.
+
+**Dissenting synthesis**
+
 - G. Edward Griffin, *The Creature from Jekyll Island*.
-- Writings and public commentary in the American System / LaRouche-Promethean tradition (Susan Kokinda, Barbara Boyd, and related publications) as examples of one living interpretive frame.
-- Standard monetary histories for the mainstream account of the Fed's origins and functions.
+
+**American System frame**
+
+- Alexander Hamilton, *Report on Manufactures* (1791) and related Federalist-era arguments.
+- Henry Clay's articulations of the American System.
+- Contemporary commentary in the American System / LaRouche-Promethean tradition (Susan Kokinda, Barbara Boyd, and related publications) as examples of one living interpretive frame.
+
+**Mainstream monetary history**
+
+- Standard economic histories of the Federal Reserve's origins, the Panic of 1907, and 20th-century central banking.
+
+**How to use the sources**
+
+Read the Federal Reserve History essay and the text of the 1913 Act first. Then read Griffin as a named dissenting account. Place Kokinda/Boyd and the broader American System literature as one interpretive tradition among others. Secondary textbooks last.

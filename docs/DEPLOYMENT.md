@@ -51,12 +51,14 @@ Open desktop → **EDUCATION** (`§`) after boot.
 
 ### Branch + CI (already wired)
 
-1. Branch **`2kool.tv`** tracks `master` (sync workflow).
-2. On every push to `2kool.tv`, **Build 2kool.tv /k-os export** runs:
-   - `NEXT_PUBLIC_BASE_PATH=/k-os`
-   - `K_OS_EXPORT=true npm run build`
-   - Uploads artifact **`2kool-tv-k-os`** (download from the Actions run)
-3. Optional: if secret **`TWOKOOL_DEPLOY_KEY`** is set, the same workflow pushes `out/` to `Koolskull/2kool.tv` → `main` → subdirectory `k-os/`.
+1. Branch **`2kool.tv`** tracks `master`.
+2. On every push to **`master`**, workflow **Sync and build 2kool.tv** (`sync-2kool-branch.yml`):
+   - Fast-forwards / merges `master` → `2kool.tv`
+   - Builds with `NEXT_PUBLIC_BASE_PATH=/k-os`
+   - Uploads artifact **`2kool-tv-k-os`**
+   - (Build is in the same workflow because GitHub does not re-trigger workflows from `GITHUB_TOKEN` pushes to `2kool.tv`.)
+3. Manual rebuild: Actions → **Build 2kool.tv /k-os export** → Run workflow (ref `2kool.tv`).
+4. Optional later: secret **`TWOKOOL_DEPLOY_KEY`** to push `out/` into an external `2kool.tv` Pages repo under `/k-os/`.
 
 ### Option A — External GitHub Pages repo for the domain
 
@@ -115,7 +117,7 @@ npx serve out -l 3001
 | Target | Branch | BASE_PATH | Workflow |
 |---|---|---|---|
 | `koolskull.github.io/K-OS-III` | `master` | `/K-OS-III` | `pages.yml` |
-| `2kool.tv/k-os` | `2kool.tv` (synced from master) | `/k-os` | `sync-2kool-branch.yml` + `deploy-2kool.yml` |
+| `2kool.tv/k-os` | `2kool.tv` (synced from master) | `/k-os` | `sync-2kool-branch.yml` (sync+build); `deploy-2kool.yml` (manual) |
 | Local dev | any | _(empty)_ | `npm run dev` |
 
 One codebase, two deploy prefixes. EDUCATION lessons and MCQ progress work on both once the static export includes `public/education/**` (it does).

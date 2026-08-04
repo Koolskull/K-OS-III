@@ -1,8 +1,9 @@
-name: Sync 2kool.tv branch from master
+name: Sync and build 2kool.tv
 
-# Keeps the 2kool.tv branch at (or ahead with merges of) master so the
-# 2kool.tv deploy path always has EDUCATION lessons, the EDUCATION app,
-# and other OS updates without a manual cherry-pick.
+# Keeps branch 2kool.tv = master, then builds the /k-os static export.
+# Build runs in THIS workflow on purpose: pushes made with GITHUB_TOKEN
+# do not trigger other workflows, so a separate deploy-2kool on push
+# to 2kool.tv would silently never run after sync.
 
 on:
   push:
@@ -13,12 +14,19 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-2kool-tv-branch
+  group: sync-2kool-tv
   cancel-in-progress: false
+
+env:
+  NEXT_PUBLIC_BASE_PATH: /k-os
+  NEXT_PUBLIC_ASSET_BASE: ""
+  NEXT_PUBLIC_GAMES_BASE: ""
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      head_sha: ${{ steps.sync.outputs.head_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,27 +34,85 @@ jobs:
           fetch-depth: 0
 
       - name: Merge master into 2kool.tv and push
+        id: sync
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git fetch origin master 2kool.tv
+          git fetch origin master 2kool.tv || git fetch origin master
 
           if ! git show-ref --verify --quiet refs/remotes/origin/2kool.tv; then
             echo "Creating origin/2kool.tv from master"
             git checkout -B 2kool.tv origin/master
             git push -u origin 2kool.tv
+            echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git checkout -B 2kool.tv origin/2kool.tv
 
-          # Fast-forward when possible; otherwise merge commit
           if git merge-base --is-ancestor HEAD origin/master; then
-            git merge --ff-only origin/master
+            git merge --ff-only origin/master || true
           else
             git merge origin/master -m "chore: sync master into 2kool.tv (education + OS)"
           fi
 
-          git push origin 2kool.tv
+          # Only push if branch advanced
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/2kool.tv)" ]; then
+            git push origin 2kool.tv
+          else
+            echo "2kool.tv already at master tip"
+          fi
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 2kool.tv tip
+        uses: actions/checkout@v4
+        with:
+          ref: 2kool.tv
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build static export (BASE_PATH=/k-os)
+        env:
+          K_OS_EXPORT: "true"
+        run: npm run build
+
+      - name: Patch CSS asset paths for basePath
+        run: |
+          set -e
+          BP="${NEXT_PUBLIC_BASE_PATH}"
+          if [ -z "$BP" ]; then exit 0; fi
+          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(/fonts/|url(${BP}/fonts/|g"
+          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url('/fonts/|url('${BP}/fonts/|g"
+          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(\"/fonts/|url(\"${BP}/fonts/|g"
+          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(/gifs/|url(${BP}/gifs/|g" || true
+
+      - name: Add .nojekyll
+        run: touch out/.nojekyll
+
+      - name: Upload 2kool.tv export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2kool-tv-k-os
+          path: out
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          echo "### 2kool.tv export ready" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`2kool.tv\` @ \`${{ needs.sync.outputs.head_sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- BASE_PATH: \`/k-os\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifact: **2kool-tv-k-os**" >> "$GITHUB_STEP_SUMMARY"
+          du -sh out || true

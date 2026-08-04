@@ -1,15 +1,14 @@
 name: Build 2kool.tv /k-os export
 
-# Builds the same static export as GitHub Pages, but with BASE_PATH=/k-os
-# for https://2kool.tv/k-os/ (or any host that mounts the app at /k-os).
-#
-# Always uploads the out/ folder as a downloadable Actions artifact.
-# Optional deploy to an external 2kool.tv Pages repo runs only when
-# repository secret TWOKOOL_DEPLOY_KEY is configured (see docs/DEPLOYMENT.md).
+# Builds static export with BASE_PATH=/k-os for 2kool.tv/k-os.
+# Uploads out/ as Actions artifact "2kool-tv-k-os".
+# External push to Koolskull/2kool.tv requires TWOKOOL_DEPLOY_KEY —
+# enable the commented deploy step in docs/DEPLOYMENT.md when ready.
 
 on:
   push:
-    branches: ["2kool.tv"]
+    branches:
+      - "2kool.tv"
   workflow_dispatch:
 
 permissions:
@@ -20,7 +19,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Shared path for 2kool.tv/k-os and koolskull.github.io/k-os style hosts
   NEXT_PUBLIC_BASE_PATH: /k-os
   NEXT_PUBLIC_ASSET_BASE: ""
   NEXT_PUBLIC_GAMES_BASE: ""
@@ -47,7 +45,6 @@ jobs:
         run: npm run build
 
       - name: Patch CSS asset paths for basePath
-        if: env.NEXT_PUBLIC_BASE_PATH != ''
         run: |
           set -e
           BP="${NEXT_PUBLIC_BASE_PATH}"
@@ -65,16 +62,3 @@ jobs:
           name: 2kool-tv-k-os
           path: out
           retention-days: 14
-
-      - name: Deploy to external 2kool.tv repo (optional)
-        # Requires repo secret TWOKOOL_DEPLOY_KEY (deploy key with write to Koolskull/2kool.tv).
-        # Skips cleanly when the secret is absent.
-        if: ${{ secrets.TWOKOOL_DEPLOY_KEY != '' }}
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          deploy_key: ${{ secrets.TWOKOOL_DEPLOY_KEY }}
-          external_repository: Koolskull/2kool.tv
-          publish_branch: main
-          publish_dir: ./out
-          destination_dir: k-os
-          commit_message: "deploy K-OS III to /k-os (incl. EDUCATION)"

@@ -366,7 +366,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
       return;
     }
     if (drag.kind === "pan") {
-      setViewport({ x: drag.ox + (e.clientX - drag.sx), y: drag.oy + (e.clientY - drag.sy) });
+      setViewport({ x: drag.ox + (e.clientX - drag.sx), y: drag.oy + (e.clientY - drag.sy), scale: viewport.scale });
     } else if (drag.kind === "node") {
       const nx = Math.round(drag.ox + (e.clientX - drag.sx) / viewport.scale);
       const ny = Math.round(drag.oy + (e.clientY - drag.sy) / viewport.scale);

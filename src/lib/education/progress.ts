@@ -1,4 +1,5 @@
 import type { LessonProgress, ProgressMap } from "./types";
+import { syncEducationIntoProfile } from "@/lib/user/profile";
 
 const KEY = "kos-education-progress-v1";
 
@@ -20,6 +21,12 @@ export function saveProgress(map: ProgressMap): void {
     window.localStorage.setItem(KEY, JSON.stringify(map));
   } catch {
     /* quota / private mode */
+  }
+  // Mirror into user profile so transcripts / future profile UI stay in sync
+  try {
+    syncEducationIntoProfile(map);
+  } catch {
+    /* profile layer optional */
   }
 }
 

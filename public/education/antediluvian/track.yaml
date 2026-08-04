@@ -1,16 +1,15 @@
 title: Antediluvian Observatory
 slug: antediluvian
 summary: >
-  Expanded survey of alternative theories about deep prehistory and the pre-flood era,
-  grounded in the specific claims and frameworks of Mr Mythos (Watchers, Enoch, Agartha,
-  American giants), Robert Sepehr / Atlantean Gardens (hyperdiffusion, Atlantis as mother
-  culture, Rh-negative markers, Hyperborea), Mind Unveiled and Jon Levi (Tartaria, mud
-  flood, World's Fairs as rebranded capitals, star forts and EMF architecture, "found not
-  founded"). Younger Dryas, Göbekli Tepe, flood parallels, occult maps. Observe every
-  claim, cite sources, leave contradictions between timelines and mechanisms fully visible.
-  Not a conversion track. Follows EPISTEMIC_STANCE.
+  Alternative theories about deep prehistory and the pre-flood era — Younger Dryas
+  catastrophe, Göbekli Tepe and "founded" megaliths, flood myths, Plato's Atlantis,
+  cross-continental parallels, occult readings of old maps, Watchers/Nephilim, and
+  mud-flood claims. Observe, compare, and cite. Not a conversion track. Follows
+  EPISTEMIC_STANCE: mainstream and dissenting accounts named; contradictions left visible.
+  Channel-grounded expansions (Mr Mythos / Sepehr / Mind Unveiled / Jon Levi deep cuts)
+  are planned as additional lessons once written.
 prerequisites: []
-estimated_hours: 28
+estimated_hours: 14
 flagship: false
 lessons:
   - file: 01-how-to-read.md
@@ -28,36 +27,10 @@ lessons:
   - file: 05-maps-and-coasts.md
     title: Maps and underwater coasts
     status: written
-  - file: 06-watchers-descent.md
-    title: The Watchers' Descent — Book of Enoch
+  - file: 06-contradicting-clocks.md
+    title: Watchers, Tartaria, and contradicting clocks
     status: written
-  - file: 07-watchers-knowledge.md
-    title: Forbidden arts of the Watchers
-    status: written
-  - file: 08-giants-americas.md
-    title: Giants of the Americas and the old world
-    status: written
-  - file: 09-hyperdiffusion.md
-    title: Hyperdiffusion and the mother culture
-    status: written
-  - file: 10-rh-markers.md
-    title: Rh markers and claimed antediluvian bloodlines
-    status: written
-  - file: 11-tartaria-mudflood.md
-    title: Tartaria and the mud flood
-    status: written
-  - file: 12-world-fairs.md
-    title: World's Fairs as alleged capitals
-    status: written
-  - file: 13-star-forts-emf.md
-    title: Star forts, domes, and EMF architecture
-    status: written
-  - file: 14-agartha-hyperborea.md
-    title: Agartha, Hyperborea, and inner earth
-    status: written
-  - file: 15-found-not-founded.md
-    title: Found not founded — architecture claims
-    status: written
-  - file: 16-contradicting-clocks.md
-    title: Contradicting clocks — synthesis
-    status: written
+# Planned (not yet shipped — do not list as written until .md files exist):
+# 07 watchers-descent, 08 watchers-knowledge, 09 giants-americas, 10 hyperdiffusion,
+# 11 rh-markers, 12 tartaria-mudflood, 13 world-fairs, 14 star-forts-emf,
+# 15 agartha-hyperborea, 16 found-not-founded

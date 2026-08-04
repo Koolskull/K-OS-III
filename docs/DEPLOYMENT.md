@@ -155,3 +155,95 @@ npx serve out -l 3001
 | Local dev | any | _(empty)_ | `npm run dev` |
 
 One codebase, two deploy prefixes. EDUCATION lessons and MCQ progress work on both once the static export includes `public/education/**` (it does).
+
+---
+
+## Server-side SSH checklist (GCE Apache → 2kool.tv)
+
+CI **does not** SSH into your box yet. Every push to `master` builds a full static export
+and uploads GitHub Actions artifacts (`2kool-tv-root` + `2kool-tv-root-zip`). **You**
+(or a deploy key + future workflow step) must place that export on the server.
+
+### A. One-time on the server
+
+1. **SSH access works as a non-root deploy user** (example `deploy`):
+
+```bash
+# from your laptop
+ssh-keygen -t ed25519 -C "2kool-deploy" -f ~/.ssh/2kool_deploy -N ""
+ssh-copy-id -i ~/.ssh/2kool_deploy.pub deploy@YOUR_SERVER_IP
+ssh -i ~/.ssh/2kool_deploy deploy@YOUR_SERVER_IP
+```
+
+2. **Document root + permissions** (Apache common paths):
+
+```bash
+# on server
+sudo mkdir -p /var/www/2kool.tv
+sudo chown -R deploy:www-data /var/www/2kool.tv
+sudo chmod -R u+rwX,g+rX /var/www/2kool.tv
+```
+
+3. **Apache vhost** points `2kool.tv` at that docroot, with `AllowOverride All`
+   (so the shipped `.htaccess` SPA rewrite works) and HTTPS (Certbot / your TLS).
+
+4. **Confirm rewrite modules**:
+
+```bash
+sudo a2enmod rewrite headers
+sudo systemctl reload apache2
+```
+
+### B. Every release (manual today)
+
+1. GitHub → **Actions** → latest green **Sync and build 2kool.tv**
+2. Download artifact **`2kool-tv-root-zip`**
+3. From a machine that can SSH:
+
+```bash
+unzip 2kool-tv-root.zip -d /tmp/2kool-out
+rsync -avz --delete -e "ssh -i ~/.ssh/2kool_deploy" \
+  /tmp/2kool-out/ deploy@YOUR_SERVER_IP:/var/www/2kool.tv/
+```
+
+`--delete` is mandatory so old `/_next/static` chunks cannot mix with a new `index.html`.
+
+4. Hard-refresh clients (or clear site data). Prefer `https://2kool.tv/`.
+
+### C. Optional later: automated SSH from Actions
+
+Not wired yet. When you want zero-touch deploys:
+
+1. Create a dedicated ed25519 key pair used **only** for deploy.
+2. Install the **public** key in `deploy@server:~/.ssh/authorized_keys`.
+3. Put the **private** key in repo secret `TWOKOOL_SSH_KEY` (and host as `TWOKOOL_SSH_HOST`, user as `TWOKOOL_SSH_USER`, path as `TWOKOOL_DOCROOT`).
+4. Add a final job step to `sync-2kool-branch.yml` that uses `appleboy/scp-action` or
+   `rsync` over SSH with those secrets. Keep `rsync --delete` semantics.
+5. Restrict the key with `from="GitHub Actions IP ranges"` if you can, and never reuse
+   personal SSH keys as deploy secrets.
+
+### D. Branch rule (lessons → 2kool.tv)
+
+| Step | Action |
+|---|---|
+| 1 | Land EDUCATION lessons + code on **`master`** (not only on feature branches) |
+| 2 | Wait for **Sync and build 2kool.tv** to go green (auto on push) |
+| 3 | Confirm branch `2kool.tv` tip equals `master` |
+| 4 | Redeploy artifact to Apache with full `rsync --delete` |
+
+You do **not** need a separate push of lesson files into `2kool.tv` by hand — the sync
+workflow mirrors `master`. What you *do* need is step 4 until SSH auto-deploy exists.
+
+### E. Education progress / profiles (client)
+
+Lesson completions are recorded in the browser:
+
+| Key | Contents |
+|---|---|
+| `kos-education-progress-v1` | Per-lesson quiz status |
+| `kos-user-profile-v1` | Display name, handle, mirrored education map |
+
+EDUCATION home → **YOUR PROFILE · EDUCATION TRANSCRIPT** → set name/handle, copy share
+card, or download JSON. Static host has no multi-user server profiles yet; the share
+card is how operators show completions publicly until a backend profile service exists.
+

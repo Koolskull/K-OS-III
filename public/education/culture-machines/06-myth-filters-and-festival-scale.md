@@ -2,49 +2,52 @@
 track: culture-machines
 lesson: 06
 title: Festival scale and myths that fail evidence checks
-estimated_minutes: 16
+estimated_minutes: 22
 ---
 
 # Festival scale and myths that fail evidence checks
 
+At a certain size, a party becomes infrastructure: fences, sponsors, medical tents, drones, rumor. Rumor loves infrastructure. It fills every dark gap with a complete screenplay. This lesson is a set of **filters**—not to mock the wounded, but to stop false plots from stealing attention from real harms.
+
+{{illust:crowd-density|Bodies as particles — density without faces, scale without a villain mask.}}
+
 ## Short version
 
-Underground party forms scale into **licensed mega-festivals**, branded raves, and platform-native aesthetics (including NFT "cult" PFPs). Real harms at scale — overdoses, assaults, predation, occasional trafficking — deserve case-based attention. Several viral claims that attach to this track **do not hold as stated** and are listed here so the filter stays sharp:
+- Underground forms scale into licensed mega-festivals; injection here is mostly **capital and regulation**.
+- Real harms (overdose, assault, rare trafficking cases) need names, dates, and sources.
+- Viral claims that fail checks:
+  - **Island Boys = Epstein’s kids** — fact-checked as AI / fabricated imagery in major checks.
+  - **Milady = government Q+++ psyop** — 2021 Remilia NFT project; cult dynamics ≠ proven state op.
+  - **Ravers frozen by Alcor / Clone-Aid pipelines** — Alcor is real voluntary cryonics; Clonaid’s cloning claims were never scientifically accepted; neither is established as systematic festival intake.
 
-- **Island Boys = Epstein's kids** — viral images fact-checked as AI-generated / fabricated; no credible documentary evidence.
-- **Milady = government psyop / "Q+++"** — Milady Maker is a 2021 Ethereum NFT project from Remilia Collective (Charlotte Fang et al.); controversies and cult-like community dynamics are public; that is not a documented state psychological operation or proven QAnon successor.
-- **Ravers systematically frozen by Alcor / experimented on at "Clone-Aid"** — **Alcor** is a real nonprofit cryonics organization (members arrange and pay for cryopreservation after legal death). **Clonaid** (Raelian-linked) made unverified human-cloning claims; scientific consensus never accepted them. Neither is established as a systematic intake system for missing festivalgoers.
+{{illust:myth-filter|A "photo" crossed out by a living X — the filter as animation.}}
 
-## Expanded notes
+## The festival as honest machine
 
-### Commercial festival scale
+Insurance, city permits, vendors, radio frequencies—these are the boring true conspiracies of scale. Creativity still happens inside the shell. Predators still hunt inside crowds. Both can be true without a cryonics subplot.
 
-From Dead-adjacent touring and warehouse parties to branded EDM events: insurance, city permits, corporate sponsors, professional production. Injection here is mostly **capital and regulation**, not necessarily intelligence. Bottom-up creativity continues inside the shell (stages, camps, sound design).
+{{illust:festival-scale|Stage glare over a crowd field — commerce and rapture in one dither.}}
 
-### Real harms without the legend
+### The cryo / clone legend
 
-Festival culture has documented drug deaths, sexual assault cases, and rare trafficking/predation cases. Report those with names, dates, and court or journalistic primary sources. Do not require a cryonics or cloning plot for the harm to be real.
+{{illust:cryo-claim|A chamber that flickers a "CLAIM" band — reminder that assertion ≠ autopsy.}}
 
-### Why weak myths spread
-
-- High emotional charge (children, celebrities, occult officers, missing persons).
-- Image generators and out-of-context photos.
-- Aesthetic networks that feel like "ops" (coordinated PFPs, ironic fascism, egregore language) without being proven government programs.
-- Desire for one total explanation (lesson 01 warned against this).
+Alcor members arrange and pay for cryopreservation after legal death. That is strange enough to deserve philosophy class. It is not the same story as "missing ravers harvested by default." Clonaid’s early-2000s human cloning announcements were theater without accepted science.
 
 ### Filter checklist
 
-1. Is there a court judgment, FOIA document, or named contemporary reporting?
-2. Does a fact-checker with sources contradict the viral image?
-3. Is the organization real but doing something more ordinary than the legend claims (e.g. Alcor = voluntary cryonics membership)?
-4. If the claim fails 1–3, keep it labeled **unsupported** — even if it "feels" true.
+1. Court judgment, FOIA, or named contemporary reporting?
+2. Does a sourced fact-check contradict the viral image?
+3. Is the org real but doing something more ordinary than the legend?
+4. If it fails 1–3, label **unsupported**—even if it feels true.
+
+{{illust:checklist|Boxes checking themselves against time — practical skepticism as a ritual.}}
 
 ## Sources
 
-- Snopes / Reuters fact checks on Epstein-related viral images tying Island Boys or anonymous boys to Epstein (AI fakes documented).
-- Remilia / Milady Maker reporting (The Block, CoinDesk, Delphi-style NFT analyses) for project origin — not for "gov psyop" claims.
-- Alcor Life Extension Foundation public history and process pages; standard scientific skepticism of cryonics revival claims.
-- Clonaid / Raelian cloning claims coverage (early 2000s) and scientific non-acceptance.
-- Local and national reporting on specific festival deaths and assaults when studying real harm.
+- Snopes / Reuters-style fact checks on Epstein-related AI images.
+- Remilia / Milady reporting (crypto press) for origin—not for "gov psyop" leaps.
+- Alcor public process pages; Clonaid coverage + scientific non-acceptance.
+- Case-based festival harm reporting.
 
-**How to use:** When a claim about culture machines includes celebrity kids, freezers, or "Q+++," run the checklist before teaching it as history.
+**How to use:** Before teaching a legend, run the checklist out loud. Then teach the real harm with a real source.

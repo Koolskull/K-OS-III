@@ -1,8 +1,8 @@
 import React from "react";
+import { DitherIllust, parseIllustKind } from "@/components/apps/education/DitherIllust";
 
-/** Minimal markdown renderer for education lessons (headers, lists, paragraphs, links, bold, code). */
+/** Minimal markdown renderer for education lessons (+ {{illust:kind|caption}} shortcodes). */
 export function renderMarkdown(md: string): React.ReactNode[] {
-  // Strip YAML frontmatter
   let body = md;
   if (body.startsWith("---")) {
     const end = body.indexOf("\n---", 3);
@@ -24,7 +24,12 @@ export function renderMarkdown(md: string): React.ReactNode[] {
       if (m.index > last) parts.push(text.slice(last, m.index));
       const t = m[0];
       if (t.startsWith("**")) parts.push(<strong key={`b${k++}`}>{t.slice(2, -2)}</strong>);
-      else if (t.startsWith("`")) parts.push(<code key={`c${k++}`} style={{ color: "#ffff88" }}>{t.slice(1, -1)}</code>);
+      else if (t.startsWith("`"))
+        parts.push(
+          <code key={`c${k++}`} style={{ color: "#ffff88" }}>
+            {t.slice(1, -1)}
+          </code>,
+        );
       else {
         const lm = t.match(/\[([^\]]+)\]\(([^)]+)\)/);
         if (lm) {
@@ -44,9 +49,36 @@ export function renderMarkdown(md: string): React.ReactNode[] {
   while (i < lines.length) {
     const line = lines[i];
 
+    // {{illust:kind}} or {{illust:kind|caption text}}
+    const illust = line.trim().match(/^\{\{illust:([a-z0-9-]+)(?:\|(.+))?\}\}$/);
+    if (illust) {
+      const kind = parseIllustKind(illust[1]);
+      if (kind) {
+        nodes.push(<DitherIllust key={key++} kind={kind} caption={illust[2]?.trim()} />);
+      } else {
+        nodes.push(
+          <p key={key++} style={{ color: "#ff6666", fontSize: 11 }}>
+            [unknown illust: {illust[1]}]
+          </p>,
+        );
+      }
+      i++;
+      continue;
+    }
+
     if (line.startsWith("# ")) {
       nodes.push(
-        <h1 key={key++} style={{ fontSize: 20, letterSpacing: 2, color: "#ffff00", margin: "0 0 12px", borderBottom: "1px solid #444", paddingBottom: 8 }}>
+        <h1
+          key={key++}
+          style={{
+            fontSize: 20,
+            letterSpacing: 2,
+            color: "#ffff00",
+            margin: "0 0 12px",
+            borderBottom: "1px solid #444",
+            paddingBottom: 8,
+          }}
+        >
           {inline(line.slice(2))}
         </h1>,
       );
@@ -55,7 +87,17 @@ export function renderMarkdown(md: string): React.ReactNode[] {
     }
     if (line.startsWith("## ")) {
       nodes.push(
-        <h2 key={key++} style={{ fontSize: 14, letterSpacing: 2, color: "#ffff00", margin: "22px 0 10px", borderBottom: "1px solid #333", paddingBottom: 4 }}>
+        <h2
+          key={key++}
+          style={{
+            fontSize: 14,
+            letterSpacing: 2,
+            color: "#ffff00",
+            margin: "22px 0 10px",
+            borderBottom: "1px solid #333",
+            paddingBottom: 4,
+          }}
+        >
           {inline(line.slice(3))}
         </h2>,
       );
@@ -133,8 +175,47 @@ export function renderMarkdown(md: string): React.ReactNode[] {
       continue;
     }
 
+    // blockquote storytelling
+    if (line.startsWith("> ")) {
+      const qs: string[] = [];
+      while (i < lines.length && lines[i].startsWith("> ")) {
+        qs.push(lines[i].slice(2));
+        i++;
+      }
+      nodes.push(
+        <blockquote
+          key={key++}
+          style={{
+            margin: "0 0 16px",
+            padding: "10px 14px",
+            borderLeft: "3px solid #ffff00",
+            background: "#0a0a00",
+            color: "#ccccaa",
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          {qs.map((q, qi) => (
+            <p key={qi} style={{ margin: qi ? "8px 0 0" : 0 }}>
+              {inline(q)}
+            </p>
+          ))}
+        </blockquote>,
+      );
+      continue;
+    }
+
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("#") && !/^[-*] /.test(lines[i]) && !/^\d+\. /.test(lines[i]) && !lines[i].trim().startsWith("|")) {
+    while (
+      i < lines.length &&
+      lines[i].trim() !== "" &&
+      !lines[i].startsWith("#") &&
+      !/^[-*] /.test(lines[i]) &&
+      !/^\d+\. /.test(lines[i]) &&
+      !lines[i].trim().startsWith("|") &&
+      !lines[i].startsWith("> ") &&
+      !lines[i].trim().match(/^\{\{illust:/)
+    ) {
       para.push(lines[i]);
       i++;
     }

@@ -2,43 +2,40 @@
 track: culture-machines
 lesson: 04
 title: Jungle, CCRU, and accelerationism
-estimated_minutes: 18
+estimated_minutes: 24
 ---
 
 # Jungle, CCRU, and accelerationism
 
+London bass weight. A breakbeat sliced until it becomes weather. In a Warwick corridor, theorists listen as if the drums were a proof. Somewhere between the pirate antenna and the seminar room, culture invents a word for fictions that start living: **hyperstition**.
+
+{{illust:break-grid|Step sequencer as city grid — hits lighting like traffic in a blackout.}}
+
 ## Short version
 
-**Jungle / drum & bass** (UK, early–mid 1990s) grew from Black Atlantic sound-system culture, breakbeat science, pirate radio, and the hardcore continuum. The **Cybernetic Culture Research Unit (CCRU)** at Warwick (mid–late 1990s) — associated with Sadie Plant, Nick Land, Mark Fisher, and others — mixed continental philosophy, cyberpunk, occult motifs, and explicit engagement with jungle as sonic model. **Accelerationism** in the Land/CCRU sense meant speeding techno-capitalist processes; it was anti-humanist theory-fiction, not a simple Silicon Valley "tech good" brand. Later internet politics rewrote the word in many directions.
+- **Jungle / drum & bass** grew from Black Atlantic sound-system culture, break science, pirate radio, hardcore continuum—**scene first**.
+- **CCRU** (Warwick, mid–late 1990s: Plant, Land, Fisher, et al.) mixed philosophy, cyberpunk, occult motifs, and jungle as sonic model.
+- **Accelerationism** (Land/CCRU sense) meant speeding techno-capital processes—anti-humanist theory-fiction, not a simple Silicon Valley pep talk.
+- Computers enter as **tool and metaphor**. Shared aesthetic graphs online (Land next to Aquino next to rave) are not shared command structures without evidence.
 
-**Breakcore** and related extreme electronic scenes drew on jungle's break science, noise, and digital production tools — scene-driven first, then theorized and aestheticized online. Computers enter as **tool and metaphor**: samplers, trackers, the net, and culture-as-cybernetic-system. That is real intellectual history. It is not proof that every rave was an intelligence operation.
+{{illust:cyber-nodes|Nodes and links breathing — CCRU diagram fever in mono.}}
 
-## Expanded notes
+## Story: the break teaches the seminar
 
-### Jungle as form
+Jungle did not need a philosophy department to invent itself. The philosophy department needed jungle to remember that theory can move at sample rate. Kodwo Eshun and others wrote at the speed of the cut; CCRU treated the dancefloor as a research instrument that had already published.
 
-- Breakbeat science: isolating and re-sequencing breaks (from hip-hop DJ practice into UK hardcore/jungle).
-- Sound systems, pirate radio, bass weight, time-stretch, darkcore aesthetics.
-- Kodwo Eshun and others later wrote "text at sample velocity" — theory after the music, not before.
+{{illust:accel-streaks|Streaks of light losing patience — acceleration as pure motion.}}
 
-### CCRU
-
-- Interests listed by the group included cinema, complexity, dance music, e-cash, encryption, jungle, markets, simulation, war.
-- **Hyperstition**: fictions that make themselves real through cultural feedback loops — a useful concept for how memes and markets co-evolve; not a license to treat every rumor as operational truth.
-- Land's later political turns and online reception are a separate phase from the 1990s Warwick experiment.
-
-### Technofuturism and computers in society
-
-Accelerationist and cybercultural writing predicted and described biotech, network addiction, China as economic power, and the internet as infrastructure of desire. Living inside a world that resembles those predictions does not mean the writers controlled the rollout. Correlation of prophecy and platform capitalism is not command.
+{{illust:hyperstition|A seed of fiction blooming into feedback — hyperstition as animation, not spellbook certainty.}}
 
 ### Temple of Set / Aquino
 
-Aquino and Setian materials appear in some online graphs next to Land, rave culture, and "occult tech." **Do not fuse them without evidence.** Aquino is covered on his own terms in lesson 05 (PSYOP paper, Temple of Set, Presidio investigation). Shared aesthetic interest in occult symbolism across subcultures is common; shared command structure is a stronger claim.
+Online graphs sometimes glue Aquino beside Land and rave. **Do not fuse without evidence.** Aquino has his own lesson (05). Shared occult *aesthetic* is common in subcultures; shared payroll is a stronger claim.
 
 ## Sources
 
-- Simon Reynolds and hardcore continuum writing; Kodwo Eshun; dance-music histories of jungle/D&B.
-- CCRU texts and secondary academic treatments of accelerationism (Aeon, university papers, *Fanged Noumena* as anthology — read as primary for Land, not as gospel).
-- Wikipedia CCRU entry only as orientation; prefer original theory-fiction and peer-reviewed overviews.
+- Simon Reynolds / hardcore continuum writing; Kodwo Eshun.
+- CCRU texts; Land’s *Fanged Noumena* as primary for Land, not gospel for reality.
+- Academic overviews of accelerationism labeled as secondary.
 
-**How to use:** Listen to early jungle, then read a short CCRU/Land text. Note what the music does without theory, then what theory claims about it.
+**How to use:** Listen to early jungle, then read a short CCRU text. Note what the music already knew.

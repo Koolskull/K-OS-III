@@ -2,31 +2,29 @@
 track: culture-machines
 lesson: 01
 title: Injection versus proliferation
-estimated_minutes: 15
+estimated_minutes: 20
 ---
 
 # Injection versus proliferation
 
+Picture two rivers under one bridge. One is clear and engineered—an aqueduct, a grant, a lab protocol, a platform algorithm. The other is muddy and alive—a scene, a joke, a breakbeat, a desert camp that should not have worked. Downstream, your phone cannot tell which water molecule came from which river. It only knows the flood.
+
+{{illust:two-streams|Two streams running, then braiding — injection meeting proliferation.}}
+
 ## Short version
 
-Culture that ends up inside computers — samples, memes, festival brands, theory-fictions, NFT aesthetics, platform subcultures — rarely has a single pure origin. Two processes usually run at once:
+Culture that ends up inside computers—samples, memes, festival brands, theory-fictions, NFT aesthetics—rarely has a single pure origin:
 
-1. **Institutional / elite injection** — universities, intelligence services, foundations, corporations, or wealthy patrons fund, legalize, research, or platform a practice (drug studies, network research, festival permits, academic theory, crypto grants).
-2. **Bottom-up proliferation** — scenes invent forms for their own reasons (breakbeats, desert camps, zines, pirate radio, Discord cults). Those forms then get absorbed, commercialized, or theorized by larger systems.
+1. **Institutional / elite injection** — universities, intelligence services, foundations, corporations, or patrons fund, legalize, research, or platform a practice.
+2. **Bottom-up proliferation** — scenes invent forms for their own reasons; later the forms get absorbed, sold, or theorized.
 
-**Symbiosis is the normal pattern.** A practice starts in one layer, gets picked up by another, and returns changed. Treating everything as pure psyop or pure grassroots both flatten the history.
+**Symbiosis is normal.** Treating everything as pure psyop or pure grassroots flattens the history.
 
-This track teaches a practical filter: for each thread, ask who funded it, who invented the form, who scaled it, who profits now, and what evidence is primary. It follows [`docs/EPISTEMIC_STANCE.md`](../../../docs/EPISTEMIC_STANCE.md).
+{{illust:layer-stack|Research, scene, theory, market, myth — layers humming like a stack of tapes.}}
 
-## Expanded notes
+## A walk through the layers
 
-### Why this matters for computers in society
-
-Digital systems amplify whatever cultural pattern is already circulating. Samplers, trackers, the early web, and social platforms did not invent jungle, Cacophony pranks, or Deadhead aesthetics — they made those forms copyable, remixed, and financially legible at scale. Accelerationist theory later described capital and culture as one machine; the description is useful as a lens, not as proof that every party was a planned op.
-
-A working model:
-
-| Layer | Typical actors | Question to ask |
+| Layer | Typical actors | Question |
 | --- | --- | --- |
 | Research | Labs, military/academic programs, pharma | What was funded and published? |
 | Scene | Musicians, pranksters, fans, zine writers | What form did they invent for themselves? |
@@ -34,22 +32,26 @@ A working model:
 | Market | Promoters, platforms, brands, NFT projects | Who scaled and monetized it? |
 | Myth | Forums, viral posts, AI fakes | What claim exceeds the primary record? |
 
-### How to read the rest of this track
+{{illust:symbiosis-loop|A feedback loop with two traveling sparks — culture teaching machines teaching culture.}}
 
-1. **Primary / near-primary first** — court opinions, institutional history essays, patents, contemporary press, participant memoirs labeled as such, declassified or FOIA material when it exists.
-2. **Named interpreters second** — Griffin-style monetary books, LaRouche/American System commentary, conspiracy literature, accelerationist blogs — always attributed.
-3. **Single-villain collapse last** — "it was all one cabal" or "it was all organic fun" are both weaker than multi-layer accounts unless evidence forces that conclusion.
+### Why computers care
 
-### What this track is not
+Digital systems amplify whatever is already circulating. Samplers, trackers, the early web, and social platforms did not invent jungle or Cacophony pranks—they made those forms **copyable, remixed, and financially legible** at scale. Accelerationist theory later described capital and culture as one machine. Useful lens. Not automatic proof of command control.
 
-- Not a claim that every rave was an intelligence operation.
-- Not a claim that intelligence and academic research never touched counterculture (they did, in documented ways).
-- Not medical, legal, or psychiatric advice.
-- Not permission to treat unproven rape/torture payroll stories as fact when the public record does not support them.
+> The method of this whole track: who funded it, who invented the form, who scaled it, who profits now, and what evidence is primary.
+
+{{illust:checklist|A living checklist filling in — the habit this track is training.}}
+
+## What this track is not
+
+- Not "every rave was an intelligence operation."
+- Not "intelligence never touched counterculture" (it did, in documented ways).
+- Not medical/legal advice.
+- Not permission to treat unproven atrocity payroll stories as fact.
 
 ## Sources
 
-- Project rule: [`docs/EPISTEMIC_STANCE.md`](../../../docs/EPISTEMIC_STANCE.md).
-- Method borrowed from the sovereignty track: primary documents first; mainstream and dissenting accounts both named; reader decides.
+- [`docs/EPISTEMIC_STANCE.md`](../../../docs/EPISTEMIC_STANCE.md)
+- Method shared with the sovereignty track: primary first, named interpreters second.
 
-**How to use:** Read this lesson once. Apply the table to every later lesson. Keep a short note of where accounts agree and where they leap.
+**How to use:** Apply the table to every later lesson. Keep score of leaps.

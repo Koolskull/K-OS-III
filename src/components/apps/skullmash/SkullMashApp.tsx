@@ -5,7 +5,7 @@
  *            ║  CUTOUT → 3D     ║
  *            ╚══════════════════╝
  *
- *   K-OS III native app — Monster Mash–style paper stage
+ *   K-OS III native app — image-first cutout → balloon (OS chrome)
  *   Image-first freehand cutouts → soft balloon inflate →
  *   pin keyframes → export .glb + JSON
  *

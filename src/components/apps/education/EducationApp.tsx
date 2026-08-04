@@ -5,7 +5,7 @@
  *      EDUCATION — IN-OS APP
  *
  *  Reads public/education markdown tracks. Progress + MCQ checkouts
- *  stored in localStorage (no accounts). GitHub Pages static-export safe.
+ *  stored in localStorage + kos-user-profile-v1 (shareable transcript). Static-export safe.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -20,6 +20,14 @@ import {
 } from "@/lib/education/progress";
 import type { ProgressMap } from "@/lib/education/types";
 import { renderMarkdown } from "@/lib/education/renderMarkdown";
+import {
+  loadProfile,
+  updateIdentity,
+  formatTranscriptCard,
+  downloadTranscriptJson,
+  syncEducationIntoProfile,
+  type KosUserProfile,
+} from "@/lib/user/profile";
 import {
   CornerHost,
   CornerPanel,
@@ -64,7 +72,14 @@ function EducationInner() {
   const isNarrow = useIsNarrow(720);
 
   useEffect(() => {
-    setProgress(loadProgress());
+    const p = loadProgress();
+    setProgress(p);
+    // Ensure existing local progress is mirrored into the user profile store
+    try {
+      syncEducationIntoProfile(p);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const openLesson = useCallback((lessonId: string) => {
@@ -195,7 +210,7 @@ function EducationInner() {
           ☦ EDUCATION
         </button>
         <span style={{ color: "#888", fontSize: 10 }}>
-          LOCAL PROGRESS · MCQ CHECKOUT
+          PROFILE TRANSCRIPT · MCQ CHECKOUT
         </span>
       </header>
 
@@ -291,11 +306,12 @@ function HomeView({
       <h1 style={h1}>Education</h1>
       <p style={muted}>
         Offline-first curriculum. Read a lesson, then pass the multiple-choice checkout to mark it complete.
-        Progress stays in this browser (localStorage) — no account.
+        Completions are recorded in your local user profile so you can share a transcript.
       </p>
-      <p style={{ ...muted, marginBottom: 28 }}>
+      <p style={{ ...muted, marginBottom: 20 }}>
         Contested topics follow EPISTEMIC_STANCE: primary sources first; mainstream and dissenting accounts named; unsupported claims labeled.
       </p>
+      <ProfileTranscriptCard progress={progress} />
       {EDUCATION_TRACKS.map((track) => {
         const stats = trackStats(
           progress,
@@ -326,6 +342,136 @@ function HomeView({
         ☦ K-OS EDUCATION · PROVE ALL THINGS
       </div>
     </>
+  );
+}
+
+function ProfileTranscriptCard({ progress }: { progress: ProgressMap }) {
+  const [profile, setProfile] = useState<KosUserProfile>(() =>
+    typeof window === "undefined" ? loadProfile() : loadProfile(),
+  );
+  const [name, setName] = useState(profile.displayName);
+  const [handle, setHandle] = useState(profile.handle);
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Keep card in sync when quizzes update progress
+  useEffect(() => {
+    try {
+      const next = syncEducationIntoProfile(progress);
+      setProfile(next);
+    } catch {
+      /* ignore */
+    }
+  }, [progress]);
+
+  const saveIdentity = () => {
+    const next = updateIdentity({ displayName: name, handle });
+    // re-attach latest education after identity write
+    const withEdu = syncEducationIntoProfile(progress);
+    setProfile({ ...next, education: withEdu.education });
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1500);
+  };
+
+  const copyCard = async () => {
+    const card = formatTranscriptCard({
+      ...profile,
+      displayName: name || profile.displayName,
+      handle: handle || profile.handle,
+      education: progress,
+    });
+    try {
+      await navigator.clipboard.writeText(card);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback
+      window.prompt("Copy transcript:", card);
+    }
+  };
+
+  const allIds = EDUCATION_TRACKS.flatMap((t) => t.lessons.map((l) => l.id));
+  const stats = trackStats(progress, allIds);
+
+  return (
+    <section
+      style={{
+        marginBottom: 28,
+        border: "2px solid #ffff00",
+        background: "#0a0a00",
+        padding: 14,
+      }}
+    >
+      <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 10 }}>
+        YOUR PROFILE · EDUCATION TRANSCRIPT
+      </div>
+      <p style={{ fontSize: 11, color: "#aaa", marginBottom: 12, lineHeight: 1.5 }}>
+        Completions are stored in this browser under your local profile. Set a display name / handle,
+        then copy a share card or download JSON to show what you've passed. No server account —
+        multi-device sync is a later layer.
+      </p>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 12,
+          alignItems: "flex-end",
+        }}
+      >
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10, color: "#888" }}>
+          DISPLAY NAME
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="operator"
+            maxLength={40}
+            style={inputStyle}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10, color: "#888" }}>
+          HANDLE
+          <input
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="koolskull"
+            maxLength={24}
+            style={inputStyle}
+          />
+        </label>
+        <button type="button" onClick={saveIdentity} style={yellowBtn}>
+          {saved ? "SAVED" : "SAVE PROFILE"}
+        </button>
+      </div>
+      <div style={{ fontSize: 12, color: "#66ff66", marginBottom: 12, letterSpacing: 1 }}>
+        {stats.passed}/{stats.total} LESSONS PASSED
+        {(name || profile.displayName) && (
+          <span style={{ color: "#fff", marginLeft: 10 }}>
+            · {(name || profile.displayName).toUpperCase()}
+            {(handle || profile.handle) ? ` @${handle || profile.handle}` : ""}
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" onClick={() => void copyCard()} style={yellowBtn}>
+          {copied ? "COPIED" : "COPY SHARE CARD"}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            downloadTranscriptJson({
+              ...profile,
+              displayName: name || profile.displayName,
+              handle: handle || profile.handle,
+              education: progress,
+            })
+          }
+          style={outlineBtn}
+        >
+          DOWNLOAD JSON
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -426,7 +572,7 @@ function LessonReadView({
           <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 12, marginBottom: 8 }}>CHECKOUT</div>
           <p style={{ fontSize: 12, color: "#ccc", marginBottom: 12, lineHeight: 1.5 }}>
             {quiz
-              ? `Answer ${quiz.questions.length} multiple-choice questions on this lesson to mark it passed. Progress is saved only in this browser.`
+              ? `Answer ${quiz.questions.length} multiple-choice questions on this lesson to mark it passed. Progress is saved to your local profile in this browser.`
               : "No quiz registered for this lesson yet."}
           </p>
           {quiz && (
@@ -649,6 +795,41 @@ function QuizView({
     </>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  background: "#000",
+  color: "#fff",
+  border: "2px solid #444",
+  padding: "6px 8px",
+  fontFamily: "inherit",
+  fontSize: 12,
+  minWidth: 140,
+  outline: "none",
+};
+
+const yellowBtn: React.CSSProperties = {
+  background: "#ffff00",
+  color: "#000",
+  border: "none",
+  padding: "8px 12px",
+  fontFamily: "inherit",
+  fontSize: 10,
+  letterSpacing: 1,
+  cursor: "pointer",
+  fontWeight: 700,
+};
+
+const outlineBtn: React.CSSProperties = {
+  background: "transparent",
+  color: "#ffff00",
+  border: "2px solid #ffff00",
+  padding: "6px 12px",
+  fontFamily: "inherit",
+  fontSize: 10,
+  letterSpacing: 1,
+  cursor: "pointer",
+  fontWeight: 700,
+};
 
 const plainBtn: React.CSSProperties = {
   background: "transparent",

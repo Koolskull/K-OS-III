@@ -47,6 +47,40 @@ Open desktop → **EDUCATION** (`§`) after boot.
 
 ---
 
+## Target 2 — `2kool.tv` (domain root on Apache/GCE)
+
+### If you see: "Application error: a client-side exception has occurred while loading 2kool.tv"
+
+That is almost always a **partial static deploy**:
+
+- `index.html` was updated to a new Next.js build id
+- some `/_next/static/chunks/*.js` files from that build were **not** uploaded
+- the browser throws `ChunkLoadError` → Next shows the black client-side exception screen
+
+**Fix:** replace the **entire** document root with one complete `out/` from CI (never mix builds).
+
+1. Actions → latest green **Sync and build 2kool.tv** → download artifact **`2kool-tv-root-zip`**
+2. On the server (GCE Apache at the 2kool.tv A record):
+
+```bash
+unzip 2kool-tv-root.zip -d /tmp/2kool-out
+# point path at your real docroot (often /var/www/html or /var/www/2kool.tv)
+rsync -avz --delete /tmp/2kool-out/ user@YOUR_SERVER:/var/www/html/
+```
+
+`--delete` is required so orphaned old chunks and a mismatched `index.html` cannot coexist.
+
+3. Hard-refresh the phone (or clear site data). Prefer **https://2kool.tv/** once TLS is set on Apache.
+
+**Working mirror while the domain is broken:**  
+https://koolskull.github.io/K-OS-III/  (GitHub Pages build — includes EDUCATION)
+
+### Branch + CI
+
+### Legacy note (path `/k-os`)
+
+Earlier docs assumed `2kool.tv/k-os`. Live Apache serves the app at **/**. CI now builds **root** (`NEXT_PUBLIC_BASE_PATH` empty, brand `2kool`).
+
 ## Target 2 — `2kool.tv/k-os`
 
 ### Branch + CI (already wired)

@@ -1,8 +1,7 @@
-name: Build 2kool.tv /k-os export
+name: Build 2kool.tv root export
 
-# Manual or direct pushes to branch 2kool.tv.
-# Normal master → 2kool flow is "Sync and build 2kool.tv" (includes the export).
-# This workflow remains for re-building without a master push.
+# Manual rebuild of the domain-root static export for Apache/GCE.
+# Primary path is "Sync and build 2kool.tv" on master push.
 
 on:
   push:
@@ -18,7 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NEXT_PUBLIC_BASE_PATH: /k-os
+  NEXT_PUBLIC_BASE_PATH: ""
+  NEXT_PUBLIC_SITE_BRAND: "2kool"
   NEXT_PUBLIC_ASSET_BASE: ""
   NEXT_PUBLIC_GAMES_BASE: ""
 
@@ -26,38 +26,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Build static export
+      - run: npm ci --legacy-peer-deps
+      - name: Build
         env:
           K_OS_EXPORT: "true"
         run: npm run build
-
-      - name: Patch CSS asset paths for basePath
+      - name: Apache helpers
         run: |
-          set -e
-          BP="${NEXT_PUBLIC_BASE_PATH}"
-          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(/fonts/|url(${BP}/fonts/|g"
-          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url('/fonts/|url('${BP}/fonts/|g"
-          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(\"/fonts/|url(\"${BP}/fonts/|g"
-          find out -name "*.css" -print0 | xargs -0 -r sed -i "s|url(/gifs/|url(${BP}/gifs/|g" || true
-
-      - name: Add .nojekyll
-        run: touch out/.nojekyll
-
-      - name: Upload 2kool.tv export artifact
-        uses: actions/upload-artifact@v4
+          cat > out/.htaccess << 'HT'
+          Options -Indexes
+          <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteRule ^index\.html$ - [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule . /index.html [L]
+          </IfModule>
+          <Files "index.html">
+            Header set Cache-Control "no-cache, no-store, must-revalidate"
+          </Files>
+          HT
+          touch out/.nojekyll
+      - uses: actions/upload-artifact@v4
         with:
-          name: 2kool-tv-k-os
+          name: 2kool-tv-root
           path: out
+          retention-days: 14
+      - run: cd out && zip -r -q ../2kool-tv-root.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 2kool-tv-root-zip
+          path: 2kool-tv-root.zip
           retention-days: 14

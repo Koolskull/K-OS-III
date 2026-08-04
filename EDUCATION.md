@@ -28,6 +28,7 @@ For the system spec, see [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md
 | **`monero/`** | Why Monero, ring signatures and stealth addresses conceptually, view keys, wallet hygiene, running a node. | Outline only. |
 | **`reading-codebases/`** | Meta-track on how to read unfamiliar codebases, orient in a large repo, use git history as a learning tool, read tests first, build a mental model from entry points. Quietly important — most developer learning fails not at syntax but at orientation. | Outline only. |
 | **`sovereignty/`** | Tools for examining sources of belief and institutional power. Simple spiritual foundations (Jesus), Robert Monroe / OBE, declassified MKUltra and Stargate, Tesla and Russell (record vs later claims), Jekyll Island / Federal Reserve / American System tradition. Follows `EPISTEMIC_STANCE.md`. | Six lessons written. |
+| **`culture-machines/`** | Injection vs bottom-up proliferation; Cacophony → Burning Man → SantaCon; Grateful Dead Acid Tests and academic LSD; jungle / CCRU / accelerationism; Aquino, MindWar, Temple of Set, and the Presidio investigation (documented record vs internet narrative); festival scale and myths that fail evidence checks. Follows `EPISTEMIC_STANCE.md`. | Six lessons written. |
 
 ---
 
@@ -41,6 +42,7 @@ The two recruiting audiences for this curriculum are **Ethereum developers who d
 - **Bitcoin** and **Monero** are smaller, deliberately — these are companion tracks for users who want to operate in those ecosystems, not standalone curricula.
 - **Reading codebases** is a meta-skill the project considers undertaught. It belongs in the curriculum because every other track ultimately leads to "read a real project's code."
 - **Sovereignty** sits alongside the technical tracks as an epistemic and historical companion: primary sources on consciousness research, declassified intelligence programs, and competing accounts of monetary power, written under the same rules as the rest of the corpus.
+- **Culture machines** sits next to sovereignty as a cultural-history companion: how scenes, institutions, and markets co-produce forms that computers scale, with the same primary-source habit and explicit filters against unsupported totalizing claims.
 
 ---
 

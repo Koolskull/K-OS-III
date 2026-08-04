@@ -1,0 +1,33 @@
+title: Culture Machines
+slug: culture-machines
+summary: >
+  How subcultures, institutions, and markets co-produce culture that computers
+  then scale. Injection versus bottom-up proliferation; Cacophony Society to
+  Burning Man and SantaCon; Grateful Dead Acid Tests and academic LSD;
+  jungle/CCRU/accelerationism; Michael Aquino, MindWar, Temple of Set, and the
+  Presidio investigation (documented record versus internet narrative);
+  commercial festival scale and claims that fail evidence checks. Follows
+  EPISTEMIC_STANCE.md — primary sources first, named interpreters second,
+  unsupported totalizing claims labeled as such.
+prerequisites: []
+estimated_hours: 6
+flagship: false
+lessons:
+  - file: 01-injection-vs-proliferation.md
+    title: Injection versus proliferation
+    status: written
+  - file: 02-cacophony-burning-man-santacon.md
+    title: Cacophony Society, Burning Man, and SantaCon
+    status: written
+  - file: 03-acid-tests-and-academic-lsd.md
+    title: Grateful Dead, Acid Tests, and academic LSD
+    status: written
+  - file: 04-jungle-ccru-accelerationism.md
+    title: Jungle, CCRU, and accelerationism
+    status: written
+  - file: 05-aquino-mindwar-presidio.md
+    title: Aquino, MindWar, Temple of Set, and the Presidio investigation
+    status: written
+  - file: 06-myth-filters-and-festival-scale.md
+    title: Festival scale and myths that fail evidence checks
+    status: written

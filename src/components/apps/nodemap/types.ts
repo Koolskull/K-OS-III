@@ -20,6 +20,8 @@ export interface MapNode {
   y: number;
   w: number;
   h: number;
+  /** Degrees. Default 0. */
+  rotation?: number;
   title: string;
   body: string;
   style: NodeStyle;
@@ -38,6 +40,8 @@ export interface MapProject {
   name: string;
   nodes: MapNode[];
   wires: MapWire[];
+  /** 0=straight, ~0.5=smooth, 1=orthogonal grid */
+  wireRouting?: number;
   updatedAt: number;
 }
 
@@ -62,6 +66,27 @@ export const DEFAULT_WIRE_STYLE: WireStyleProps = {
   style: "solid",
 };
 
+export const DEFAULT_WIRE_ROUTING = 0.45;
+
 export function uid(prefix = "n"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function normalizeProject(p: MapProject): MapProject {
+  return {
+    ...p,
+    wireRouting:
+      typeof p.wireRouting === "number"
+        ? Math.min(1, Math.max(0, p.wireRouting))
+        : DEFAULT_WIRE_ROUTING,
+    nodes: p.nodes.map((n) => ({
+      ...n,
+      rotation: typeof n.rotation === "number" ? n.rotation : 0,
+      style: { ...DEFAULT_NODE_STYLE, ...n.style },
+    })),
+    wires: p.wires.map((w) => ({
+      ...w,
+      style: { ...DEFAULT_WIRE_STYLE, ...w.style },
+    })),
+  };
 }

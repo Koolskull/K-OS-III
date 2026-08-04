@@ -1,0 +1,52 @@
+name: Sync 2kool.tv branch from master
+
+# Keeps the 2kool.tv branch at (or ahead with merges of) master so the
+# 2kool.tv deploy path always has EDUCATION lessons, the EDUCATION app,
+# and other OS updates without a manual cherry-pick.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-2kool-tv-branch
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge master into 2kool.tv and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin master 2kool.tv
+
+          if ! git show-ref --verify --quiet refs/remotes/origin/2kool.tv; then
+            echo "Creating origin/2kool.tv from master"
+            git checkout -B 2kool.tv origin/master
+            git push -u origin 2kool.tv
+            exit 0
+          fi
+
+          git checkout -B 2kool.tv origin/2kool.tv
+
+          # Fast-forward when possible; otherwise merge commit
+          if git merge-base --is-ancestor HEAD origin/master; then
+            git merge --ff-only origin/master
+          else
+            git merge origin/master -m "chore: sync master into 2kool.tv (education + OS)"
+          fi
+
+          git push origin 2kool.tv

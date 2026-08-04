@@ -11,7 +11,7 @@
  *   Planned: optional user-initiated NFT mint of objects for a fee
  *   (commerce + K-Wallet integration later).
  *
- *   v0.3.2 — pin IDW warp, dual-view animate, K-OS chrome, hotkeys
+ *   v0.4.0 — plush Poisson inflate + amount control, pin-warp, dual animate
  */
 
 "use client";
@@ -21,7 +21,7 @@ import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { assetUrl } from "@/lib/assets";
-import { inflatePolygon, type Point2 } from "./inflate";
+import { inflatePolygon, sliderToInflate, type Point2 } from "./inflate";
 import { applyPinWarp, resetToRest } from "./deform";
 import "./skullmash.css";
 
@@ -83,6 +83,8 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [ready, setReady] = useState(false);
   const [brush, setBrush] = useState(3);
+  const [inflateSlider, setInflateSlider] = useState(52); // plush default
+  const inflateSliderRef = useRef(52);
   const [drawTool, setDrawTool] = useState<"pen" | "select">("pen");
   const [meshTick, setMeshTick] = useState(0);
 
@@ -119,6 +121,10 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   useEffect(() => {
     pinsRef.current = pins;
   }, [pins]);
+
+  useEffect(() => {
+    inflateSliderRef.current = inflateSlider;
+  }, [inflateSlider]);
 
   const bakeImage = useCallback((img: HTMLImageElement) => {
     const off = document.createElement("canvas");
@@ -367,8 +373,9 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
-      roughness: 0.38,
-      metalness: 0.05,
+      roughness: 0.62,
+      metalness: 0.0,
+      flatShading: false,
     });
     matRef.current = mat;
     sceneReadyRef.current = true;
@@ -465,7 +472,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         canvasW: CANVAS_W,
         canvasH: CANVAS_H,
         imageData: imageDataRef.current,
-        heightScale: 1.7,
+        inflate: sliderToInflate(inflateSliderRef.current),
         fillColor: hexToRgb(s.color),
       });
       if (geo.getAttribute("position")?.count) {
@@ -507,7 +514,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
 
   useEffect(() => {
     rebuildMeshes();
-  }, [rebuildMeshes, shapes, mode, ready, meshTick]);
+  }, [rebuildMeshes, shapes, mode, ready, meshTick, inflateSlider]);
 
   // Live pin warp
   useEffect(() => {
@@ -660,7 +667,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         return;
       }
       setMode("INFLATE");
-      setStatus("Inflated balloon — drag to orbit. Next / Enter → Animate.");
+      setStatus("Plush inflate — drag to orbit · slider = thickness · Enter → Animate.");
       requestAnimationFrame(() => {
         const n = rebuildMeshes();
         setStatus(
@@ -892,7 +899,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                     return;
                   }
                   setMode("INFLATE");
-                  setStatus("Soft balloon — orbit with drag. Enter → Animate.");
+                  setStatus("Plush body — orbit · tweak Inflate slider · Enter → Animate.");
                   requestAnimationFrame(() => rebuildMeshes());
                 }}
               >
@@ -1090,17 +1097,50 @@ export default function SkullMashApp({ isFocused = true }: Props) {
           </div>
         </div>
 
-        {ready && mode === "DRAW" && (
-          <div style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
-            <label className="sm-brush">
-              Brush
+        {ready && (mode === "DRAW" || mode === "INFLATE") && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 14,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 20,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            {mode === "DRAW" && (
+              <label className="sm-brush">
+                Brush
+                <input
+                  type="range"
+                  min={1}
+                  max={8}
+                  step={0.5}
+                  value={brush}
+                  onChange={(e) => setBrush(parseFloat(e.target.value))}
+                />
+              </label>
+            )}
+            <label className="sm-brush" title="Plush thickness — low = flatter, high = chunky doll">
+              Inflate {Math.round(inflateSlider)}
               <input
                 type="range"
-                min={1}
-                max={8}
-                step={0.5}
-                value={brush}
-                onChange={(e) => setBrush(parseFloat(e.target.value))}
+                min={0}
+                max={100}
+                step={1}
+                value={inflateSlider}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setInflateSlider(v);
+                  setStatus(
+                    `Inflate ${Math.round(v)} · ${
+                      v < 30 ? "flat sheet" : v < 55 ? "soft plush" : v < 75 ? "stuffed" : "chunky"
+                    }`,
+                  );
+                }}
               />
             </label>
           </div>

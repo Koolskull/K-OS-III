@@ -398,3 +398,7 @@
 .sm-stage .sm-canvas-wrap {
   min-width: 0;
 }
+
+.sm-brush input[type="range"] {
+  width: 120px;
+}

@@ -485,6 +485,242 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
     ],
   },
+  "antediluvian/01": {
+    lessonId: "antediluvian/01",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "This track’s primary job is to:",
+        choices: [
+          { id: "a", text: "Convert the reader to one antediluvian theory" },
+          { id: "b", text: "Observe and map alternative theories with sources and visible contradictions" },
+          { id: "c", text: "Replace all archaeology with YouTube alone" },
+          { id: "d", text: "Prove every institution is always lying" },
+        ],
+        correctId: "b",
+        explain: "Observe, don’t convert — EPISTEMIC_STANCE and lesson 01.",
+      },
+      {
+        id: "q2",
+        prompt: "A longform alternative-history video is usually:",
+        choices: [
+          { id: "a", text: "A primary excavation report" },
+          { id: "b", text: "Secondary entertainment-scholarship — good for questions, weak as final dating authority" },
+          { id: "c", text: "The same as an ice core" },
+          { id: "d", text: "Illegal to watch" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "When four theories use different clocks, this track treats that as:",
+        choices: [
+          { id: "a", text: "A bug to hide" },
+          { id: "b", text: "Data — contradiction left visible" },
+          { id: "c", text: "Proof one ethnicity is responsible" },
+          { id: "d", text: "Irrelevant" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/02": {
+    lessonId: "antediluvian/02",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The Younger Dryas is:",
+        choices: [
+          { id: "a", text: "A fictional YouTube invention only" },
+          { id: "b", text: "A real late-Pleistocene cold interval, with debated mechanisms" },
+          { id: "c", text: "The same as Tartaria world fairs" },
+          { id: "d", text: "Only mentioned in Genesis" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "YDIH (Younger Dryas Impact Hypothesis) is best labeled as:",
+        choices: [
+          { id: "a", text: "Uncontested textbook consensus with no critics" },
+          { id: "b", text: "A contested research program with published proponents and critics" },
+          { id: "c", text: "A Federal Reserve policy" },
+          { id: "d", text: "Proof Plato invented ice cores" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Merging YD proxies with Plato’s 9,000 years without conversion is:",
+        choices: [
+          { id: "a", text: "Automatic good chronology" },
+          { id: "b", text: "Clock-merging that needs explicit calendar work" },
+          { id: "c", text: "Required by EPISTEMIC_STANCE" },
+          { id: "d", text: "The same as reading an ice core" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/03": {
+    lessonId: "antediluvian/03",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Göbekli Tepe is:",
+        choices: [
+          { id: "a", text: "A CGI-only internet myth" },
+          { id: "b", text: "A real Pre-Pottery Neolithic site with monumental T-pillars" },
+          { id: "c", text: "A 19th-century world fair building" },
+          { id: "d", text: "Plato’s personal estate" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Why does the site matter to textbooks?",
+        choices: [
+          { id: "a", text: "It proves free energy" },
+          { id: "b", text: "Monumental ritual architecture appears earlier than older simple models expected" },
+          { id: "c", text: "It is underwater near Japan only" },
+          { id: "d", text: "It is a Federal Reserve archive" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Zodiac/comet readings of pillars should be:",
+        choices: [
+          { id: "a", text: "Accepted without publication" },
+          { id: "b", text: "Treated as hypotheses needing enclosure numbers, sources, and testability" },
+          { id: "c", text: "Banned from discussion" },
+          { id: "d", text: "Identical to radiocarbon dates" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/04": {
+    lessonId: "antediluvian/04",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Plato’s Atlantis appears primarily in:",
+        choices: [
+          { id: "a", text: "A NOAA ice-core table" },
+          { id: "b", text: "The dialogues Timaeus and Critias" },
+          { id: "c", text: "The Federal Reserve Act" },
+          { id: "d", text: "A 2020 NFT whitepaper only" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Post-glacial sea-level rise drowning shelves is:",
+        choices: [
+          { id: "a", text: "Fringe-only and unevidenced" },
+          { id: "b", text: "Strongly evidenced geology — not automatically identical to Plato’s moral island" },
+          { id: "c", text: "Disproven by every textbook" },
+          { id: "d", text: "The same as mud-flood basement windows" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Flood myths cross-culturally are:",
+        choices: [
+          { id: "a", text: "Proof of one dated global layer without further work" },
+          { id: "b", text: "A real literary pattern; single-event glue is a hypothesis needing mechanism and date" },
+          { id: "c", text: "Only found in one culture" },
+          { id: "d", text: "Illegal to compare" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/05": {
+    lessonId: "antediluvian/05",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "When a video claims a map ‘knows too much,’ first step is:",
+        choices: [
+          { id: "a", text: "Accept the overlay as primary" },
+          { id: "b", text: "Inspect an archival image of the actual sheet and its legends" },
+          { id: "c", text: "Ignore all maps forever" },
+          { id: "d", text: "Assume Antarctica is always correct" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Underwater linear rocks on video are:",
+        choices: [
+          { id: "a", text: "Always temples" },
+          { id: "b", text: "Candidates that may be natural, modern, or archaeological — provenance and survey required" },
+          { id: "c", text: "Never interesting" },
+          { id: "d", text: "Proof of Tartaria alone" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "The recommended montage stress sentence is about:",
+        choices: [
+          { id: "a", text: "Image X, claim Y, bridge Z" },
+          { id: "b", text: "Volume of music only" },
+          { id: "c", text: "Subscriber count" },
+          { id: "d", text: "Ignoring geology" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "antediluvian/06": {
+    lessonId: "antediluvian/06",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Watchers/Nephilim material is primarily anchored in:",
+        choices: [
+          { id: "a", text: "Ice cores only" },
+          { id: "b", text: "Biblical and Enochic textual traditions" },
+          { id: "c", text: "19th-century expo blueprints alone" },
+          { id: "d", text: "NOAA sea-level charts only" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Tartaria / mud-flood claims often emphasize:",
+        choices: [
+          { id: "a", text: "Pre-Pottery Neolithic pillars exclusively" },
+          { id: "b", text: "Early modern maps of Tartary and 18th–19th-century architecture/photos" },
+          { id: "c", text: "Plato’s exact Greek meter" },
+          { id: "d", text: "Greenland ice annual layers only" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Treating Nephilim, Atlantis, YD, and Tartarian fairs as one empire without calendar conversion is:",
+        choices: [
+          { id: "a", text: "Strict chronology" },
+          { id: "b", text: "Mythic collage — seams should stay visible" },
+          { id: "c", text: "Required dig method" },
+          { id: "d", text: "The same as EPISTEMIC_STANCE’s only allowed conclusion" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+
 };
 
 export function getQuiz(lessonId: string): LessonQuiz | null {

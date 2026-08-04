@@ -58,7 +58,28 @@ export type IllustKind =
   | "myth-filter"
   | "crowd-density"
   | "cryo-claim"
-  | "checklist";
+  | "checklist"
+  | "observe-map"
+  | "source-stack"
+  | "four-clocks"
+  | "sky-rupture"
+  | "black-mat"
+  | "proxy-debate"
+  | "t-pillars"
+  | "carved-fauna"
+  | "dig-grid"
+  | "flood-wave"
+  | "tablet-wave"
+  | "atlantis-ring"
+  | "shelf-drown"
+  | "ghost-map"
+  | "compass-rose"
+  | "sunken-colonnade"
+  | "watcher-field"
+  | "enoch-descent"
+  | "mud-strata"
+  | "clock-seams"
+  | "observe-lamp";
 
 const BAYER_GLSL = `
 float bayer(vec2 p) {
@@ -476,6 +497,241 @@ function sceneShader(kind: IllustKind): string {
       float claim = step(0.4, p.x) * step(p.x, 0.6) * step(0.45, p.y) * step(p.y, 0.55) * (0.5 + 0.5 * step(0.5, fract(t * 0.5)));
       g = clamp(chamber * 0.5 + frost * 0.3 + claim * 0.4, 0.0, 1.0);
     `,
+    "observe-map": `
+      vec2 q = p;
+      q += 0.04 * vec2(sin(t + p.y * 8.0), cos(t * 0.7 + p.x * 6.0));
+      float coast = 0.0;
+      for (int i = 1; i <= 5; i++) {
+        float fi = float(i);
+        coast += sin(q.x * (3.0 + fi) + t * 0.3 + q.y * fi) * sin(q.y * (2.0 + fi) - t * 0.2) / fi;
+      }
+      float land = step(0.0, coast + 0.15 * sin(q.x * 2.0 + t * 0.1));
+      float grid = step(0.92, fract(q.x * 20.0 + coast)) + step(0.92, fract(q.y * 14.0));
+      float star = step(0.997, fract(sin(dot(floor(p * 50.0), vec2(3.0, 7.0)) + t * 0.1) * 99.0));
+      g = clamp(mix(0.08, 0.75, land) * 0.85 + grid * 0.25 + star, 0.0, 1.0);
+`,
+    "source-stack": `
+      float layers = 0.0;
+      for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float y = 0.18 + fi * 0.11 + 0.02 * sin(t * 0.8 + fi + p.x * 4.0);
+        float wob = 0.03 * sin(t + p.x * 10.0 + fi);
+        layers += smoothstep(0.03, 0.0, abs(p.y - y)) * step(0.2 + wob, p.x) * step(p.x, 0.8 - wob);
+      }
+      float melt = 0.15 * sin(p.x * 12.0 + t) * (1.0 - p.y);
+      g = clamp(layers * 0.85 + melt * 0.3 + 0.08, 0.0, 1.0);
+`,
+    "four-clocks": `
+      float clocks = 0.0;
+      for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        vec2 c = vec2(0.2 + fi * 0.2, 0.5 + 0.05 * sin(t + fi));
+        float r = length(p - c);
+        clocks += smoothstep(0.02, 0.0, abs(r - 0.1));
+        float ang = atan(p.y - c.y, p.x - c.x);
+        float hand = smoothstep(0.015, 0.0, abs(sin(ang - t * (0.5 + fi * 0.3) - fi) * r)) * step(r, 0.1);
+        clocks += hand * 0.7;
+      }
+      g = clamp(clocks, 0.0, 1.0);
+`,
+    "sky-rupture": `
+      vec2 q = p - vec2(0.5, 0.35);
+      float burst = 0.0;
+      for (int i = 0; i < 24; i++) {
+        float fi = float(i);
+        float a = fi * 0.26 + t * 0.4;
+        vec2 d = vec2(cos(a), sin(a * 1.1));
+        float streak = exp(-18.0 * abs(dot(q, vec2(-d.y, d.x)))) * exp(-2.0 * max(0.0, -dot(q, d)));
+        burst += streak * (0.5 + 0.5 * sin(t * 3.0 + fi));
+      }
+      float horizon = smoothstep(0.04, 0.0, abs(p.y - 0.28 - 0.02 * sin(p.x * 10.0 + t)));
+      float dust = step(0.985, fract(sin(dot(p * 40.0, vec2(2.0, 9.0)) + t) * 99.0));
+      g = clamp(burst * 0.7 + horizon * 0.5 + dust + 0.05 * (1.0 - p.y), 0.0, 1.0);
+`,
+    "black-mat": `
+      float y0 = 0.42 + 0.03 * sin(p.x * 8.0 + t * 0.5);
+      float mat = smoothstep(0.06, 0.0, abs(p.y - y0));
+      float strata = 0.0;
+      for (int i = 0; i < 8; i++) {
+        float y = 0.15 + float(i) * 0.08 + 0.01 * sin(t + float(i));
+        strata += 0.2 * smoothstep(0.01, 0.0, abs(p.y - y));
+      }
+      float ash = step(0.96, fract(sin(dot(floor(p * 30.0), vec2(4.0, 1.0)) + t * 0.2) * 50.0));
+      g = clamp(0.15 + strata + mat * 0.9 + ash * 0.3, 0.0, 1.0);
+`,
+    "proxy-debate": `
+      float left = 0.5 + 0.35 * sin(p.x * 20.0 - t * 2.0) * step(p.x, 0.48);
+      float right = 0.5 + 0.35 * sin(p.x * 18.0 + t * 2.2) * step(0.52, p.x);
+      float seam = smoothstep(0.03, 0.0, abs(p.x - 0.5));
+      float noise = 0.1 * sin(p.y * 40.0 + t);
+      g = clamp((left + right) * 0.7 + seam * 0.5 + noise, 0.0, 1.0);
+`,
+    "t-pillars": `
+      float pillars = 0.0;
+      for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float x = 0.18 + fi * 0.15 + 0.01 * sin(t * 0.5 + fi);
+        float stem = smoothstep(0.035, 0.015, abs(p.x - x)) * step(0.25, p.y) * step(p.y, 0.62);
+        float top = step(abs(p.x - x), 0.07) * step(0.58, p.y) * step(p.y, 0.68);
+        pillars += stem * 0.75 + top * 0.9;
+      }
+      float ground = step(p.y, 0.28 + 0.02 * sin(p.x * 12.0)) * 0.35;
+      float fog = 0.15 * sin(p.y * 3.0 - t * 0.3);
+      g = clamp(pillars + ground + fog, 0.0, 1.0);
+`,
+    "carved-fauna": `
+      vec2 q = p - 0.5;
+      q += 0.03 * vec2(sin(t + q.y * 5.0), cos(t * 0.8 + q.x * 4.0));
+      float body = smoothstep(0.18, 0.1, length(q * vec2(1.3, 0.9)));
+      float leg = 0.0;
+      for (int i = 0; i < 4; i++) {
+        float x = -0.08 + float(i) * 0.05;
+        leg += smoothstep(0.015, 0.0, abs(q.x - x)) * step(q.y, -0.05) * step(-0.22, q.y);
+      }
+      float horn = smoothstep(0.02, 0.0, abs(q.y - 0.12 - abs(q.x) * 0.5)) * step(abs(q.x), 0.12);
+      float chip = step(0.97, fract(sin(dot(floor(p * 25.0), vec2(2.0, 5.0))) * 40.0));
+      g = clamp(body * 0.55 + leg * 0.6 + horn * 0.7 + chip * 0.25, 0.0, 1.0);
+`,
+    "dig-grid": `
+      float gx = step(0.9, fract(p.x * 12.0 + 0.05 * sin(t)));
+      float gy = step(0.9, fract(p.y * 9.0));
+      float pit = smoothstep(0.2, 0.05, length((p - vec2(0.5, 0.45)) * vec2(1.2, 0.8)));
+      float tool = exp(-40.0 * length(p - vec2(0.5 + 0.1 * sin(t), 0.45 + 0.05 * cos(t * 1.3))));
+      g = clamp(gx * 0.4 + gy * 0.4 + pit * 0.5 + tool, 0.0, 1.0);
+`,
+    "flood-wave": `
+      float w = 0.0;
+      for (int i = 1; i <= 6; i++) {
+        float fi = float(i);
+        w += sin(p.x * (3.0 + fi) - t * fi * 0.8 + p.y * 2.0) / fi;
+      }
+      float wave = smoothstep(0.2, 0.0, abs(p.y - 0.4 - 0.12 * w));
+      float rain = step(0.98, fract(p.x * 40.0 + p.y * 10.0 - t * 2.0));
+      float ark = smoothstep(0.06, 0.02, length((p - vec2(0.5, 0.55 + 0.05 * w)) * vec2(1.8, 1.0)));
+      g = clamp(0.1 + wave * 0.8 + rain * 0.4 + ark * 0.5, 0.0, 1.0);
+`,
+    "tablet-wave": `
+      float tablet = step(0.25, p.x) * step(p.x, 0.75) * step(0.2, p.y) * step(p.y, 0.75);
+      float wedges = step(0.5, fract(p.x * 30.0 + floor(p.y * 20.0) * 0.3)) * tablet * 0.5;
+      float wet = 0.3 * smoothstep(0.0, 0.4, 0.55 + 0.1 * sin(t) - p.y);
+      float ripple = 0.2 * sin(p.x * 25.0 + t * 3.0) * wet;
+      g = clamp(tablet * 0.35 + wedges + wet * 0.4 + ripple, 0.0, 1.0);
+`,
+    "atlantis-ring": `
+      vec2 q = p - 0.5;
+      float r = length(q);
+      float rings = 0.0;
+      for (int i = 1; i <= 4; i++) {
+        float target = 0.08 * float(i) + 0.02 * sin(t + float(i));
+        rings += smoothstep(0.015, 0.0, abs(r - target));
+      }
+      float canal = smoothstep(0.02, 0.0, abs(q.x)) * step(r, 0.35) + smoothstep(0.02, 0.0, abs(q.y)) * step(r, 0.35);
+      float sink = exp(-8.0 * abs(r - 0.2 - 0.05 * sin(t * 2.0)));
+      g = clamp(rings * 0.85 + canal * 0.35 + sink * 0.3, 0.0, 1.0);
+`,
+    "shelf-drown": `
+      float shore = 0.45 + 0.05 * sin(p.x * 6.0) + 0.08 * sin(t * 0.3);
+      float water = step(p.y, shore + 0.1 * sin(p.x * 15.0 - t));
+      float shelf = step(p.y, shore - 0.15) * 0.4;
+      float ruin = 0.0;
+      for (int i = 0; i < 5; i++) {
+        float x = 0.2 + float(i) * 0.12;
+        ruin += smoothstep(0.02, 0.0, abs(p.x - x)) * step(p.y, shore - 0.05) * step(shore - 0.2, p.y) * water;
+      }
+      g = clamp(water * 0.35 + shelf + ruin * 0.8, 0.0, 1.0);
+`,
+    "ghost-map": `
+      vec2 q = p;
+      q += 0.05 * vec2(sin(3.0 * p.y + t * 0.4), cos(2.5 * p.x - t * 0.3));
+      float n = 0.0;
+      for (int i = 1; i <= 4; i++) {
+        float fi = float(i);
+        n += sin(q.x * 4.0 * fi + t * 0.2) * cos(q.y * 3.0 * fi) / fi;
+      }
+      float land = step(0.1, n);
+      float stain = exp(-15.0 * length(p - vec2(0.3 + 0.1 * sin(t * 0.2), 0.6)));
+      float edge = smoothstep(0.08, 0.0, min(min(p.x, 1.0 - p.x), min(p.y, 1.0 - p.y)));
+      g = clamp(mix(0.2, 0.7, land) + stain * 0.4 + edge * 0.5, 0.0, 1.0);
+`,
+    "compass-rose": `
+      vec2 q = p - 0.5;
+      float a = atan(q.y, q.x);
+      float r = length(q);
+      float rose = pow(abs(cos(a * 4.0 + t * 0.2)), 4.0) * smoothstep(0.35, 0.05, r);
+      float ring = smoothstep(0.02, 0.0, abs(r - 0.28));
+      float spin = smoothstep(0.015, 0.0, abs(sin(a - t) * r)) * step(r, 0.28);
+      g = clamp(rose * 0.9 + ring * 0.7 + spin * 0.5, 0.0, 1.0);
+`,
+    "sunken-colonnade": `
+      float cols = 0.0;
+      for (int i = 0; i < 6; i++) {
+        float x = 0.2 + float(i) * 0.12 + 0.01 * sin(t + float(i));
+        cols += smoothstep(0.03, 0.012, abs(p.x - x)) * step(0.25, p.y) * step(p.y, 0.65);
+      }
+      float lintel = step(0.6, p.y) * step(p.y, 0.68) * step(0.18, p.x) * step(p.x, 0.82);
+      float particles = step(0.99, fract(sin(dot(p * 50.0, vec2(1.0, 3.0)) + t) * 90.0));
+      float caustic = 0.2 * sin(p.x * 20.0 + t * 2.0) * sin(p.y * 15.0 - t);
+      g = clamp(cols * 0.75 + lintel * 0.6 + particles + caustic * 0.4 + 0.1, 0.0, 1.0);
+`,
+    "watcher-field": `
+      float figures = 0.0;
+      for (int i = 0; i < 12; i++) {
+        float fi = float(i);
+        float x = 0.1 + fract(fi * 0.17) * 0.8;
+        float h = 0.25 + 0.35 * fract(fi * 0.37);
+        float w = 0.02 + 0.02 * fract(fi * 0.11);
+        float blur = 0.01 + 0.02 * (0.5 + 0.5 * sin(t * 0.5 + fi));
+        figures += smoothstep(w + blur, w, abs(p.x - x)) * step(0.2, p.y) * step(p.y, 0.25 + h);
+      }
+      float rain = step(0.97, fract(p.x * 60.0 + p.y * 20.0 - t * 3.0));
+      float small = smoothstep(0.015, 0.0, length(p - vec2(0.5, 0.28)));
+      g = clamp(figures * 0.55 + rain * 0.35 + small * 0.9, 0.0, 1.0);
+`,
+    "enoch-descent": `
+      float rays = 0.0;
+      for (int i = 0; i < 10; i++) {
+        float a = -1.2 + float(i) * 0.25;
+        vec2 d = normalize(vec2(sin(a), -cos(a)));
+        vec2 o = p - vec2(0.5, 0.95);
+        float along = dot(o, d);
+        float perp = length(o - d * along);
+        rays += exp(-25.0 * perp) * step(0.0, along) * exp(-along);
+      }
+      float ground = step(p.y, 0.25) * 0.3;
+      float figure = smoothstep(0.04, 0.01, length((p - vec2(0.5, 0.35 + 0.1 * fract(t * 0.15))) * vec2(1.5, 2.0)));
+      g = clamp(rays * 0.8 + ground + figure, 0.0, 1.0);
+`,
+    "mud-strata": `
+      float mud = 0.0;
+      for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float y = 0.15 + fi * 0.1 + 0.03 * sin(p.x * 5.0 + t * 0.4 + fi);
+        mud += smoothstep(0.04, 0.0, abs(p.y - y)) * (0.4 + 0.1 * sin(p.x * 8.0 + fi));
+      }
+      float column = smoothstep(0.05, 0.02, abs(p.x - 0.65)) * step(0.3, p.y) * step(p.y, 0.7);
+      float ornate = 0.3 * step(0.95, fract(p.y * 20.0 + p.x * 5.0)) * column;
+      g = clamp(mud * 0.7 + column * 0.6 + ornate, 0.0, 1.0);
+`,
+    "clock-seams": `
+      float a = 0.5 + 0.5 * sin(p.x * 10.0 + t);
+      float b = 0.5 + 0.5 * sin(p.y * 8.0 - t * 1.1);
+      float c = 0.5 + 0.5 * sin((p.x + p.y) * 9.0 + t * 0.7);
+      float seams = smoothstep(0.04, 0.0, abs(a - b)) + smoothstep(0.04, 0.0, abs(b - c));
+      float glow = seams * (0.5 + 0.5 * sin(t * 4.0));
+      g = clamp(0.2 + a * 0.2 + b * 0.15 + glow, 0.0, 1.0);
+`,
+    "observe-lamp": `
+      vec2 q = p - vec2(0.5, 0.4);
+      float lamp = smoothstep(0.08, 0.03, length(q * vec2(1.0, 1.4)));
+      float glow = exp(-6.0 * length(q)) * (0.6 + 0.4 * sin(t * 2.0));
+      float shelves = 0.0;
+      for (int i = 0; i < 6; i++) {
+        float y = 0.15 + float(i) * 0.12;
+        shelves += smoothstep(0.01, 0.0, abs(p.y - y)) * step(0.15, p.x) * step(p.x, 0.85) * 0.25;
+      }
+      float books = step(0.7, fract(p.x * 25.0)) * step(0.2, p.y) * step(p.y, 0.8) * 0.15;
+      g = clamp(shelves + books + lamp * 0.9 + glow, 0.0, 1.0);
+`,
     "checklist": `
       float items = 0.0;
       for (int i = 0; i < 5; i++) {
@@ -651,7 +907,7 @@ const KIND_SET = new Set<string>([
   "ledger-flow","american-system","two-streams","layer-stack","symbiosis-loop","effigy-desert","santa-swarm",
   "zone-trip","saturnalia-mask","acid-kaleido","prankster-bus","lab-beaker","festival-scale","break-grid",
   "cyber-nodes","accel-streaks","hyperstition","mindwar-field","set-geometry","dossier-stamp","presidio-fog",
-  "myth-filter","crowd-density","cryo-claim","checklist",
+  "myth-filter","crowd-density","cryo-claim","checklist","observe-map","source-stack","four-clocks","sky-rupture","black-mat","proxy-debate","t-pillars","carved-fauna","dig-grid","flood-wave","tablet-wave","atlantis-ring","shelf-drown","ghost-map","compass-rose","sunken-colonnade","watcher-field","enoch-descent","mud-strata","clock-seams","observe-lamp",
 ]);
 
 export function parseIllustKind(s: string): IllustKind | null {

@@ -1,0 +1,30 @@
+title: Antediluvian Observatory
+slug: antediluvian
+summary: >
+  Alternative theories about deep prehistory and the pre-flood era — Younger Dryas
+  catastrophe, Göbekli Tepe, flood myths, Plato's Atlantis, coastal ruins, anomalous
+  maps, Watchers/Nephilim, and mud-flood claims. Observe, compare, and cite. Not a
+  conversion track. Follows EPISTEMIC_STANCE: mainstream and dissenting accounts
+  named; contradictions left visible.
+prerequisites: []
+estimated_hours: 10
+flagship: false
+lessons:
+  - file: 01-how-to-read.md
+    title: How to read alternative history
+    status: written
+  - file: 02-younger-dryas.md
+    title: When the sky fell — Younger Dryas
+    status: written
+  - file: 03-gobekli-tepe.md
+    title: Göbekli Tepe before the textbooks
+    status: written
+  - file: 04-floods-and-atlantis.md
+    title: Floods everywhere and Plato's date
+    status: written
+  - file: 05-maps-and-coasts.md
+    title: Maps and underwater coasts
+    status: written
+  - file: 06-contradicting-clocks.md
+    title: Watchers, Tartaria, and contradicting clocks
+    status: written

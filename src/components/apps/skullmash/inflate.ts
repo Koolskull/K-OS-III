@@ -92,7 +92,7 @@ export function inflatePolygon(
 ): THREE.BufferGeometry {
   const { canvasW, canvasH } = opts;
   const heightScale = opts.heightScale ?? 1.55;
-  const fill = opts.fillColor ?? [0.78, 0.78, 0.8];
+  const fill = opts.fillColor ?? [0.72, 0.72, 0.74];
 
   if (rawPts.length < 3) return new THREE.BufferGeometry();
 

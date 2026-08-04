@@ -12,7 +12,7 @@
  *   Planned: optional user-initiated NFT mint of objects for a fee
  *   (commerce + K-Wallet integration later).
  *
- *   v0.3.0 — MM paper stage, freehand, photo-textured balloon
+ *   v0.3.1 — K-OS chrome (black/yellow mono), freehand, photo balloon
  */
 
 "use client";
@@ -119,7 +119,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     const scale = Math.max(CANVAS_W / img.width, CANVAS_H / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
-    octx.fillStyle = "#f2eee6";
+    octx.fillStyle = "#000000";
     octx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     octx.drawImage(img, (CANVAS_W - w) / 2, (CANVAS_H - h) / 2, w, h);
     imageDataRef.current = octx.getImageData(0, 0, CANVAS_W, CANVAS_H);
@@ -191,7 +191,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     setReady(true);
     setMode("DRAW");
     setDrawTool("pen");
-    setStatus("Blank paper. Freehand-draw closed shapes, then Next.");
+    setStatus("Blank stage. Freehand-draw closed shapes, then Next.");
     setStrokeVersion((v) => v + 1);
   };
 
@@ -209,13 +209,13 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     const currentStroke = strokeRef.current;
     const lw = Math.max(1.5, brush * 0.9);
 
-    ctx.fillStyle = "#f2eee6";
+    ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     if (imageDataRef.current) {
       ctx.putImageData(imageDataRef.current, 0, 0);
     } else {
-      ctx.strokeStyle = "rgba(0,0,0,0.035)";
+      ctx.strokeStyle = "rgba(255,255,255,0.04)";
       ctx.lineWidth = 1;
       for (let i = 0; i < CANVAS_W; i += 48) {
         ctx.beginPath();
@@ -252,7 +252,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       for (let i = 1; i < currentStroke.length; i++) {
         ctx.lineTo(currentStroke[i]!.x, currentStroke[i]!.y);
       }
-      ctx.strokeStyle = "#c62828";
+      ctx.strokeStyle = "#ffff00";
       ctx.lineWidth = lw;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
@@ -265,7 +265,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
           currentStroke[currentStroke.length - 1]!.y,
         );
         ctx.lineTo(currentStroke[0]!.x, currentStroke[0]!.y);
-        ctx.strokeStyle = "rgba(198,40,40,0.4)";
+        ctx.strokeStyle = "rgba(255,255,0,0.35)";
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -275,10 +275,10 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       for (const pin of pins) {
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = "#ea4335";
+        ctx.fillStyle = "#ffff00";
         ctx.fill();
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
     }
@@ -294,7 +294,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     if (!host) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xece8e0);
+    scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
     camera.position.set(0, 3.2, 5.6);
@@ -323,14 +323,14 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     renderer.domElement.style.touchAction = "none";
     host.replaceChildren(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xfff8f0, 0.65));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     const key = new THREE.DirectionalLight(0xffffff, 1.35);
     key.position.set(3.5, 9, 4.5);
     scene.add(key);
     const fill = new THREE.DirectionalLight(0xb0c4ff, 0.45);
     fill.position.set(-5, 2.5, -2);
     scene.add(fill);
-    scene.add(new THREE.HemisphereLight(0xfff5e8, 0x8a8478, 0.35));
+    scene.add(new THREE.HemisphereLight(0x888899, 0x111111, 0.4));
 
     const group = new THREE.Group();
     scene.add(group);
@@ -867,7 +867,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                 <div className="sm-welcome">
                   <div className="sm-welcome-icon">✎</div>
                   <h1>Draw or upload an image</h1>
-                  <p>Freehand cutouts inflate into soft 3D — just like Monster Mash.</p>
+                  <p>Freehand cutouts inflate into soft 3D · export GLB + JSON</p>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                   <button type="button" className="sm-next" onClick={() => fileInputRef.current?.click()}>
@@ -877,12 +877,12 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                     Sample creature
                   </button>
                   <button type="button" className="sm-back" onClick={startBlank}>
-                    Blank paper
+                    Blank stage
                   </button>
                 </div>
-                <p style={{ maxWidth: 320, textAlign: "center", fontSize: 12, color: "#9aa0a6", lineHeight: 1.5 }}>
-                  Drop a photo anywhere on this paper. Trace closed shapes, hit{" "}
-                  <span style={{ fontWeight: 600, color: "#34a853" }}>Next</span>, then animate pins.
+                <p style={{ maxWidth: 320, textAlign: "center", fontSize: 12, color: "#666666", lineHeight: 1.5 }}>
+                  Drop a photo on the stage. Trace closed shapes · hit{" "}
+                  <span style={{ color: "#ffff00" }}>NEXT</span> · animate pins.
                   Optional NFT mint of your object (for a fee) is planned.
                 </p>
               </div>
@@ -890,7 +890,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
 
             {show3d && shapes.length === 0 && (
               <div style={{ position: "absolute", inset: 0, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <p style={{ borderRadius: 999, background: "rgba(0,0,0,0.4)", color: "#fff", padding: "8px 16px", fontSize: 13 }}>
+                <p style={{ background: "#000", border: "1px solid #444", color: "#ffff00", padding: "8px 14px", fontSize: 9, letterSpacing: 1, textTransform: "uppercase" as const, fontFamily: "var(--dm-font-primary)" }}>
                   Draw regions first
                 </p>
               </div>
@@ -928,7 +928,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
               >
                 {playing ? "Stop" : "Play"}
               </button>
-              <span style={{ fontFamily: "var(--sm-mono)", fontSize: 11, color: "#5f6368" }}>
+              <span style={{ fontFamily: "var(--sm-mono)", fontSize: 11, color: "#888888" }}>
                 t={time.toFixed(2)}
               </span>
               <input
@@ -942,7 +942,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                   setTime(parseFloat(e.target.value));
                 }}
               />
-              <span style={{ fontSize: 11, color: "#80868b" }}>
+              <span style={{ fontSize: 11, color: "#666666" }}>
                 {pins.length}p · {keyframes.length}kf
               </span>
               <button

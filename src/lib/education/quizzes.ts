@@ -491,7 +491,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "This track’s primary job is to:",
+        prompt: "This track's primary job is to:",
         choices: [
           { id: "a", text: "Convert the reader to one antediluvian theory" },
           { id: "b", text: "Observe and map alternative theories with sources and visible contradictions" },
@@ -499,16 +499,16 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "d", text: "Prove every institution is always lying" },
         ],
         correctId: "b",
-        explain: "Observe, don’t convert — EPISTEMIC_STANCE and lesson 01.",
+        explain: "Observe, don't convert — EPISTEMIC_STANCE and lesson 01.",
       },
       {
         id: "q2",
-        prompt: "A longform alternative-history video is usually:",
+        prompt: "Which research cluster is central to this track's denser material?",
         choices: [
-          { id: "a", text: "A primary excavation report" },
-          { id: "b", text: "Secondary entertainment-scholarship — good for questions, weak as final dating authority" },
-          { id: "c", text: "The same as an ice core" },
-          { id: "d", text: "Illegal to watch" },
+          { id: "a", text: "Only modern stock-market charts" },
+          { id: "b", text: "Old-map occultism, cross-continental similarities, and 'founded' megalith problems" },
+          { id: "c", text: "Only Federal Reserve minutes" },
+          { id: "d", text: "Only NFT whitepapers" },
         ],
         correctId: "b",
       },
@@ -520,6 +520,17 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "b", text: "Data — contradiction left visible" },
           { id: "c", text: "Proof one ethnicity is responsible" },
           { id: "d", text: "Irrelevant" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "A longform alternative-history video is usually:",
+        choices: [
+          { id: "a", text: "A primary excavation report" },
+          { id: "b", text: "Secondary entertainment-scholarship — good for questions, weak as final dating authority" },
+          { id: "c", text: "The same as an ice core" },
+          { id: "d", text: "Illegal to watch" },
         ],
         correctId: "b",
       },
@@ -553,7 +564,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q3",
-        prompt: "Merging YD proxies with Plato’s 9,000 years without conversion is:",
+        prompt: "Merging YD proxies with Plato's 9,000 years without conversion is:",
         choices: [
           { id: "a", text: "Automatic good chronology" },
           { id: "b", text: "Clock-merging that needs explicit calendar work" },
@@ -575,24 +586,35 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "a", text: "A CGI-only internet myth" },
           { id: "b", text: "A real Pre-Pottery Neolithic site with monumental T-pillars" },
           { id: "c", text: "A 19th-century world fair building" },
-          { id: "d", text: "Plato’s personal estate" },
+          { id: "d", text: "Plato's personal estate" },
         ],
         correctId: "b",
       },
       {
         id: "q2",
-        prompt: "Why does the site matter to textbooks?",
+        prompt: "The 'founded' buildings problem in this lesson means:",
         choices: [
-          { id: "a", text: "It proves free energy" },
-          { id: "b", text: "Monumental ritual architecture appears earlier than older simple models expected" },
-          { id: "c", text: "It is underwater near Japan only" },
-          { id: "d", text: "It is a Federal Reserve archive" },
+          { id: "a", text: "Every stone building is fake" },
+          { id: "b", text: "Sites where conventional founding/attribution sits awkwardly beside scale or technique — studied site by site" },
+          { id: "c", text: "Only underwater hotels" },
+          { id: "d", text: "A Federal Reserve construction program" },
         ],
         correctId: "b",
       },
       {
         id: "q3",
-        prompt: "Zodiac/comet readings of pillars should be:",
+        prompt: "Baalbek, Giza, and Andean polygonal walls are treated here as:",
+        choices: [
+          { id: "a", text: "Automatic proof of one global antediluvian guild" },
+          { id: "b", text: "Claim clusters where alternative pressure meets mainstream phase dating — not interchangeable clocks" },
+          { id: "c", text: "Irrelevant to alternative history" },
+          { id: "d", text: "Only Roman tourist props with no stone mass" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "Zodiac/comet readings of Göbekli pillars should be:",
         choices: [
           { id: "a", text: "Accepted without publication" },
           { id: "b", text: "Treated as hypotheses needing enclosure numbers, sources, and testability" },
@@ -609,7 +631,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "Plato’s Atlantis appears primarily in:",
+        prompt: "Plato's Atlantis appears primarily in:",
         choices: [
           { id: "a", text: "A NOAA ice-core table" },
           { id: "b", text: "The dialogues Timaeus and Critias" },
@@ -620,23 +642,34 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
+        prompt: "Cross-continental similarities in myths and stone forms are best handled as:",
+        choices: [
+          { id: "a", text: "Automatic proof of one parent empire" },
+          { id: "b", text: "Patterns that may reflect contact, convergence, or both — without forcing one rule on every case" },
+          { id: "c", text: "Illegal to compare" },
+          { id: "d", text: "Only explainable by modern social media" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
         prompt: "Post-glacial sea-level rise drowning shelves is:",
         choices: [
           { id: "a", text: "Fringe-only and unevidenced" },
-          { id: "b", text: "Strongly evidenced geology — not automatically identical to Plato’s moral island" },
+          { id: "b", text: "Strongly evidenced geology — not automatically identical to Plato's moral island" },
           { id: "c", text: "Disproven by every textbook" },
           { id: "d", text: "The same as mud-flood basement windows" },
         ],
         correctId: "b",
       },
       {
-        id: "q3",
-        prompt: "Flood myths cross-culturally are:",
+        id: "q4",
+        prompt: "Diffusionism vs independent invention in this track means:",
         choices: [
-          { id: "a", text: "Proof of one dated global layer without further work" },
-          { id: "b", text: "A real literary pattern; single-event glue is a hypothesis needing mechanism and date" },
-          { id: "c", text: "Only found in one culture" },
-          { id: "d", text: "Illegal to compare" },
+          { id: "a", text: "Only one is ever allowed" },
+          { id: "b", text: "Both can be true in different cases; forcing one rule on every site is the error" },
+          { id: "c", text: "Neither exists in anthropology" },
+          { id: "d", text: "They are banking terms" },
         ],
         correctId: "b",
       },
@@ -648,7 +681,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "When a video claims a map ‘knows too much,’ first step is:",
+        prompt: "When a video claims a map 'knows too much,' first step is:",
         choices: [
           { id: "a", text: "Accept the overlay as primary" },
           { id: "b", text: "Inspect an archival image of the actual sheet and its legends" },
@@ -659,6 +692,28 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
+        prompt: "The occult / alternative map worldview typically holds that early modern charts are:",
+        choices: [
+          { id: "a", text: "Only tourist posters" },
+          { id: "b", text: "Palimpsests that may preserve fragments of older hydrographic knowledge after catastrophe" },
+          { id: "c", text: "Proof the Federal Reserve surveyed Antarctica in 1913" },
+          { id: "d", text: "Identical to ice cores" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Piri Reis (1513) in this lesson is framed as:",
+        choices: [
+          { id: "a", text: "A modern CGI fake only" },
+          { id: "b", text: "An Ottoman compilation whose alternative readings claim older source knowledge; mainstream reads it within discovery-era cartography" },
+          { id: "c", text: "Plato's personal sketchbook" },
+          { id: "d", text: "A Tartaria world-fair blueprint" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
         prompt: "Underwater linear rocks on video are:",
         choices: [
           { id: "a", text: "Always temples" },
@@ -669,15 +724,15 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
         correctId: "b",
       },
       {
-        id: "q3",
-        prompt: "The recommended montage stress sentence is about:",
+        id: "q5",
+        prompt: "Hapgood-style source-map arguments should separate:",
         choices: [
-          { id: "a", text: "Image X, claim Y, bridge Z" },
-          { id: "b", text: "Volume of music only" },
-          { id: "c", text: "Subscriber count" },
-          { id: "d", text: "Ignoring geology" },
+          { id: "a", text: "Nothing — accept the whole package" },
+          { id: "b", text: "Sheet inspection / compilation claims from larger pole-shift or cosmology claims" },
+          { id: "c", text: "Only subscriber counts" },
+          { id: "d", text: "Maps from legends forever" },
         ],
-        correctId: "a",
+        correctId: "b",
       },
     ],
   },
@@ -702,19 +757,30 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
         choices: [
           { id: "a", text: "Pre-Pottery Neolithic pillars exclusively" },
           { id: "b", text: "Early modern maps of Tartary and 18th–19th-century architecture/photos" },
-          { id: "c", text: "Plato’s exact Greek meter" },
+          { id: "c", text: "Plato's exact Greek meter" },
           { id: "d", text: "Greenland ice annual layers only" },
         ],
         correctId: "b",
       },
       {
         id: "q3",
-        prompt: "Treating Nephilim, Atlantis, YD, and Tartarian fairs as one empire without calendar conversion is:",
+        prompt: "Treating Nephilim, Atlantis, YD, Piri Reis, and Tartarian fairs as one empire without calendar conversion is:",
         choices: [
           { id: "a", text: "Strict chronology" },
           { id: "b", text: "Mythic collage — seams should stay visible" },
           { id: "c", text: "Required dig method" },
-          { id: "d", text: "The same as EPISTEMIC_STANCE’s only allowed conclusion" },
+          { id: "d", text: "The same as EPISTEMIC_STANCE's only allowed conclusion" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "A healthy checkout habit for combined conclusions is to:",
+        choices: [
+          { id: "a", text: "Accept every glue word as proof" },
+          { id: "b", text: "Keep, split, or drop claims based on whether evidence chains match the date and mechanism" },
+          { id: "c", text: "Ignore all mainstream sources" },
+          { id: "d", text: "Only trust music under the video" },
         ],
         correctId: "b",
       },

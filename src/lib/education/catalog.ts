@@ -9,14 +9,14 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
     slug: "antediluvian",
     title: "Antediluvian Observatory",
     summary:
-      "Alternative deep history and pre-flood theories — observe, cite, leave contradictions visible. Younger Dryas, Göbekli Tepe, floods, Atlantis, maps, Watchers, Tartaria.",
+      "Alternative deep history and pre-flood theories — occult old-map readings, cross-continental parallels, founded megaliths, Younger Dryas, floods, Atlantis, Watchers, Tartaria. Observe, cite, leave contradictions visible.",
     lessons: [
-      { id: "antediluvian/01", file: "01-how-to-read.md", title: "How to read alternative history", estimatedMinutes: 14 },
-      { id: "antediluvian/02", file: "02-younger-dryas.md", title: "When the sky fell — Younger Dryas", estimatedMinutes: 18 },
-      { id: "antediluvian/03", file: "03-gobekli-tepe.md", title: "Göbekli Tepe before the textbooks", estimatedMinutes: 16 },
-      { id: "antediluvian/04", file: "04-floods-and-atlantis.md", title: "Floods everywhere and Plato's date", estimatedMinutes: 18 },
-      { id: "antediluvian/05", file: "05-maps-and-coasts.md", title: "Maps and underwater coasts", estimatedMinutes: 16 },
-      { id: "antediluvian/06", file: "06-contradicting-clocks.md", title: "Watchers, Tartaria, and contradicting clocks", estimatedMinutes: 18 },
+      { id: "antediluvian/01", file: "01-how-to-read.md", title: "How to read alternative history", estimatedMinutes: 22 },
+      { id: "antediluvian/02", file: "02-younger-dryas.md", title: "When the sky fell — Younger Dryas", estimatedMinutes: 24 },
+      { id: "antediluvian/03", file: "03-gobekli-tepe.md", title: "Göbekli Tepe before the textbooks", estimatedMinutes: 32 },
+      { id: "antediluvian/04", file: "04-floods-and-atlantis.md", title: "Floods everywhere and Plato's date", estimatedMinutes: 30 },
+      { id: "antediluvian/05", file: "05-maps-and-coasts.md", title: "Maps and underwater coasts", estimatedMinutes: 36 },
+      { id: "antediluvian/06", file: "06-contradicting-clocks.md", title: "Watchers, Tartaria, and contradicting clocks", estimatedMinutes: 28 },
     ],
   },
 

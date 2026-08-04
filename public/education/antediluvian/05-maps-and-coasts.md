@@ -111,4 +111,4 @@ Maps and coasts are where **visual charisma** is highest. That is exactly when E
 
 > A beautiful line under water is still only a line until a survey says more. A beautiful line on parchment is still only ink until the source chain is walked.
 
-Next: Watchers, Tartaria, and why the clocks refuse to agree — the contradiction lesson that closes the core track.
+Next: the Watchers' descent in the Book of Enoch — textual deep past before the photo-era Tartaria arguments.

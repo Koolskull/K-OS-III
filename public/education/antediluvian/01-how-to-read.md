@@ -54,7 +54,7 @@ Later lessons dig into each. For orientation:
 2. **Cross-continental similarity** — flood myths, megalithic masonry habits, metrological claims, and diffusionist conclusions that a parent culture or shared catastrophe memory links the Old World and the New.
 3. **"Founded" buildings** — sites where conventional founding dates and later cultural attribution sit awkwardly beside construction scale, tool marks, or local memory (Göbekli Tepe, Baalbek-style megaliths, Andean cyclopean work, Egyptian orthodoxy vs alternative chronologies).
 
-These clusters **overlap** in the channels you named. They do not automatically share one clock or one mechanism. Lesson 06 is the honesty test for when narrators glue them anyway.
+These clusters **overlap** in the channels you named. They do not automatically share one clock or one mechanism. Lesson 16 is the honesty test for when narrators glue them anyway.
 
 ## Contradiction is data
 

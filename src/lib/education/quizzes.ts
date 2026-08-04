@@ -736,51 +736,442 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
     ],
   },
+
   "antediluvian/06": {
     lessonId: "antediluvian/06",
     passRatio: 1,
     questions: [
       {
         id: "q1",
-        prompt: "Watchers/Nephilim material is primarily anchored in:",
+        prompt: "1 Enoch's Book of the Watchers is best treated on this track as:",
         choices: [
-          { id: "a", text: "Ice cores only" },
-          { id: "b", text: "Biblical and Enochic textual traditions" },
-          { id: "c", text: "19th-century expo blueprints alone" },
-          { id: "d", text: "NOAA sea-level charts only" },
+          { id: "a", text: "A radiocarbon-dated dig report" },
+          { id: "b", text: "Second Temple–era literature with a descent narrative — sacred/mythic clock, not ice-core chronology by default" },
+          { id: "c", text: "A Federal Reserve white paper" },
+          { id: "d", text: "Proof Tartaria built Göbekli Tepe" },
         ],
         correctId: "b",
       },
       {
         id: "q2",
-        prompt: "Tartaria / mud-flood claims often emphasize:",
+        prompt: "When a video glues Enoch to megaliths without a bridge argument, the failure mode is:",
         choices: [
-          { id: "a", text: "Pre-Pottery Neolithic pillars exclusively" },
+          { id: "a", text: "Correct scientific method" },
+          { id: "b", text: "Collage — text-world beings treated as dig-layer bones without evidence chain" },
+          { id: "c", text: "Required by Genesis alone" },
+          { id: "d", text: "The only valid EPISTEMIC_STANCE conclusion" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "A primary door for Enochic text work is:",
+        choices: [
+          { id: "a", text: "Only TikTok summaries" },
+          { id: "b", text: "Public-domain translations (e.g. R.H. Charles) plus manuscript/DSS scholarship entry points" },
+          { id: "c", text: "NOAA sea-level charts only" },
+          { id: "d", text: "World's Fair souvenir books only" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/07": {
+    lessonId: "antediluvian/07",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The Watchers' 'forbidden arts' catalog should first be handled as:",
+        choices: [
+          { id: "a", text: "A verified global engineering syllabus" },
+          { id: "b", text: "A literary list in Enochic tradition — check chapters/names before upgrading to civilization theory" },
+          { id: "c", text: "Identical to every patent office filing" },
+          { id: "d", text: "Proof cosmetics invented agriculture" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Upgrading the teaching list into one antediluvian tech guild is:",
+        choices: [
+          { id: "a", text: "Automatic once an angel is named" },
+          { id: "b", text: "An extraordinary cultural hypothesis that must be tested site-by-site against material records" },
+          { id: "c", text: "Forbidden to discuss" },
+          { id: "d", text: "The same as reading ice cores" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Culture-hero myths (Prometheus-style civilizers) are useful as:",
+        choices: [
+          { id: "a", text: "Identical passports for one dated empire" },
+          { id: "b", text: "Comparative literature — not automatic proof of one descent event" },
+          { id: "c", text: "Banking regulations" },
+          { id: "d", text: "Proof no crafts have real gradual histories" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/08": {
+    lessonId: "antediluvian/08",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Giant claims should separate at minimum:",
+        choices: [
+          { id: "a", text: "Nothing — all giants are one species" },
+          { id: "b", text: "Biblical/Enochic text, folklore, and newspaper/osteology claims with provenience" },
+          { id: "c", text: "Only AI art" },
+          { id: "d", text: "Only star-fort plans" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "A 19th-century newspaper giant skeleton story is:",
+        choices: [
+          { id: "a", text: "Automatically a museum catalog fact" },
+          { id: "b", text: "A clipping that may be sensational, erroneous, fraudulent, or occasionally mundane tall burial — needs provenience" },
+          { id: "c", text: "Illegal to read" },
+          { id: "d", text: "Identical to 1 Enoch chapter and verse" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Race-mystical 'prior race' giant stories are treated on this track as:",
+        choices: [
+          { id: "a", text: "Required doctrine" },
+          { id: "b", text: "Ethically and evidentially weak — colonial abuse patterns to notice, not entertain as hierarchy" },
+          { id: "c", text: "The only valid anthropology" },
+          { id: "d", text: "Proof of Tartaria alone" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/09": {
+    lessonId: "antediluvian/09",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Hyperdiffusionism claims that:",
+        choices: [
+          { id: "a", text: "No culture ever contacts another" },
+          { id: "b", text: "Most major 'high' culture radiates from one (or few) mother sources rather than repeated independent invention" },
+          { id: "c", text: "Only ice cores invent myths" },
+          { id: "d", text: "Maps are illegal" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Mainstream archaeology's usual stance is:",
+        choices: [
+          { id: "a", text: "Zero diffusion ever happens" },
+          { id: "b", text: "Lots of diffusion is real; hyperdiffusion as a universal rule is rejected because multiple centers and local sequences exist" },
+          { id: "c", text: "Atlantis is required curriculum" },
+          { id: "d", text: "Only YouTube counts" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "When evaluating a mother-culture claim, first:",
+        choices: [
+          { id: "a", text: "Accept the montage music as proof" },
+          { id: "b", text: "Define the trait precisely, date both ends, propose a vector, and check what should also have transferred" },
+          { id: "c", text: "Rank living peoples by 'advancement'" },
+          { id: "d", text: "Ignore local developmental sequences" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/10": {
+    lessonId: "antediluvian/10",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Rh blood groups in medicine are:",
+        choices: [
+          { id: "a", text: "A YouTube invention only" },
+          { id: "b", text: "Real genetics with clinical importance (e.g. pregnancy incompatibility) — not automatically antediluvian hybrid proof" },
+          { id: "c", text: "Proof of Agartha" },
+          { id: "d", text: "Identical to star-fort plans" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Upgrading Rh-negative status into a divine/non-human caste is treated here as:",
+        choices: [
+          { id: "a", text: "Required OS doctrine" },
+          { id: "b", text: "Extraordinary metaphysical claim that often smuggles hierarchy — refuse master-race framing" },
+          { id: "c", text: "The same as reading a peer-reviewed allele frequency table" },
+          { id: "d", text: "Proof Plato invented blood banks" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "If a channel cites genetics, the habit is:",
+        choices: [
+          { id: "a", text: "Trust the B-roll helix animation" },
+          { id: "b", text: "Open the paper / primary genetics source and separate Tier A science from Tier C myth" },
+          { id: "c", text: "Only trust another video" },
+          { id: "d", text: "Ignore all labs forever" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/11": {
+    lessonId: "antediluvian/11",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "'Tartary' on early modern maps is:",
+        choices: [
+          { id: "a", text: "CGI only" },
+          { id: "b", text: "A real cartographic label for poorly known Eurasian interiors — not auto-proof of one free-energy world empire" },
+          { id: "c", text: "Plato's personal estate name" },
+          { id: "d", text: "A NOAA ice-core code" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Windows half-below modern grade often reflect:",
+        choices: [
+          { id: "a", text: "Only a single global mud day with no other explanations" },
+          { id: "b", text: "Street raising, basements, renovations — check local municipal history before global slurry" },
+          { id: "c", text: "Proof of Nephilim plumbing" },
+          { id: "d", text: "That maps are fake" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "A global mud-flood reset is:",
+        choices: [
+          { id: "a", text: "Trivial and already proven by one photo" },
+          { id: "b", text: "An extraordinary claim needing stratigraphy and synchronized evidence, not only montage" },
+          { id: "c", text: "Identical to Younger Dryas by default" },
+          { id: "d", text: "Forbidden to question" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/12": {
+    lessonId: "antediluvian/12",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Many World's Fair landmark buildings were:",
+        choices: [
+          { id: "a", text: "Solid granite meant to last forever by contract" },
+          { id: "b", text: "Temporary staff/plaster spectacles designed for a season — demolition was often planned" },
+          { id: "c", text: "Built by Plato in 9600 BCE" },
+          { id: "d", text: "Only CGI in 2020" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Alternative media often reads fairs as:",
+        choices: [
+          { id: "a", text: "Boring trade shows with no photos" },
+          { id: "b", text: "Last public faces of a suppressed capital civilization — a claim that must beat temporary-construction evidence" },
+          { id: "c", text: "Federal Reserve board meetings only" },
+          { id: "d", text: "Identical to Göbekli enclosures" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "First step for a fair building claim is:",
+        choices: [
+          { id: "a", text: "Accept the drone music" },
+          { id: "b", text: "Identify year/city, materials, and planned duration from contemporary guides/engineering sources" },
+          { id: "c", text: "Assume mud flood" },
+          { id: "d", text: "Ignore all archives" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/13": {
+    lessonId: "antediluvian/13",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Mainstream military history explains star forts primarily as:",
+        choices: [
+          { id: "a", text: "Aether antennas only" },
+          { id: "b", text: "Gunpowder-era geometry against cannon (low walls, angled bastions, flanking fire)" },
+          { id: "c", text: "Neolithic farming plots" },
+          { id: "d", text: "World's Fair souvenir pins" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "EMF / free-energy readings of forts and domes must eventually provide:",
+        choices: [
+          { id: "a", text: "Only aesthetic resemblance" },
+          { id: "b", text: "Mechanism, units, and tests — not only sacred-geometry vibe" },
+          { id: "c", text: "A better soundtrack" },
+          { id: "d", text: "Proof military history never existed" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Formal resemblance between plans is:",
+        choices: [
+          { id: "a", text: "Automatic proof of identical function" },
+          { id: "b", text: "A hypothesis generator — function still needs evidence" },
+          { id: "c", text: "Illegal to notice" },
+          { id: "d", text: "The same as radiocarbon" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/14": {
+    lessonId: "antediluvian/14",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Classical Hyperborea is primarily:",
+        choices: [
+          { id: "a", text: "A NOAA sediment core" },
+          { id: "b", text: "A Greek literary/mythic far-north people/place later reused by esoteric writers" },
+          { id: "c", text: "A 1893 fair pavilion only" },
+          { id: "d", text: "A star-fort manual" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Agartha / hollow-earth kingdoms in modern alt media usually descend from:",
+        choices: [
+          { id: "a", text: "Peer-reviewed mantle tomography alone" },
+          { id: "b", text: "Occult/Theosophical and speculative traditions — cultural history first, extraordinary geophysics if claimed" },
+          { id: "c", text: "Only municipal street-raising records" },
+          { id: "d", text: "The Federal Reserve Act" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Polar origin myths that rank living peoples are:",
+        choices: [
+          { id: "a", text: "Encouraged as OS doctrine" },
+          { id: "b", text: "Rejected as hierarchy smuggling — study texts without race-mysticism upgrades" },
+          { id: "c", text: "Required for map reading" },
+          { id: "d", text: "Identical to plate tectonics" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/15": {
+    lessonId: "antediluvian/15",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "'Found not founded' in the strong sense means:",
+        choices: [
+          { id: "a", text: "Every plaque is perfect" },
+          { id: "b", text: "Official founders only rebranded older monumental infrastructure built by a lost culture — needs positive evidence, not only disbelief" },
+          { id: "c", text: "No building is multi-phase" },
+          { id: "d", text: "Only fair plaster exists" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Multi-phase rebuilding and spoliation are:",
+        choices: [
+          { id: "a", text: "Impossible in archaeology" },
+          { id: "b", text: "Normal — weak 'found' can mean reuse; strong antediluvian contractor claims need more" },
+          { id: "c", text: "Proof of one global year" },
+          { id: "d", text: "Only a YouTube filter" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Site-by-site method includes:",
+        choices: [
+          { id: "a", text: "Only drone music" },
+          { id: "b", text: "Phases, inscriptions/archives, quarries/logistics, tool-mark studies, and falsifiers" },
+          { id: "c", text: "Merging Baalbek and Chicago 1893 as one date" },
+          { id: "d", text: "Ignoring local sequences" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "antediluvian/16": {
+    lessonId: "antediluvian/16",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Treating Nephilim, Atlantis, YD, Piri Reis, Agartha, and Tartarian fairs as one empire without calendar conversion is:",
+        choices: [
+          { id: "a", text: "Strict chronology" },
+          { id: "b", text: "Mythic collage — seams should stay visible" },
+          { id: "c", text: "Required dig method" },
+          { id: "d", text: "The only EPISTEMIC_STANCE conclusion" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Tartaria/mud-flood photo arguments often emphasize which clock?",
+        choices: [
+          { id: "a", text: "Pre-Pottery Neolithic only" },
           { id: "b", text: "Early modern maps of Tartary and 18th–19th-century architecture/photos" },
-          { id: "c", text: "Plato's exact Greek meter" },
+          { id: "c", text: "Plato's exact Greek meter only" },
           { id: "d", text: "Greenland ice annual layers only" },
         ],
         correctId: "b",
       },
       {
         id: "q3",
-        prompt: "Treating Nephilim, Atlantis, YD, Piri Reis, and Tartarian fairs as one empire without calendar conversion is:",
-        choices: [
-          { id: "a", text: "Strict chronology" },
-          { id: "b", text: "Mythic collage — seams should stay visible" },
-          { id: "c", text: "Required dig method" },
-          { id: "d", text: "The same as EPISTEMIC_STANCE's only allowed conclusion" },
-        ],
-        correctId: "b",
-      },
-      {
-        id: "q4",
         prompt: "A healthy checkout habit for combined conclusions is to:",
         choices: [
           { id: "a", text: "Accept every glue word as proof" },
           { id: "b", text: "Keep, split, or drop claims based on whether evidence chains match the date and mechanism" },
           { id: "c", text: "Ignore all mainstream sources" },
           { id: "d", text: "Only trust music under the video" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "When blood/ethnicity enters an antediluvian essay, this track says:",
+        choices: [
+          { id: "a", text: "Rank peoples immediately" },
+          { id: "b", text: "Apply lesson 10's ethics filter — no master-race or single-villain ethnic frames" },
+          { id: "c", text: "Skip all genetics papers" },
+          { id: "d", text: "Treat Rh as proof of Agartha" },
         ],
         correctId: "b",
       },

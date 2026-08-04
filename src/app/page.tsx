@@ -43,6 +43,8 @@ import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { EducationApp } from "@/components/apps/education/EducationApp";
 import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
+import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
+import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
@@ -59,7 +61,9 @@ type AppId =
   | "shotlist"
   | "skulltext"
   | "skullmash"
-  | "education";
+  | "education"
+  | "nodemap"
+  | "stance";
 
 interface OpenWindow {
   id: string;
@@ -81,6 +85,8 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
   skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
   education: { title: "EDUCATION", width: 920, height: 640 },
+  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
+  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -233,6 +239,10 @@ export default function KoolskullOS() {
               <SkullMashApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "education" && <EducationApp />}
+            {win.appId === "nodemap" && (
+              <NodeMapApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "stance" && <StanceApp />}
           </AppWindow>
         ))}
 

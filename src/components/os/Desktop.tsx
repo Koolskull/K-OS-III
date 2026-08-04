@@ -32,13 +32,14 @@ const ICONS: DesktopIcon[] = [
   { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
   { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
   { id: "tilemap", label: "TILEMAP", glyph: "▤" },
+  { id: "nodemap", label: "NODEMAP", glyph: "◈" },
+  { id: "stance", label: "EPISTEMIC STANCE", glyph: "¶" },
   { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
   { id: "skullmash", label: "SKULLMASH", glyph: "◎" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "education", label: "EDUCATION", glyph: "§" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
-  // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
 ];
 
 export function Desktop({ onLaunchApp }: DesktopProps) {
@@ -50,11 +51,9 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
     const last = lastClickRef.current;
 
     if (last && last.id === id && now - last.time < 400) {
-      // Double-click: launch
       onLaunchApp(id);
       lastClickRef.current = null;
     } else {
-      // Single click: select
       setSelectedIcon(id);
       lastClickRef.current = { id, time: now };
     }
@@ -76,7 +75,6 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      {/* Icon grid */}
       <div
         style={{
           display: "flex",
@@ -107,7 +105,6 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
                 userSelect: "none",
               }}
             >
-              {/* Icon glyph */}
               <div
                 style={{
                   width: "36px",
@@ -122,7 +119,6 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               >
                 {icon.glyph}
               </div>
-              {/* Label */}
               <span
                 style={{
                   fontFamily: "var(--dm-font-primary)",

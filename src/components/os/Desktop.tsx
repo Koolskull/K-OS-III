@@ -35,6 +35,7 @@ const ICONS: DesktopIcon[] = [
   { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
+  { id: "education", label: "EDUCATION", glyph: "§" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
   // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
 ];

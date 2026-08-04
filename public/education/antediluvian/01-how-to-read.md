@@ -2,7 +2,7 @@
 track: antediluvian
 lesson: 01
 title: How to read alternative history
-estimated_minutes: 14
+estimated_minutes: 22
 ---
 
 # How to read alternative history
@@ -15,7 +15,7 @@ K-OS already has a rule for contested topics. Read [`docs/EPISTEMIC_STANCE.md`](
 
 ## What this track is for
 
-The **Antediluvian Observatory** surveys alternative theories about deep prehistory and the "pre-flood" era as they appear in research orbits adjacent to creators such as **John Levi**, **Mind Unveiled**, **Robert Sepehr (Atlantean Gardens)**, **Mr Mythos**, and similar programs.
+The **Antediluvian Observatory** surveys alternative theories about deep prehistory and the "pre-flood" era as they appear in research orbits adjacent to creators such as **John Levi**, **Mind Unveiled**, **Robert Sepehr (Atlantean Gardens)**, **Mr Mythos**, and similar programs. It also tracks the older scholarly and occult traditions those programs inherit: diffusionist anthropology, catastrophism, sacred geography, and the long argument over whether monumental stonework worldwide shares a forgotten parent culture.
 
 **The job is not to convert you.** Conversion media optimizes for belief change. Observation media optimizes for **map quality**:
 
@@ -23,6 +23,8 @@ The **Antediluvian Observatory** surveys alternative theories about deep prehist
 - What is the source?
 - What else does it contradict?
 - What would count as a failed prediction?
+
+The densest material in this track is not a single "smoking gun." It is the **pattern recognition** alternative researchers do across old maps, cross-continental architectural similarities, and buildings whose construction narratives feel incomplete — then the counter-pattern recognition mainstream specialists do with stratigraphy, radiocarbon, and local archival history. Both pattern systems can be wrong in places. Both deserve a chair.
 
 ## Primary, secondary, tertiary
 
@@ -32,7 +34,7 @@ The **Antediluvian Observatory** surveys alternative theories about deep prehist
 | **Secondary** | monographs, critical editions, careful essays | Bridge. Still check citations. |
 | **Tertiary** | textbooks, explainer videos, montages | Orientation. Not final authority on dates or mechanisms. |
 
-A longform video is almost always **secondary entertainment-scholarship**: excellent for generating questions, weak as the last word on radiocarbon or stratigraphy.
+A longform video is almost always **secondary entertainment-scholarship**: excellent for generating questions, weak as the last word on radiocarbon or stratigraphy. Occult and esoteric books (Blavatsky, Hapgood's more speculative pages, 19th-century diffusionists) are also secondary or tertiary relative to the stones and the sheets — even when they are historically influential.
 
 Useful doors:
 
@@ -40,8 +42,19 @@ Useful doors:
 - [Sacred Texts — Book of Enoch (Charles)](https://sacred-texts.com/bib/boe/index.htm)
 - [Göbekli Tepe — German Archaeological Institute overview](https://www.dainst.org/en/dai/meldungen)
 - [Plato, *Timaeus* & *Critias* (Perseus / public domain translations)](http://www.perseus.tufts.edu/)
+- Library of Congress / museum digital catalogs for early modern maps (lesson 05)
 
 {{illust:source-stack|Primary at the bottom, montage at the top — gravity still works.}}
+
+## Three research clusters this track returns to
+
+Later lessons dig into each. For orientation:
+
+1. **Old-map occultism and anomalous cartography** — readings of Piri Reis, Oronteus Finaeus, Buache, and related sheets as evidence of a lost hydrographic tradition or ice-free polar knowledge (Hapgood and successors; occult geography traditions that treat maps as compressed cosmology).
+2. **Cross-continental similarity** — flood myths, megalithic masonry habits, metrological claims, and diffusionist conclusions that a parent culture or shared catastrophe memory links the Old World and the New.
+3. **"Founded" buildings** — sites where conventional founding dates and later cultural attribution sit awkwardly beside construction scale, tool marks, or local memory (Göbekli Tepe, Baalbek-style megaliths, Andean cyclopean work, Egyptian orthodoxy vs alternative chronologies).
+
+These clusters **overlap** in the channels you named. They do not automatically share one clock or one mechanism. Lesson 06 is the honesty test for when narrators glue them anyway.
 
 ## Contradiction is data
 
@@ -51,8 +64,9 @@ Useful doors:
 | Atlantis | Plato + later Holocene proposals | Hubris, war, inundation | Dialogues, coastal claims |
 | Younger Dryas impact-style | ~12.8 ka | Cosmic or climatic shock | Proxies, megafauna debates |
 | Tartaria / mud flood | Often early modern–Victorian | Mud burial + historical reset | Photos, fairs, maps |
+| Lost cartographic source culture | Pre-modern / antediluvian | Advanced surveyors before "history" | Map sheets, projections |
 
-When a creator merges all four without adjusting clocks, you are watching **syncretic storytelling**. On this track, **contradiction is data**, not a bug to hide.
+When a creator merges all of the above without adjusting clocks, you are watching **syncretic storytelling**. On this track, **contradiction is data**, not a bug to hide.
 
 {{illust:four-clocks|Four clocks, four times — leave the seams visible.}}
 
@@ -61,7 +75,7 @@ When a creator merges all four without adjusting clocks, you are watching **sync
 1. **Dating** — What calendar? Shared nouns with different dates are false friends.
 2. **Mechanism** — How, physically or socially? Mood is not a mechanism.
 3. **Testability** — What observation would *lower* the claim's probability?
-4. **Provenance** — Archive ID, excavation report, manuscript siglum?
+4. **Provenance** — Archive ID, excavation report, manuscript siglum, plate shelfmark?
 
 ## Channel map (descriptive, not ranked)
 
@@ -70,7 +84,7 @@ When a creator merges all four without adjusting clocks, you are watching **sync
 - **[Robert Sepehr / Atlantean Gardens](https://www.youtube.com/@AtlanteangardensOrg)** — Atlantis, diffusionist and occult-history frames.
 - **[John Levi](https://www.youtube.com/@JohnLevi)** — esoteric continuity and alternative deep history.
 
-Treat each as a **question generator**. Trace key claims to primaries.
+Treat each as a **question generator**. Trace key claims to primaries. When they cite Hapgood, Plato, Enoch, or a museum map, go to those objects — not only to the thumbnail.
 
 ## What this track is not
 

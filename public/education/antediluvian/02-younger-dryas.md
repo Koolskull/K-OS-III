@@ -2,7 +2,7 @@
 track: antediluvian
 lesson: 02
 title: When the sky fell — Younger Dryas
-estimated_minutes: 18
+estimated_minutes: 24
 ---
 
 # When the sky fell — Younger Dryas
@@ -15,7 +15,7 @@ This lesson maps both frames. You decide how much weight each carries.
 
 ## Short version (mainstream)
 
-The Younger Dryas is documented in ice cores, pollen records, and paleolimnology. A leading mechanism hypothesis has long been **freshwater disruption of Atlantic overturning circulation** after ice-sheet meltwater floods (the "shutdown" storyline, still debated in detail).
+The Younger Dryas is documented in ice cores, pollen records, and paleolimnology. A leading mechanism hypothesis has long been **freshwater disruption of Atlantic overturning circulation** after ice-sheet meltwater floods (the "shutdown" storyline, still debated in detail). Whatever the trigger, the cooling is not a YouTube invention: it is a named stratigraphic and climatic interval with a large literature.
 
 Key doors:
 
@@ -40,11 +40,11 @@ Channels in the antediluvian orbit often treat YDIH as:
 
 1. a **dating anchor** for a lost advanced culture (~13 ka),
 2. a **mechanism** for global flood myths,
-3. a bridge to **Göbekli Tepe** and coastal inundation stories.
+3. a bridge to **Göbekli Tepe**, coastal inundation, and (more loosely) anomalous maps that supposedly record ice-free polar coasts.
 
 Watch for **clock merging**: Plato's "9,000 years before Solon," biblical flood calendars, and 12.8 ka proxies are not the same clock unless *you* do the conversion work and show it.
 
-Creators such as Robert Sepehr and adjacent Atlantis-oriented programs often narrate YD-scale catastrophe as civilizational death. Treat that as **interpretation layered on proxies**, not as the ice core itself speaking.
+Creators such as Robert Sepehr and adjacent Atlantis-oriented programs often narrate YD-scale catastrophe as civilizational death. Treat that as **interpretation layered on proxies**, not as the ice core itself speaking. Occult and Theosophical lineages had catastrophe chronologies long before YDIH papers existed; modern impact literature sometimes gets retrofitted into those older mythic schedules.
 
 ## Critical counterpoints (read them)
 
@@ -70,4 +70,4 @@ A healthy read: hold **both** the pro-impact papers and the skeptical reviews op
 
 > The ice remembers cold. Interpreters remember stories. Keep the difference labeled.
 
-Next: Göbekli Tepe — a site that rewrote the agricultural timeline and became a magnet for every antediluvian theory at once.
+Next: Göbekli Tepe and other megalithic sites whose "founding" stories feel thinner than the stone — the unexplained-origins problem alternative history keeps pressing.

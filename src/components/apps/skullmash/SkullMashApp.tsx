@@ -5,14 +5,13 @@
  *            ║  CUTOUT → 3D     ║
  *            ╚══════════════════╝
  *
- *   K-OS III native app — image-first cutout → balloon (OS chrome)
- *   Image-first freehand cutouts → soft balloon inflate →
- *   pin keyframes → export .glb + JSON
+ *   K-OS III native app — image-first cutout → balloon
+ *   Freehand regions → soft inflate → pin-warp keyframes → .glb + JSON
  *
  *   Planned: optional user-initiated NFT mint of objects for a fee
  *   (commerce + K-Wallet integration later).
  *
- *   v0.3.1 — K-OS chrome (black/yellow mono), freehand, photo balloon
+ *   v0.3.2 — pin IDW warp, dual-view animate, K-OS chrome, hotkeys
  */
 
 "use client";
@@ -23,6 +22,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { assetUrl } from "@/lib/assets";
 import { inflatePolygon, type Point2 } from "./inflate";
+import { applyPinWarp, resetToRest } from "./deform";
 import "./skullmash.css";
 
 type Mode = "DRAW" | "INFLATE" | "ANIMATE";
@@ -37,6 +37,8 @@ interface Pin {
   id: string;
   x: number;
   y: number;
+  restX: number;
+  restY: number;
 }
 
 interface Keyframe {
@@ -51,7 +53,7 @@ interface Props {
 const CANVAS_W = 720;
 const CANVAS_H = 720;
 const STROKE_MIN_DIST = 2.2;
-const SHAPE_COLORS = ["#c62828", "#1565c0", "#2e7d32", "#ef6c00", "#6a1b9a", "#00838f"];
+const SHAPE_COLORS = ["#ff4444", "#66aaff", "#66ff99", "#ffaa33", "#cc88ff", "#55dddd"];
 
 function uid(prefix: string) {
   return prefix + Math.random().toString(36).slice(2, 9);
@@ -72,6 +74,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   const [strokeVersion, setStrokeVersion] = useState(0);
   const drawingRef = useRef(false);
   const [pins, setPins] = useState<Pin[]>([]);
+  const pinsRef = useRef<Pin[]>([]);
   const [keyframes, setKeyframes] = useState<Keyframe[]>([]);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -87,6 +90,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   const imageDataRef = useRef<ImageData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragPinRef = useRef<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
   const threeHostRef = useRef<HTMLDivElement>(null);
@@ -98,6 +102,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   const matRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const userOrbitRef = useRef(false);
   const focusedRef = useRef(isFocused);
+  const restPosRef = useRef(new Map<THREE.BufferGeometry, Float32Array>());
 
   useEffect(() => {
     focusedRef.current = isFocused;
@@ -110,6 +115,10 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   useEffect(() => {
     shapesRef.current = shapes;
   }, [shapes]);
+
+  useEffect(() => {
+    pinsRef.current = pins;
+  }, [pins]);
 
   const bakeImage = useCallback((img: HTMLImageElement) => {
     const off = document.createElement("canvas");
@@ -214,8 +223,11 @@ export default function SkullMashApp({ isFocused = true }: Props) {
 
     if (imageDataRef.current) {
       ctx.putImageData(imageDataRef.current, 0, 0);
+      // slight vignette so strokes read
+      ctx.fillStyle = "rgba(0,0,0,0.08)";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     } else {
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
+      ctx.strokeStyle = "rgba(255,255,255,0.045)";
       ctx.lineWidth = 1;
       for (let i = 0; i < CANVAS_W; i += 48) {
         ctx.beginPath();
@@ -237,7 +249,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         ctx.lineTo(s.points[i]!.x, s.points[i]!.y);
       }
       ctx.closePath();
-      ctx.fillStyle = s.color + "33";
+      ctx.fillStyle = s.color + "44";
       ctx.fill();
       ctx.strokeStyle = s.color;
       ctx.lineWidth = 2.5;
@@ -272,6 +284,20 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     }
 
     if (mode === "ANIMATE") {
+      // rest ghosts
+      for (const pin of pins) {
+        if (pin.x === pin.restX && pin.y === pin.restY) continue;
+        ctx.beginPath();
+        ctx.arc(pin.restX, pin.restY, 5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,255,0,0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pin.restX, pin.restY);
+        ctx.lineTo(pin.x, pin.y);
+        ctx.strokeStyle = "rgba(255,255,0,0.4)";
+        ctx.stroke();
+      }
       for (const pin of pins) {
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, 8, 0, Math.PI * 2);
@@ -308,7 +334,9 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const fit = () => {
-      const s = Math.max(64, Math.min(host.clientWidth || 640, host.clientHeight || 640, 960));
+      const w = Math.max(64, host.clientWidth || 640);
+      const h = Math.max(64, host.clientHeight || 640);
+      const s = Math.min(w, h, 960);
       renderer.setSize(s, s, false);
       camera.aspect = 1;
       camera.updateProjectionMatrix();
@@ -366,11 +394,12 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     const tick = () => {
       if (!running) return;
       animIdRef.current = requestAnimationFrame(tick);
-      if (!focusedRef.current && modeRef.current !== "INFLATE") {
-        // still render when focused away only if inflate? skip heavy when unfocused
-      }
       controls.update();
-      if (modeRef.current === "INFLATE" && !userOrbitRef.current && focusedRef.current) {
+      if (
+        modeRef.current === "INFLATE" &&
+        !userOrbitRef.current &&
+        focusedRef.current
+      ) {
         group.rotation.y += 0.007;
       }
       renderer.render(scene, camera);
@@ -399,8 +428,23 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       cameraRef.current = null;
       controlsRef.current = null;
       sceneReadyRef.current = false;
+      restPosRef.current.clear();
     };
   }, [ready]);
+
+  const applyDeform = useCallback((list: Pin[]) => {
+    const group = meshGroupRef.current;
+    if (!group || !sceneReadyRef.current) return;
+    if (list.length === 0) {
+      resetToRest(group, restPosRef.current);
+      return;
+    }
+    const rest = list.map((p) => ({ id: p.id, x: p.restX, y: p.restY }));
+    const cur = list.map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    // always start from rest pose then warp (avoids drift)
+    resetToRest(group, restPosRef.current);
+    applyPinWarp(group, rest, cur, CANVAS_W, CANVAS_H, restPosRef.current);
+  }, []);
 
   const rebuildMeshes = useCallback(() => {
     const group = meshGroupRef.current;
@@ -412,6 +456,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       group.remove(ch);
       (ch as THREE.Mesh).geometry?.dispose();
     }
+    restPosRef.current.clear();
 
     const list = shapesRef.current;
     let count = 0;
@@ -429,6 +474,15 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       }
     }
 
+    // capture rest pose
+    group.traverse((obj) => {
+      if (!(obj as THREE.Mesh).isMesh) return;
+      const mesh = obj as THREE.Mesh;
+      const geo = mesh.geometry as THREE.BufferGeometry;
+      const pos = geo.getAttribute("position") as THREE.BufferAttribute;
+      if (pos) restPosRef.current.set(geo, new Float32Array(pos.array as Float32Array));
+    });
+
     if (count > 0 && cameraRef.current && controlsRef.current) {
       const box = new THREE.Box3().setFromObject(group);
       const size = box.getSize(new THREE.Vector3());
@@ -442,14 +496,24 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       );
       controlsRef.current.target.copy(center);
       controlsRef.current.update();
-      group.rotation.y = 0.4;
+      if (modeRef.current === "INFLATE") group.rotation.y = 0.4;
+      else group.rotation.y = 0.25;
     }
+
+    // re-apply current pin warp after rebuild
+    applyDeform(pinsRef.current);
     return count;
-  }, []);
+  }, [applyDeform]);
 
   useEffect(() => {
     rebuildMeshes();
   }, [rebuildMeshes, shapes, mode, ready, meshTick]);
+
+  // Live pin warp
+  useEffect(() => {
+    if (mode !== "ANIMATE" && mode !== "INFLATE") return;
+    applyDeform(pins);
+  }, [pins, mode, applyDeform, meshTick]);
 
   useEffect(() => {
     if (!playing || keyframes.length < 2) return;
@@ -513,7 +577,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       const color = SHAPE_COLORS[prev.length % SHAPE_COLORS.length]!;
       const shape: Shape = { id: uid("s"), points: closed, color };
       const next = [...prev, shape];
-      setStatus(`Region ${next.length} closed. Draw more, or press Next to inflate.`);
+      setStatus(`Region ${next.length} closed. Draw more, or press Next / Enter.`);
       return next;
     });
     strokeRef.current = [];
@@ -533,9 +597,9 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       const hit = pins.find((pin) => Math.hypot(pin.x - p.x, pin.y - p.y) < 16);
       if (hit) dragPinRef.current = hit.id;
       else {
-        const pin: Pin = { id: uid("p"), x: p.x, y: p.y };
+        const pin: Pin = { id: uid("p"), x: p.x, y: p.y, restX: p.x, restY: p.y };
         setPins((prev) => {
-          setStatus(`Pin ${prev.length + 1} · drag to move · REC KF on the timeline`);
+          setStatus(`Pin ${prev.length + 1} · drag to warp mesh · REC KF on timeline`);
           return [...prev, pin];
         });
       }
@@ -584,14 +648,19 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     setStatus("Removed last region.");
   };
 
-  const goNext = () => {
-    if (mode === "DRAW") {
-      if (shapes.length === 0) {
+  const resetPinsToRest = () => {
+    setPins((prev) => prev.map((p) => ({ ...p, x: p.restX, y: p.restY })));
+    setStatus("Pins reset to rest pose.");
+  };
+
+  const goNext = useCallback(() => {
+    if (modeRef.current === "DRAW") {
+      if (shapesRef.current.length === 0) {
         setStatus("Draw at least one closed region first.");
         return;
       }
       setMode("INFLATE");
-      setStatus("Inflated balloon — drag to orbit, scroll to zoom. Next → Animate.");
+      setStatus("Inflated balloon — drag to orbit. Next / Enter → Animate.");
       requestAnimationFrame(() => {
         const n = rebuildMeshes();
         setStatus(
@@ -600,23 +669,24 @@ export default function SkullMashApp({ isFocused = true }: Props) {
             : "Inflate produced no mesh — try a fuller closed stroke.",
         );
       });
-    } else if (mode === "INFLATE") {
+    } else if (modeRef.current === "INFLATE") {
       setMode("ANIMATE");
-      setStatus("Place red pins on the sketch, drag them, record keyframes.");
+      setStatus("Yellow pins warp the mesh. Drag · REC KF · Play. Enter exports GLB.");
+      requestAnimationFrame(() => rebuildMeshes());
     }
-  };
+  }, [rebuildMeshes]);
 
-  const goBack = () => {
-    if (mode === "ANIMATE") {
+  const goBack = useCallback(() => {
+    if (modeRef.current === "ANIMATE") {
       setMode("INFLATE");
       setStatus("Back to inflate — orbit the balloon.");
       requestAnimationFrame(() => rebuildMeshes());
-    } else if (mode === "INFLATE") {
+    } else if (modeRef.current === "INFLATE") {
       setMode("DRAW");
       setStatus("Back to draw — add or edit freehand regions.");
       setStrokeVersion((v) => v + 1);
     }
-  };
+  }, [rebuildMeshes]);
 
   const recordKeyframe = () => {
     if (pins.length === 0) {
@@ -630,16 +700,25 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     setKeyframes((prev) =>
       [...prev.filter((k) => Math.abs(k.time - time) > 0.02), kf].sort((a, b) => a.time - b.time),
     );
-    setStatus(`Keyframe @ t=${time.toFixed(2)}`);
+    setStatus(`Keyframe @ t=${time.toFixed(2)} · ${pins.length} pins`);
   };
 
-  const exportGLB = () => {
+  const exportGLB = useCallback(() => {
     rebuildMeshes();
+    applyDeform(pinsRef.current);
     const g = meshGroupRef.current;
     if (!g || g.children.length === 0) {
       setStatus("Nothing to export — draw & inflate first.");
       return;
     }
+    // freeze current deformed pose into geometry for export
+    g.traverse((obj) => {
+      if (!(obj as THREE.Mesh).isMesh) return;
+      const mesh = obj as THREE.Mesh;
+      const geo = mesh.geometry as THREE.BufferGeometry;
+      const pos = geo.getAttribute("position");
+      if (pos) pos.needsUpdate = true;
+    });
     const exporter = new GLTFExporter();
     exporter.parse(
       g,
@@ -651,7 +730,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         a.download = `skullmash_${Date.now()}.glb`;
         a.click();
         URL.revokeObjectURL(url);
-        setStatus("Exported binary glTF (.glb)");
+        setStatus("Exported binary glTF (.glb) at current pose");
       },
       (err) => {
         console.error(err);
@@ -659,20 +738,26 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       },
       { binary: true },
     );
-  };
+  }, [rebuildMeshes, applyDeform]);
 
   const exportJSON = () => {
     const data = {
-      version: "0.3.0",
+      version: "0.3.2",
       tool: "SKULLMASH",
       host: "K-OS-III",
-      workflow: "image → freehand cutout → balloon inflate → pin keyframes",
+      workflow: "image → freehand cutout → balloon inflate → pin-warp keyframes",
       canvas: { w: CANVAS_W, h: CANVAS_H },
       shapes: shapes.map((s) => ({ id: s.id, points: s.points, color: s.color })),
-      pins,
+      pins: pins.map((p) => ({
+        id: p.id,
+        x: p.x,
+        y: p.y,
+        restX: p.restX,
+        restY: p.restY,
+      })),
       keyframes,
       notes:
-        "Monster Mash–style image-first pipeline. Pair .glb with this JSON for pin playback in Stardrain / custom players. Optional NFT mint planned (user-initiated, for a fee).",
+        "Pin rest vs current encodes IDW mesh warp. Pair .glb with this JSON for pin playback. Optional NFT mint planned (user-initiated, for a fee).",
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -681,11 +766,61 @@ export default function SkullMashApp({ isFocused = true }: Props) {
     a.download = `skullmash_anim_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setStatus("Exported JSON project + animation data");
+    setStatus("Exported JSON project + pin-warp animation data");
   };
 
+  // Hotkeys when focused
+  useEffect(() => {
+    if (!isFocused || !ready) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (modeRef.current === "ANIMATE") exportGLB();
+        else goNext();
+      } else if (e.key === "Escape" || e.key === "Backspace") {
+        if (e.key === "Backspace" && modeRef.current === "DRAW") {
+          e.preventDefault();
+          undoLast();
+          return;
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          goBack();
+        }
+      } else if ((e.key === "z" || e.key === "Z") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (modeRef.current === "DRAW") undoLast();
+      } else if (e.key === "z" || e.key === "Z") {
+        if (modeRef.current === "DRAW") {
+          e.preventDefault();
+          undoLast();
+        }
+      } else if (e.key === "k" || e.key === "K") {
+        if (modeRef.current === "ANIMATE") {
+          e.preventDefault();
+          recordKeyframe();
+        }
+      } else if (e.key === " ") {
+        if (modeRef.current === "ANIMATE" && keyframes.length >= 2) {
+          e.preventDefault();
+          setPlaying((p) => !p);
+        }
+      } else if (e.key === "r" || e.key === "R") {
+        if (modeRef.current === "ANIMATE") {
+          e.preventDefault();
+          resetPinsToRest();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFocused, ready, goNext, goBack, exportGLB, keyframes.length]);
+
   const showSketch = mode === "DRAW" || mode === "ANIMATE";
-  const show3d = mode === "INFLATE";
+  const show3d = mode === "INFLATE" || mode === "ANIMATE";
+  const dual = mode === "ANIMATE";
   const onWelcome = !ready;
 
   const nextLabel = mode === "ANIMATE" ? "Export" : "Next";
@@ -698,11 +833,11 @@ export default function SkullMashApp({ isFocused = true }: Props) {
   };
 
   return (
-    <div className="sm-root">
+    <div className="sm-root" ref={rootRef} tabIndex={0}>
       <header className="sm-bar">
         <span className="sm-title">SKULLMASH</span>
-        <span className="sm-chip">K-OS · cutout → balloon</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+        <span className="sm-chip">cutout · balloon · pin-warp</span>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
           <button type="button" className="sm-bar-btn primary" onClick={() => fileInputRef.current?.click()}>
             Image
           </button>
@@ -716,6 +851,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
               setKeyframes([]);
               strokeRef.current = [];
               setMode("DRAW");
+              setPlaying(false);
               setStatus("Draw or upload an image to begin.");
             }}
           >
@@ -734,14 +870,14 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         onDrop={onDrop}
       >
         {ready && (
-          <div style={{ position: "absolute", left: "50%", top: 10, transform: "translateX(-50%)", zIndex: 20 }}>
+          <div style={{ position: "absolute", left: "50%", top: 8, transform: "translateX(-50%)", zIndex: 20 }}>
             <div className="sm-steps">
               <button
                 type="button"
                 className={`sm-step ${mode === "DRAW" ? "active" : shapes.length ? "done" : ""}`}
                 onClick={() => {
                   setMode("DRAW");
-                  setStatus("Freehand closed regions over the image.");
+                  setStatus("Freehand closed regions. Z undo · Enter next.");
                   setStrokeVersion((v) => v + 1);
                 }}
               >
@@ -756,7 +892,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                     return;
                   }
                   setMode("INFLATE");
-                  setStatus("Soft balloon mesh — orbit with drag.");
+                  setStatus("Soft balloon — orbit with drag. Enter → Animate.");
                   requestAnimationFrame(() => rebuildMeshes());
                 }}
               >
@@ -771,7 +907,8 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                     return;
                   }
                   setMode("ANIMATE");
-                  setStatus("Place pins, record keyframes.");
+                  setStatus("Yellow pins warp mesh · K = REC KF · Space play · R rest");
+                  requestAnimationFrame(() => rebuildMeshes());
                 }}
               >
                 <span className="num">3</span> Animate
@@ -781,12 +918,12 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         )}
 
         {ready && mode === "DRAW" && (
-          <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", zIndex: 20 }}>
+          <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", zIndex: 20 }}>
             <div className="sm-rail">
               <button
                 type="button"
                 className={`sm-rail-btn ${drawTool === "pen" ? "active" : ""}`}
-                title="Freehand pen"
+                title="Pen"
                 onClick={() => setDrawTool("pen")}
               >
                 ✎
@@ -799,11 +936,10 @@ export default function SkullMashApp({ isFocused = true }: Props) {
               >
                 ▹
               </button>
-              <div style={{ height: 1, width: 28, background: "rgba(0,0,0,0.1)", margin: "4px 0" }} />
               <button type="button" className="sm-rail-btn" title="Open image" onClick={() => fileInputRef.current?.click()}>
                 ↥
               </button>
-              <button type="button" className="sm-rail-btn" title="Undo" disabled={shapes.length === 0} onClick={undoLast}>
+              <button type="button" className="sm-rail-btn" title="Undo (Z)" disabled={shapes.length === 0} onClick={undoLast}>
                 ↺
               </button>
               <button type="button" className="sm-rail-btn danger" title="Clear" disabled={shapes.length === 0} onClick={clearAll}>
@@ -813,16 +949,35 @@ export default function SkullMashApp({ isFocused = true }: Props) {
           </div>
         )}
 
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
-          <div className="sm-canvas-wrap">
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: dual ? 8 : 0,
+            padding: dual ? "40px 8px 56px" : 8,
+          }}
+        >
+          {/* Sketch plane */}
+          <div
+            className="sm-canvas-wrap"
+            style={{
+              display: showSketch || onWelcome ? "block" : "none",
+              flex: dual ? "1 1 50%" : undefined,
+              maxWidth: dual ? "48%" : undefined,
+              height: dual ? "100%" : undefined,
+            }}
+          >
             <canvas
               data-testid="sketch-canvas"
               ref={canvas2dRef}
               width={CANVAS_W}
               height={CANVAS_H}
               style={{
-                zIndex: showSketch ? 10 : 0,
-                opacity: showSketch ? 1 : 0,
+                zIndex: 10,
+                opacity: 1,
                 pointerEvents: showSketch ? "auto" : "none",
                 touchAction: "none",
                 cursor:
@@ -839,17 +994,6 @@ export default function SkullMashApp({ isFocused = true }: Props) {
               onContextMenu={(e) => e.preventDefault()}
             />
 
-            <div
-              ref={threeHostRef}
-              className="sm-three"
-              data-testid="three-host"
-              style={{
-                zIndex: show3d ? 10 : 0,
-                opacity: show3d ? 1 : 0,
-                pointerEvents: show3d ? "auto" : "none",
-              }}
-            />
-
             {onWelcome && (
               <div
                 style={{
@@ -860,16 +1004,17 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 20,
+                  gap: 18,
                   padding: 24,
+                  background: "#000",
                 }}
               >
                 <div className="sm-welcome">
-                  <div className="sm-welcome-icon">✎</div>
+                  <div className="sm-welcome-icon">◎</div>
                   <h1>Draw or upload an image</h1>
                   <p>Freehand cutouts inflate into soft 3D · export GLB + JSON</p>
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
                   <button type="button" className="sm-next" onClick={() => fileInputRef.current?.click()}>
                     Upload image
                   </button>
@@ -880,26 +1025,73 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                     Blank stage
                   </button>
                 </div>
-                <p style={{ maxWidth: 320, textAlign: "center", fontSize: 12, color: "#666666", lineHeight: 1.5 }}>
-                  Drop a photo on the stage. Trace closed shapes · hit{" "}
-                  <span style={{ color: "#ffff00" }}>NEXT</span> · animate pins.
-                  Optional NFT mint of your object (for a fee) is planned.
+                <p style={{ maxWidth: 340, textAlign: "center", fontSize: 9, color: "#666", letterSpacing: 1, textTransform: "uppercase", lineHeight: 1.7, fontFamily: "var(--dm-font-primary)" }}>
+                  Drop a photo · trace closed shapes ·{" "}
+                  <span style={{ color: "#ffff00" }}>Next</span> · pin-warp · export.
+                  Optional NFT mint (for a fee) planned.
                 </p>
               </div>
             )}
+          </div>
 
+          {/* 3D balloon */}
+          <div
+            className="sm-canvas-wrap"
+            style={{
+              display: show3d ? "block" : "none",
+              flex: dual ? "1 1 50%" : undefined,
+              maxWidth: dual ? "48%" : mode === "INFLATE" ? undefined : 0,
+              height: dual || mode === "INFLATE" ? "100%" : undefined,
+            }}
+          >
+            <div
+              ref={threeHostRef}
+              className="sm-three"
+              data-testid="three-host"
+              style={{
+                zIndex: 10,
+                opacity: 1,
+                pointerEvents: show3d ? "auto" : "none",
+              }}
+            />
             {show3d && shapes.length === 0 && (
-              <div style={{ position: "absolute", inset: 0, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <p style={{ background: "#000", border: "1px solid #444", color: "#ffff00", padding: "8px 14px", fontSize: 9, letterSpacing: 1, textTransform: "uppercase" as const, fontFamily: "var(--dm-font-primary)" }}>
-                  Draw regions first
-                </p>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 20,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  pointerEvents: "none",
+                }}
+              >
+                <p className="sm-hint">Draw regions first</p>
+              </div>
+            )}
+            {dual && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  left: 6,
+                  zIndex: 15,
+                  fontFamily: "var(--dm-font-primary)",
+                  fontSize: 8,
+                  letterSpacing: 1,
+                  color: "#666",
+                  textTransform: "uppercase",
+                  pointerEvents: "none",
+                }}
+              >
+                3D warp
               </div>
             )}
           </div>
         </div>
 
         {ready && mode === "DRAW" && (
-          <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+          <div style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
             <label className="sm-brush">
               Brush
               <input
@@ -915,9 +1107,9 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         )}
 
         {ready && mode === "ANIMATE" && (
-          <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+          <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
             <div className="sm-timeline">
-              <button type="button" className="sm-footer-btn" onClick={recordKeyframe}>
+              <button type="button" className="sm-footer-btn" onClick={recordKeyframe} title="K">
                 REC KF
               </button>
               <button
@@ -925,10 +1117,14 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                 className="sm-footer-btn"
                 disabled={keyframes.length < 2}
                 onClick={() => setPlaying((p) => !p)}
+                title="Space"
               >
                 {playing ? "Stop" : "Play"}
               </button>
-              <span style={{ fontFamily: "var(--sm-mono)", fontSize: 11, color: "#888888" }}>
+              <button type="button" className="sm-footer-btn" onClick={resetPinsToRest} title="R" disabled={pins.length === 0}>
+                Rest
+              </button>
+              <span style={{ fontFamily: "var(--dm-font-primary)", fontSize: 9, color: "#888", letterSpacing: 1 }}>
                 t={time.toFixed(2)}
               </span>
               <input
@@ -942,7 +1138,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                   setTime(parseFloat(e.target.value));
                 }}
               />
-              <span style={{ fontSize: 11, color: "#666666" }}>
+              <span style={{ fontSize: 9, color: "#666", letterSpacing: 1, fontFamily: "var(--dm-font-primary)" }}>
                 {pins.length}p · {keyframes.length}kf
               </span>
               <button
@@ -952,16 +1148,17 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                 onClick={() => {
                   setPins([]);
                   setKeyframes([]);
+                  setStatus("Pins cleared.");
                 }}
               >
-                Clear pins
+                Clear
               </button>
             </div>
           </div>
         )}
 
         {ready && (
-          <div style={{ position: "absolute", bottom: 16, right: 14, zIndex: 30, display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ position: "absolute", bottom: 12, right: 10, zIndex: 30, display: "flex", gap: 6, alignItems: "center" }}>
             {mode !== "DRAW" && (
               <button type="button" className="sm-back" onClick={goBack}>
                 ← Back
@@ -985,6 +1182,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
         <span className="sm-status" style={{ flex: "none" }}>
           {shapes.length} region{shapes.length === 1 ? "" : "s"}
           {hasImage ? " · image" : ready ? " · blank" : ""}
+          {mode === "ANIMATE" ? " · warp" : ""}
         </span>
         <button type="button" className="sm-footer-btn primary" onClick={exportGLB}>
           .GLB

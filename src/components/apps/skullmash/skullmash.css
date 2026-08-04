@@ -393,3 +393,8 @@
   text-transform: uppercase;
   padding: 8px 14px;
 }
+
+/* Dual-view animate: allow side-by-side panels to shrink */
+.sm-stage .sm-canvas-wrap {
+  min-width: 0;
+}

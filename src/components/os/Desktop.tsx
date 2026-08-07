@@ -27,6 +27,7 @@ interface DesktopIcon {
 }
 
 const ICONS: DesktopIcon[] = [
+  { id: "identity", label: "IDENTITY", glyph: "◉" },
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
   { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },

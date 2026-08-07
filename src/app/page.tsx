@@ -45,12 +45,14 @@ import { EducationApp } from "@/components/apps/education/EducationApp";
 import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
+import { IdentityApp } from "@/components/apps/identity/IdentityApp";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
 type AppId =
+  | "identity"
   | "datamoshpit"
   | "bible"
   | "games"
@@ -74,6 +76,7 @@ interface OpenWindow {
 }
 
 const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
+  identity: { title: "IDENTITY", width: 640, height: 560 },
   datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
@@ -243,6 +246,7 @@ export default function KoolskullOS() {
               <NodeMapApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "stance" && <StanceApp />}
+            {win.appId === "identity" && <IdentityApp />}
           </AppWindow>
         ))}
 

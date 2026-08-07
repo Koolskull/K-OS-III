@@ -53,6 +53,7 @@
     "tailwindcss": "^4.2.1",
     "three": "^0.183.2",
     "tone": "^15.1.22",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "viem": "^2.55.11"
   }
 }

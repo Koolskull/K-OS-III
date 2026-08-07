@@ -36,6 +36,7 @@ const ICONS: DesktopIcon[] = [
   { id: "stance", label: "EPISTEMIC STANCE", glyph: "¶" },
   { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
   { id: "skullmash", label: "SKULLMASH", glyph: "◎" },
+  { id: "notes", label: "NOTES", glyph: "✎" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "education", label: "EDUCATION", glyph: "§" },

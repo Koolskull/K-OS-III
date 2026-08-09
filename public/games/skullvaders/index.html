@@ -1,0 +1,327 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SKULLVADERS</title>
+<style>
+  @font-face {
+    font-family: 'kongtext';
+    src: url('/fonts/kongtext-webfont.woff2') format('woff2'),
+         url('/fonts/kongtext-webfont.woff') format('woff');
+  }
+  html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;outline:none;-webkit-tap-highlight-color:transparent;}
+</style>
+</head>
+<body>
+<canvas id="c" width="160" height="120" tabindex="0"></canvas>
+<script>
+/*
+ * SKULLVADERS — a tiny Space Invaders clone, 1-bit dithered pixel art
+ * (as if every sprite were drawn in KoolDraw's dither pen). No build step,
+ * no libraries, no audio files — one file, one canvas, Web Audio square
+ * waves for every sound.
+ *
+ * Sprite format: array of strings. '#' = solid pixel. 'x' = dithered pixel
+ * (drawn only on a checkerboard parity, same idea as KoolDraw's ordered-
+ * dither tool) so flat shapes read as shaded without a second color.
+ */
+const ctx = document.getElementById('c').getContext('2d');
+const W = 160, H = 120;
+
+function drawSprite(sprite, x, y) {
+  ctx.fillStyle = '#fff';
+  for (let r = 0; r < sprite.length; r++) {
+    const row = sprite[r];
+    for (let col = 0; col < row.length; col++) {
+      const ch = row[col];
+      if (ch === '#' || (ch === 'x' && (col + r) % 2 === 0)) {
+        ctx.fillRect(x + col, y + r, 1, 1);
+      }
+    }
+  }
+}
+
+const SHIP = [
+  '...##...',
+  '..####..',
+  '..####..',
+  '.######.',
+  '########',
+  '##.##.##',
+];
+
+const SKULL = [
+  '..####..',
+  '.######.',
+  '##.##.##',
+  '##x##x##',
+  '########',
+  '##.xx.##',
+  '.######.',
+  '.#.##.#.',
+];
+
+const MONSTER = [
+  '#........#',
+  '##x....x##',
+  '.##x..x##.',
+  '..##xx##..',
+  '...####...',
+  '..######..',
+  '.##....##.',
+  '#..####..#',
+];
+
+const spriteW = s => s[0].length;
+const spriteH = s => s.length;
+
+/* ── 1-bit chiptune audio — square waves + noise bursts, nothing else ── */
+let actx = null;
+function audioCtx() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function beep(freq, dur, vol, sweepTo) {
+  const ac = audioCtx();
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, ac.currentTime);
+  if (sweepTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, sweepTo), ac.currentTime + dur);
+  gain.gain.setValueAtTime(vol ?? 0.15, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+  osc.connect(gain).connect(ac.destination);
+  osc.start();
+  osc.stop(ac.currentTime + dur);
+}
+function noiseBurst(dur, vol) {
+  const ac = audioCtx();
+  const size = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const buffer = ac.createBuffer(1, size, ac.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buffer;
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(vol ?? 0.2, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+  src.connect(gain).connect(ac.destination);
+  src.start();
+}
+function arpeggio(freqs, step, vol) {
+  freqs.forEach((f, i) => setTimeout(() => beep(f, step * 1.2, vol ?? 0.15), i * step * 1000));
+}
+const sfx = {
+  laser: () => beep(880, 0.1, 0.1, 220),
+  fire: () => beep(180, 0.09, 0.12, 90),
+  hit: () => noiseBurst(0.12, 0.18),
+  crash: () => noiseBurst(0.4, 0.3),
+  win: () => arpeggio([523, 659, 784, 1046], 0.09),
+  gameover: () => arpeggio([392, 349, 294, 196], 0.16),
+};
+
+// Classic Space-Invaders 4-note descending "heartbeat" bass — the theme —
+// ticking faster as fewer enemies remain.
+const BASS_NOTES = [98, 87, 82, 73];
+let bassIdx = 0, bassTimer = 0;
+function bassTick() {
+  if (!started || over) return;
+  const alive = enemies.filter(e => e.alive).length;
+  const total = Math.max(1, enemies.length);
+  const framesPerBeat = 8 + Math.floor((alive / total) * 32);
+  bassTimer++;
+  if (bassTimer >= framesPerBeat) {
+    bassTimer = 0;
+    beep(BASS_NOTES[bassIdx % 4], 0.1, 0.09);
+    bassIdx++;
+  }
+}
+
+// ── State ──
+let lives = 3;
+let score = 0;
+let wave = 1;
+let over = false;
+let started = false;
+
+const player = { x: W / 2 - 4, y: H - 12, w: spriteW(SHIP), h: spriteH(SHIP), cool: 0 };
+let bullets = [];      // player bullets, {x,y}
+let enemyBullets = []; // enemy bullets, {x,y}
+let enemies = [];
+let dir = 1;
+let stepTimer = 0;
+let enemySpeed = 1;
+
+function spawnWave() {
+  enemies = [];
+  const cols = 6, rows = 3, gapX = 16, gapY = 14;
+  const offsetX = (W - cols * gapX) / 2;
+  for (let r = 0; r < rows; r++) {
+    const sprite = r === 0 ? MONSTER : SKULL;
+    for (let c = 0; c < cols; c++) {
+      enemies.push({
+        x: offsetX + c * gapX,
+        y: 12 + r * gapY,
+        sprite,
+        alive: true,
+      });
+    }
+  }
+  enemySpeed = 1 + (wave - 1) * 0.4;
+  dir = 1;
+}
+
+function resetGame() {
+  lives = 3; score = 0; wave = 1; over = false;
+  bullets = []; enemyBullets = [];
+  bassIdx = 0; bassTimer = 0;
+  player.x = W / 2 - 4;
+  spawnWave();
+}
+
+// ── Input ──
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (!started && e.code === 'Space') { audioCtx(); started = true; resetGame(); }
+  if (over && (e.code === 'Space' || e.code === 'Enter')) { over = false; started = true; resetGame(); }
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+document.getElementById('c').addEventListener('pointerdown', () => document.getElementById('c').focus());
+document.getElementById('c').focus();
+
+function hit(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function update() {
+  if (!started || over) return;
+  bassTick();
+
+  if (keys['ArrowLeft']) player.x -= 1.4;
+  if (keys['ArrowRight']) player.x += 1.4;
+  player.x = Math.max(0, Math.min(W - player.w, player.x));
+
+  if (keys['Space'] && player.cool <= 0 && bullets.length < 3) {
+    bullets.push({ x: player.x + player.w / 2, y: player.y - 3 });
+    player.cool = 12;
+    sfx.laser();
+  }
+  if (player.cool > 0) player.cool--;
+
+  bullets.forEach(b => b.y -= 2.2);
+  bullets = bullets.filter(b => b.y > -4);
+
+  enemyBullets.forEach(b => b.y += 1.6);
+  enemyBullets = enemyBullets.filter(b => b.y < H + 4);
+  if (Math.random() < 0.02 + wave * 0.005) {
+    const alive = enemies.filter(e => e.alive);
+    if (alive.length) {
+      const e = alive[Math.floor(Math.random() * alive.length)];
+      enemyBullets.push({ x: e.x + spriteW(e.sprite) / 2, y: e.y + spriteH(e.sprite) });
+      sfx.fire();
+    }
+  }
+
+  // Enemy formation movement — classic side-to-side + step down at edges
+  stepTimer += enemySpeed;
+  if (stepTimer >= 8) {
+    stepTimer = 0;
+    let hitEdge = false;
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      if (e.x + dir <= 0 || e.x + spriteW(e.sprite) + dir >= W) hitEdge = true;
+    });
+    if (hitEdge) {
+      dir *= -1;
+      enemies.forEach(e => { e.y += 4; });
+    } else {
+      enemies.forEach(e => { e.x += dir; });
+    }
+  }
+
+  // Collisions: player bullets vs enemies
+  bullets.forEach(b => {
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      if (hit(b.x, b.y, 1, 2, e.x, e.y, spriteW(e.sprite), spriteH(e.sprite))) {
+        e.alive = false;
+        b.y = -100;
+        score += e.sprite === MONSTER ? 15 : 10;
+        sfx.hit();
+      }
+    });
+  });
+
+  // Collisions: enemy bullets vs player
+  enemyBullets.forEach(b => {
+    if (hit(b.x, b.y, 1, 2, player.x, player.y, player.w, player.h)) {
+      b.y = H + 100;
+      loseLife();
+    }
+  });
+  // Reaching the player's row is an instant loss (checked once via `over`,
+  // not loseLife(), since multiple enemies could cross the line on the
+  // same frame and loseLife() isn't idempotent).
+  if (!over && enemies.some(e => e.alive && e.y + spriteH(e.sprite) >= player.y)) {
+    lives = 0;
+    over = true;
+    sfx.gameover();
+  }
+
+  if (enemies.every(e => !e.alive)) { wave++; sfx.win(); spawnWave(); }
+}
+
+function loseLife() {
+  lives--;
+  bullets = []; enemyBullets = [];
+  player.x = W / 2 - 4;
+  if (lives <= 0) { over = true; sfx.gameover(); }
+  else sfx.crash();
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!started) {
+    drawSprite(SKULL, W / 2 - 4, 30);
+    text('SKULLVADERS', 20, 55, true);
+    text('PRESS SPACE', 40, 70);
+    return;
+  }
+
+  drawSprite(SHIP, player.x, player.y);
+  enemies.forEach(e => { if (e.alive) drawSprite(e.sprite, e.x, e.y); });
+  ctx.fillStyle = '#fff';
+  bullets.forEach(b => ctx.fillRect(b.x, b.y, 1, 3));
+  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, 1, 3));
+
+  text('SCORE ' + score, 2, 6);
+  text('L' + lives, W - 16, 6);
+
+  if (over) {
+    text('GAME OVER', 48, 50, true);
+    text('SPACE=RETRY', 38, 62);
+  }
+}
+
+function text(str, x, y, big) {
+  ctx.fillStyle = '#fff';
+  ctx.font = (big ? '8px' : '6px') + " 'kongtext', monospace";
+  ctx.textBaseline = 'top';
+  ctx.fillText(str, x, y);
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

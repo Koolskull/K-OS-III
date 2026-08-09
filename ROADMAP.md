@@ -40,6 +40,7 @@ Bigger pieces, not yet sized into individual PRs. Most of these unlock follow-on
 - **Chat (Farcaster adapter)** — read-only first, then signing via K-Wallet.
 - **DDR Cabinet input profile** — large-target UI mode optimized for foot input and 3-6ft viewing distance.
 - **PWA / installable web app** — manifest, service worker, offline-first for the OS shell and the bundled apps.
+- **KoolDraw vector mode** — a pen tool in the spirit of classic Flash / Wick Editor: freehand strokes become editable, scalable vector shapes (not just pixels), living in the same asset library as raster KoolDraw projects. Genuinely separate from the current pixel-art engine — real-time stroke-to-vector-shape fitting is its own design problem — so this needs its own scoping pass before it's sized into PRs.
 
 ---
 

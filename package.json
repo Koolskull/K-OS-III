@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev -p 5555",
     "build": "next build",
-    "build:export": "K_OS_EXPORT=true NEXT_PUBLIC_BASE_PATH=/K-OS-III next build",
+    "build:export": "NEXT_PUBLIC_BASE_PATH=/K-OS-III NEXT_PUBLIC_BRAND=kos3 ./scripts/build-static.sh",
+    "build:2kooltv": "NEXT_PUBLIC_BASE_PATH= NEXT_PUBLIC_BRAND=2kooltv ./scripts/build-static.sh",
     "start": "next start -p 5555",
     "lint": "tsc --noEmit",
     "preview:export": "npm run build:export && cd out && python3 -m http.server 4044"
@@ -22,6 +23,7 @@
   "author": "2kool Productions",
   "license": "ISC",
   "dependencies": {
+    "@auth/pg-adapter": "^1.11.3",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-cpp": "^6.0.3",
@@ -43,16 +45,25 @@
     "@types/node": "^25.5.0",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
+    "@walletconnect/ethereum-provider": "^2.23.10",
+    "bcryptjs": "^3.0.3",
     "codemirror": "^6.0.2",
+    "ethers": "^6.17.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
     "next": "^16.1.6",
+    "next-auth": "^5.0.0-beta.32",
+    "pg": "^8.22.0",
     "postcss": "^8.5.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "siwe": "^3.0.0",
     "tailwindcss": "^4.2.1",
     "three": "^0.183.2",
     "tone": "^15.1.22",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
   }
 }

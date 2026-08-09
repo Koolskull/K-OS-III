@@ -1,0 +1,25 @@
+# Local-only Postgres for developing the accounts system (see docs/ACCOUNTS_SPEC.md).
+# Not used in production — the real deployment runs against a self-hosted
+# Postgres on the project owner's own server, per the self-hosting direction
+# agreed for this project.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   psql "postgresql://kos_dev:kos_dev_password@localhost:5433/kos_dev" -f db/schema.sql
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kos_dev
+      POSTGRES_PASSWORD: kos_dev_password
+      POSTGRES_DB: kos_dev
+    ports:
+      # Non-default host port so this doesn't collide with a system Postgres.
+      - "5433:5432"
+    volumes:
+      - kos_dev_pgdata:/var/lib/postgresql/data
+
+volumes:
+  kos_dev_pgdata:

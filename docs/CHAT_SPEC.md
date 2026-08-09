@@ -1,8 +1,24 @@
 # Chat & Messaging — Design Spec
 
-**Status:** design document. No adapters are implemented in this pass. This spec is what future PRs build against — Matrix first, then Farcaster, then community-contributed adapters.
+**Status:** design document with a dual-rail shell stub on `2kooltv`. Live XMTP / matrix-js-sdk adapters are not implemented yet; `src/lib/chat/` holds types + honest stubs, and `KChatApp` is the pixel shell.
 
-K-OS ships with a single chat app whose **UI and protocol are decoupled.** The app is a minimal, pixel-correct, keyboard-first messenger shell. The protocol layer is pluggable. A user can wire one adapter, several adapters, or all of them simultaneously; channels from different networks appear side-by-side in the same interface.
+K-OS ships with a single chat app whose **UI and protocol are decoupled.** The app is a minimal, pixel-correct, keyboard-first messenger shell. The protocol layer is pluggable. A user can wire one adapter, several adapters, or all of them simultaneously; channels from different networks appear side-by-side in the same interface **without pretending they share one encryption domain.**
+
+### Dual-rail non-negotiable (wallet/ENS ≠ Matrix)
+
+| Rail | Identity | Transport | Encryption / retention |
+|------|----------|-----------|------------------------|
+| **Wallet / ENS** | `0x` or ENS | XMTP when SDK wired; local cache until then | Network E2EE only when XMTP live; **not** Matrix |
+| **Matrix** | `@user:homeserver` | Matrix C-S HTTP (K-CHAT stores chat token in localStorage; Account sign-in still discards tokens) | Room E2EE when marked; verify devices in Element for full crypto |
+| **Server 48h** | K-OS user id | Postgres **text only** | Auto-delete **48h**; **no** images/video; not E2EE — lightweight notes only |
+
+**UI:** collapsible left list of DMs vs groups with PFPs; filters favorites / Matrix / ENS / 48h.
+
+**Server weight:** Matrix history stays on the homeserver; XMTP on XMTP network. K-OS Postgres only holds ephemeral text notes (+ profile data). No media uploads on server notes.
+
+**X Chat (Twitter):** X Chat API/XDK exists (2026) but is deferred — API cost/complexity. Optional later adapter only.
+
+Account linking (see `ACCOUNTS_SPEC.md`) can put identities on one portfolio. That does **not** merge chat rails.
 
 **Precedent for this pattern:** Beeper, Bitlbee, Pidgin, Matrix's own bridge ecosystem. None of these are K-OS's target aesthetic — the point is that the architectural pattern (one UI, many transports) is well-established and known to work. K-OS's version is smaller, pixel-correct, and native to the OS.
 

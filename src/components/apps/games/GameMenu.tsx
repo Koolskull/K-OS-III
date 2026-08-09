@@ -37,6 +37,12 @@ const GAMES: GameEntry[] = [
     desc: "SEGA GENESIS / MD – PICODRIVE (LIGHT)",
     src: "/games/genesis/index.html",
   },
+  {
+    id: "skullvaders",
+    name: "SKULLVADERS",
+    desc: "1-BIT DITHERED SPACE INVADERS - VANILLA JS",
+    src: "/games/skullvaders/index.html",
+  },
 ];
 
 interface KeyMapping {
@@ -72,6 +78,7 @@ const GAME_KEY_MAPS: Record<string, Record<string, KeyMapping>> = {
 const GAME_HELP: Record<string, string> = {
   keen: "ARROWS:MOVE  Q:JUMP  W:POGO  SHOOT:FIRE  ESC:EXIT",
   genesis: "ARROWS:MOVE  A/B/C/X/Y/Z  START  ESC:EXIT",
+  skullvaders: "LEFT/RIGHT:MOVE  SPACE:SHOOT  ESC:EXIT",
 };
 
 const DEFAULT_HELP = "ARROWS:MOVE  Q:ACTION  W:ALT  SPACE:CONFIRM  ESC:EXIT";
@@ -569,6 +576,77 @@ function MegaDriveTouchPad({
 }
 
 /* ══════════════════════════════════════════════════════════════
+   SKULLVADERS CONTROLLER  (LEFT / RIGHT / SHOOT — nothing else needed)
+   ══════════════════════════════════════════════════════════════ */
+
+function SkullvadersTouchPad({
+  onArrow,
+  onAction,
+  help,
+}: {
+  onArrow: (dir: "up" | "down" | "left" | "right", type: "keydown" | "keyup") => void;
+  onAction: (kosCode: string, type: "keydown" | "keyup") => void;
+  help: string;
+}) {
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
+  const setActive = (id: string, on: boolean) => {
+    setActiveKeys((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+  const bindHold = useHoldBind(setActive);
+  const styleFor = (id: string): React.CSSProperties => (activeKeys.has(id) ? ACTIVE_STYLE : CIRCLE_STYLE);
+
+  return (
+    <div
+      className="dm-touch-controller flex-shrink-0 border-t-2"
+      style={{
+        borderColor: "#1a1a1a",
+        backgroundColor: "#000000",
+        padding: "10px 12px",
+        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        fontFamily: "var(--dm-font-primary)",
+      }}
+    >
+      <div style={{ fontSize: 7, color: "#555", letterSpacing: 1, marginBottom: 8, textAlign: "center" }}>
+        {help}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, maxWidth: 360, margin: "0 auto" }}>
+        <div style={{ display: "flex", gap: BTN_GAP }}>
+          <button
+            type="button"
+            className="dm-touch-btn-circle"
+            style={styleFor("left")}
+            {...bindHold("left", () => onArrow("left", "keydown"), () => onArrow("left", "keyup"))}
+          >
+            LT
+          </button>
+          <button
+            type="button"
+            className="dm-touch-btn-circle"
+            style={styleFor("right")}
+            {...bindHold("right", () => onArrow("right", "keydown"), () => onArrow("right", "keyup"))}
+          >
+            RT
+          </button>
+        </div>
+        <button
+          type="button"
+          className="dm-touch-btn-circle"
+          style={{ ...styleFor("shoot"), width: BTN_SIZE * 2, borderRadius: 0 }}
+          {...bindHold("shoot", () => onAction("Space", "keydown"), () => onAction("Space", "keyup"))}
+        >
+          SHOOT
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
    MAIN GAME MENU
    ══════════════════════════════════════════════════════════════ */
 
@@ -809,6 +887,7 @@ export function GameMenu() {
                   width: "100%",
                   height: "100%",
                   border: 0,
+                  outline: "none",
                   backgroundColor: "#000000",
                 }}
                 allow="autoplay; gamepad; storage-access"
@@ -842,6 +921,12 @@ export function GameMenu() {
               onArrow={sendArrow}
               onAction={sendAction}
               help={GAME_HELP.genesis}
+            />
+          ) : activeGame.id === "skullvaders" ? (
+            <SkullvadersTouchPad
+              onArrow={sendArrow}
+              onAction={sendAction}
+              help={GAME_HELP.skullvaders}
             />
           ) : null)}
       </div>

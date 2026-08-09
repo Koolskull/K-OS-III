@@ -41,31 +41,24 @@ import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWiki
 import TilemapApp from "@/components/apps/tilemap/TilemapApp";
 import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
+import { AccountApp } from "@/components/apps/account/AccountApp";
+import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
+import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
+import { KChatApp, type KChatLaunchOpts } from "@/components/apps/chat/KChatApp";
 import { EducationApp } from "@/components/apps/education/EducationApp";
 import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { NotesApp } from "@/components/apps/notes/NotesApp";
-import { assetUrl } from "@/lib/assets";
+import { AppManagerApp } from "@/components/apps/appmanager/AppManagerApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
+import { HAS_BACKEND } from "@/lib/buildFlags";
+import { APP_CATALOG, type AppId } from "@/lib/apps/catalog";
+import { canLaunchApp, recordAppOpen } from "@/lib/apps/installStore";
+import { usageClockBlur, usageClockFocus } from "@/lib/apps/usageClock";
+import { syncActivityToAccount } from "@/lib/apps/activitySync";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
-
-type AppId =
-  | "datamoshpit"
-  | "bible"
-  | "games"
-  | "kooldraw"
-  | "manual"
-  | "stardrain-wiki"
-  | "tilemap"
-  | "shotlist"
-  | "skulltext"
-  | "skullmash"
-  | "education"
-  | "nodemap"
-  | "stance"
-  | "notes";
 
 interface OpenWindow {
   id: string;
@@ -75,23 +68,23 @@ interface OpenWindow {
   zIndex: number;
 }
 
-const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
-  datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
-  bible: { title: "HOLY BIBLE", width: 640, height: 500 },
-  games: { title: "GAMES", width: 700, height: 550 },
-  kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
-  manual: { title: "K-OS MANUAL", width: 880, height: 600 },
-  "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
-  tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
-  shotlist: { title: "SHOTLIST", width: 900, height: 640 },
-  skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
-  skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
-  education: { title: "EDUCATION", width: 920, height: 640 },
-  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
-  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
-  notes: { title: "NOTES", width: 860, height: 620 },
-  // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
-};
+/** Window defaults from the versioned app catalog (single source of truth). */
+const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> =
+  Object.fromEntries(
+    APP_CATALOG.map((p) => [
+      p.id,
+      {
+        title: p.defaultWindow.title,
+        width: p.defaultWindow.width,
+        height: p.defaultWindow.height,
+      },
+    ]),
+  ) as Record<AppId, { title: string; width: number; height: number }>;
+
+/** No local-only mode exists for these — entirely useless without /api/*. */
+const BACKEND_ONLY_APPS = new Set<AppId>(
+  APP_CATALOG.filter((p) => p.requiresCloud).map((p) => p.id),
+);
 
 let windowCounter = 0;
 
@@ -100,16 +93,47 @@ export default function KoolskullOS() {
   const [windows, setWindows] = useState<OpenWindow[]>([]);
   const [focusedWindowId, setFocusedWindowId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(1);
+  const [chatLaunch, setChatLaunch] = useState<KChatLaunchOpts | undefined>(undefined);
+  const [shotlistLaunch, setShotlistLaunch] = useState<{ sequenceId: number } | undefined>(undefined);
+  const [kooldrawLaunch, setKooldrawLaunch] = useState<{ projectId: number } | undefined>(undefined);
+  const [appManagerHighlight, setAppManagerHighlight] = useState<string | null>(null);
 
-  const launchApp = useCallback((appId: string) => {
-    const id = appId as AppId;
+  const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number } | { projectId: number }) => {
+    let id = appId as AppId;
+    // Legacy id from earlier thin implementation
+    if ((appId as string) === "app-manager") id = "appmanager";
+
+    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return;
+
+    // Not installed → open App Manager with that package highlighted
+    if (!canLaunchApp(id) && id !== "appmanager") {
+      setAppManagerHighlight(id);
+      id = "appmanager";
+    }
+
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
+
+    recordAppOpen(id);
+    if (id !== "appmanager") {
+      void syncActivityToAccount();
+    }
+
+    if (id === "chat" && launchOpts) {
+      setChatLaunch(launchOpts as KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string });
+    }
+    if (id === "shotlist" && launchOpts && "sequenceId" in launchOpts) {
+      setShotlistLaunch(launchOpts);
+    }
+    if (id === "kooldraw" && launchOpts && "projectId" in launchOpts) {
+      setKooldrawLaunch(launchOpts);
+    }
 
     // If app is already open, focus it
     const existing = windows.find((w) => w.appId === id);
     if (existing) {
       setFocusedWindowId(existing.id);
+      usageClockFocus(id);
       setNextZIndex((z) => z + 1);
       setWindows((prev) =>
         prev.map((w) =>
@@ -141,26 +165,33 @@ export default function KoolskullOS() {
 
     setWindows((prev) => [...prev, newWindow]);
     setFocusedWindowId(windowId);
+    usageClockFocus(id);
     setNextZIndex((z) => z + 1);
   }, [windows, nextZIndex]);
 
   const focusWindow = useCallback((id: string) => {
     setFocusedWindowId(id);
+    const win = windows.find((w) => w.id === id);
+    if (win) usageClockFocus(win.appId);
     setNextZIndex((z) => {
       setWindows((prev) =>
         prev.map((w) => (w.id === id ? { ...w, zIndex: z } : w)),
       );
       return z + 1;
     });
-  }, []);
+  }, [windows]);
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => prev.filter((w) => w.id !== id));
     setFocusedWindowId((prev) => {
       if (prev !== id) return prev;
       const remaining = windows.filter((w) => w.id !== id);
-      if (remaining.length === 0) return null;
+      if (remaining.length === 0) {
+        usageClockBlur();
+        return null;
+      }
       remaining.sort((a, b) => b.zIndex - a.zIndex);
+      usageClockFocus(remaining[0].appId);
       return remaining[0].id;
     });
   }, [windows]);
@@ -225,15 +256,28 @@ export default function KoolskullOS() {
             {win.appId === "bible" && <BibleReader />}
             {win.appId === "games" && <GameMenu />}
             {win.appId === "kooldraw" && (
-              <KoolDrawApp isFocused={win.id === focusedWindowId} />
+              <KoolDrawApp isFocused={win.id === focusedWindowId} launchProjectId={kooldrawLaunch?.projectId} />
             )}
             {win.appId === "manual" && <ManualApp />}
+            {win.appId === "appmanager" && (
+              <AppManagerApp
+                highlightAppId={appManagerHighlight}
+                onOpenApp={(id) => {
+                  setAppManagerHighlight(null);
+                  launchApp(id);
+                }}
+              />
+            )}
             {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
             {win.appId === "tilemap" && (
               <TilemapApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "shotlist" && (
-              <ShotlistApp isFocused={win.id === focusedWindowId} />
+              <ShotlistApp
+                isFocused={win.id === focusedWindowId}
+                launchSequenceId={shotlistLaunch?.sequenceId}
+                onOpenKoolDrawProject={(projectId) => launchApp("kooldraw", { projectId })}
+              />
             )}
             {win.appId === "skulltext" && (
               <SkullTextApp isFocused={win.id === focusedWindowId} />
@@ -249,6 +293,16 @@ export default function KoolskullOS() {
             {win.appId === "notes" && (
               <NotesApp isFocused={win.id === focusedWindowId} />
             )}
+            {win.appId === "account" && <AccountApp />}
+            {win.appId === "browser" && (
+              <KOSBrowserApp
+                onMessage={(opts) => launchApp("chat", opts)}
+              />
+            )}
+            {win.appId === "prodev" && (
+              <PRODEVApp onOpenShotlistSequence={(sequenceId) => launchApp("shotlist", { sequenceId })} />
+            )}
+            {win.appId === "chat" && <KChatApp launch={chatLaunch} />}
           </AppWindow>
         ))}
 
@@ -261,20 +315,9 @@ export default function KoolskullOS() {
           focusedId={focusedWindowId}
           onWindowClick={handleTaskbarClick}
           onShowDesktop={showDesktop}
+          onLaunchApp={launchApp}
         />
 
-        {/* Screen glitch overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            opacity: 0.07,
-            zIndex: 999999,
-            mixBlendMode: "screen",
-          }}
-        />
       </div>
     </CreativeWorkflowProvider>
   );

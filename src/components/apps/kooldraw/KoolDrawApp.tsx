@@ -20,6 +20,8 @@ import {
   downloadCanvasAsPng,
   downloadFramesAsZip,
   downloadAnimationBundle,
+  serializeProjectToBundleZip,
+  loadProjectFromBundleZip,
   loadProjectFromDataUrl,
   dataUrlToMonoDataUrl,
   resizeProject,
@@ -61,6 +63,7 @@ import {
 } from "@/components/ui/CornerChrome";
 import { PixelKnob } from "@/components/ui/PixelKnob";
 import { PixelColorPicker } from "@/components/ui/PixelColorPicker";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 
 export interface KoolDrawEmbeddedMode {
   initialWidth?: number;
@@ -73,6 +76,8 @@ export interface KoolDrawEmbeddedMode {
 interface KoolDrawAppProps {
   isFocused: boolean;
   embeddedMode?: KoolDrawEmbeddedMode;
+  /** Auto-load this saved project on mount — e.g. "EDIT DRAWING" from PRODEV/Shotlist. */
+  launchProjectId?: number;
 }
 
 /** Shape / utility tools (freehand stack comes from modular registry) */
@@ -214,15 +219,15 @@ const headerBtn = (active: boolean): React.CSSProperties => ({
   justifyContent: "center",
 });
 
-export function KoolDrawApp({ isFocused, embeddedMode }: KoolDrawAppProps) {
+export function KoolDrawApp({ isFocused, embeddedMode, launchProjectId }: KoolDrawAppProps) {
   return (
     <CornerHost storageKey="kos-kooldraw-chrome" style={{ backgroundColor: "#000" }}>
-      <KoolDrawInner isFocused={isFocused} embeddedMode={embeddedMode} />
+      <KoolDrawInner isFocused={isFocused} embeddedMode={embeddedMode} launchProjectId={launchProjectId} />
     </CornerHost>
   );
 }
 
-function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
+function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawAppProps) {
   const chrome = useCornerChromeOptional();
   const isNarrow = chrome?.isNarrow ?? false;
   const uiHidden = chrome?.uiHidden ?? false;
@@ -234,8 +239,17 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
   const [project, setProject] = useState<SpriteProject>(() =>
     createBlankSprite("SPRITE", embeddedMode?.initialWidth ?? 32, embeddedMode?.initialHeight ?? 32),
   );
-  /** Mandatory name+size prompt before drawing — skipped when arriving via a handoff/embed, which already have their own naming/sizing context. */
-  const [needsSetup, setNeedsSetup] = useState(() => !embeddedMode && !handoff);
+  /** Mandatory name+size prompt before drawing — skipped when arriving via a handoff/embed/deep-link, which already have their own naming/sizing context. */
+  const [needsSetup, setNeedsSetup] = useState(() => !embeddedMode && !handoff && launchProjectId == null);
+
+  /* ---- Persistence (Postgres save/load) ---- */
+  const [serverProjectId, setServerProjectId] = useState<number | null>(null);
+  const [savingProject, setSavingProject] = useState(false);
+  const [savedProjects, setSavedProjects] = useState<
+    Array<{ id: number; name: string; width: number; height: number; updated_at: string }>
+  >([]);
+  const [loadingSavedProjects, setLoadingSavedProjects] = useState(false);
+  const [showOpenExisting, setShowOpenExisting] = useState(false);
   const [setupName, setSetupName] = useState("");
   const [setupW, setSetupW] = useState(32);
   const [setupH, setSetupH] = useState(32);
@@ -447,12 +461,73 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
     };
   }, [handoff?.id, embeddedMode, forceRender, handoff]);
 
+  const loadProjectById = useCallback(
+    async (id: number) => {
+      const res = await fetch(`/api/kooldraw/projects/${id}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const proj = await loadProjectFromBundleZip(blob);
+      setProject(proj);
+      setServerProjectId(id);
+      setActiveFrameIndex(0);
+      setActiveLayerIndex(0);
+      setZoom(clampPixelZoom(fitPixelZoom(proj.width, proj.height, 720, 520)));
+      historyRef.current = [{ layers: snapshotLayers(proj.layers), activeFrameIndex: 0, activeLayerIndex: 0 }];
+      historyIndexRef.current = 0;
+      setNeedsSetup(false);
+      setShowOpenExisting(false);
+      forceRender();
+    },
+    [forceRender],
+  );
+
+  useEffect(() => {
+    if (launchProjectId != null) loadProjectById(launchProjectId);
+    // Only re-run when the launch target itself changes; loadProjectById is stable enough in practice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchProjectId]);
+
+  const loadSavedProjectsList = useCallback(async () => {
+    setLoadingSavedProjects(true);
+    const res = await fetch("/api/kooldraw/projects");
+    if (res.ok) setSavedProjects(await res.json());
+    setLoadingSavedProjects(false);
+  }, []);
+
   const exportCurrentDataUrl = useCallback(() => {
     return frameToCanvas(
       compositeFrame(project.layers, activeFrameIndex, project.width, project.height),
       1,
     ).toDataURL("image/png");
   }, [project, activeFrameIndex]);
+
+  const saveProject = useCallback(
+    async (asNew: boolean) => {
+      setSavingProject(true);
+      try {
+        const zipBlob = await serializeProjectToBundleZip(project, 1);
+        const thumbnail = exportCurrentDataUrl();
+        const form = new FormData();
+        form.set("file", zipBlob, "project.zip");
+        form.set("name", project.name || "UNTITLED");
+        form.set("width", String(project.width));
+        form.set("height", String(project.height));
+        form.set("thumbnail", thumbnail);
+
+        const targetId = asNew ? null : serverProjectId;
+        const res = targetId != null
+          ? await fetch(`/api/kooldraw/projects/${targetId}`, { method: "PUT", body: form })
+          : await fetch("/api/kooldraw/projects", { method: "POST", body: form });
+        if (res.ok) {
+          const saved = await res.json();
+          setServerProjectId(saved.id);
+        }
+      } finally {
+        setSavingProject(false);
+      }
+    },
+    [project, serverProjectId, exportCurrentDataUrl],
+  );
 
   const returnHandoff = useCallback(async () => {
     if (!handoff) return;
@@ -1706,6 +1781,27 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
         onOpacityChange={handleLayerOpacity}
         onReorder={handleReorderLayer}
       />
+      {HAS_BACKEND && (
+        <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
+          <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>PROJECT</span>
+          <button
+            onClick={() => saveProject(false)}
+            disabled={savingProject}
+            style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}
+          >
+            {savingProject ? "SAVING…" : serverProjectId != null ? "SAVE" : "SAVE PROJECT"}
+          </button>
+          {serverProjectId != null && (
+            <button
+              onClick={() => saveProject(true)}
+              disabled={savingProject}
+              style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}
+            >
+              SAVE AS NEW
+            </button>
+          )}
+        </div>
+      )}
       <div className="border-t" style={{ borderColor: "#1a1a1a", padding: 4 }}>
         <span style={{ fontSize: 7, color: "#888", letterSpacing: 1, display: "block", marginBottom: 2 }}>EXPORT</span>
         <button onClick={exportFrames} style={{ width: "100%", height: 20, border: "1px solid #333", background: "#000", color: "#888", fontFamily: "var(--dm-font-primary)", fontSize: 7, cursor: "pointer", marginBottom: 2 }}>PNG ZIP</button>
@@ -2086,6 +2182,66 @@ function KoolDrawInner({ isFocused, embeddedMode }: KoolDrawAppProps) {
           >
             START DRAWING
           </button>
+
+          {HAS_BACKEND && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !showOpenExisting;
+                  setShowOpenExisting(next);
+                  if (next) loadSavedProjectsList();
+                }}
+                style={{
+                  width: "100%",
+                  height: 22,
+                  marginTop: 6,
+                  border: "1px solid #555",
+                  background: "#000",
+                  color: "#888",
+                  fontFamily: "inherit",
+                  fontSize: 7,
+                  letterSpacing: 1,
+                  cursor: "pointer",
+                }}
+              >
+                {showOpenExisting ? "▾ HIDE SAVED PROJECTS" : "▸ OPEN EXISTING PROJECT"}
+              </button>
+
+              {showOpenExisting && (
+                <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #333" }}>
+                  {loadingSavedProjects ? (
+                    <div style={{ fontSize: 7, color: "#666", padding: 6 }}>LOADING…</div>
+                  ) : savedProjects.length === 0 ? (
+                    <div style={{ fontSize: 7, color: "#666", padding: 6 }}>NO SAVED PROJECTS YET.</div>
+                  ) : (
+                    savedProjects.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => loadProjectById(p.id)}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "4px 6px",
+                          border: "none",
+                          borderBottom: "1px solid #1a1a1a",
+                          background: "transparent",
+                          color: "#ccc",
+                          fontFamily: "inherit",
+                          fontSize: 7,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {p.name} — {p.width}×{p.height}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

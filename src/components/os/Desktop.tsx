@@ -5,66 +5,56 @@
  *            ║  DESKTOP         ║
  *            ╚═══════════════════╝
  *
- *   Desktop with icon grid. Double-click to launch apps.
- *   Classic Win98 layout: icons flow top-left, down then right.
- *
- *   Saint Michael the Archangel, defend this desktop.
- *   Holy Guardian Angels, order every window under Heaven.
+ *   Icons = core ∪ installs (App Manager). Double-click to launch.
  */
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  desktopPackages,
+  loadInstallState,
+  subscribeInstalls,
+  type InstallStoreState,
+} from "@/lib/apps/installStore";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
 }
 
-interface DesktopIcon {
-  id: string;
-  label: string;
-  glyph: string;
-}
-
-const ICONS: DesktopIcon[] = [
-  { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
-  { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
-  { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
-  { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
-  { id: "tilemap", label: "TILEMAP", glyph: "▤" },
-  { id: "nodemap", label: "NODEMAP", glyph: "◈" },
-  { id: "stance", label: "EPISTEMIC STANCE", glyph: "¶" },
-  { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
-  { id: "skullmash", label: "SKULLMASH", glyph: "◎" },
-  { id: "notes", label: "NOTES", glyph: "✎" },
-  { id: "games", label: "GAMES", glyph: ">" },
-  { id: "manual", label: "MANUAL", glyph: "?" },
-  { id: "education", label: "EDUCATION", glyph: "§" },
-  { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
-];
-
 export function Desktop({ onLaunchApp }: DesktopProps) {
+  const [state, setState] = useState<InstallStoreState>({ version: 1, installs: {} });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const lastClickRef = React.useRef<{ id: string; time: number } | null>(null);
 
-  const handleIconClick = useCallback((id: string) => {
-    const now = Date.now();
-    const last = lastClickRef.current;
+  useEffect(() => {
+    setState(loadInstallState());
+    return subscribeInstalls(() => setState(loadInstallState()));
+  }, []);
 
-    if (last && last.id === id && now - last.time < 400) {
-      onLaunchApp(id);
-      lastClickRef.current = null;
-    } else {
-      setSelectedIcon(id);
-      lastClickRef.current = { id, time: now };
-    }
-  }, [onLaunchApp]);
+  const icons = desktopPackages(state);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && selectedIcon) {
-      onLaunchApp(selectedIcon);
-    }
-  }, [selectedIcon, onLaunchApp]);
+  const handleIconClick = useCallback(
+    (id: string) => {
+      const now = Date.now();
+      const last = lastClickRef.current;
+      if (last && last.id === id && now - last.time < 400) {
+        onLaunchApp(id);
+        lastClickRef.current = null;
+      } else {
+        setSelectedIcon(id);
+        lastClickRef.current = { id, time: now };
+      }
+    },
+    [onLaunchApp],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && selectedIcon) onLaunchApp(selectedIcon);
+    },
+    [selectedIcon, onLaunchApp],
+  );
 
   return (
     <div
@@ -87,7 +77,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
           height: "calc(100% - var(--dm-taskbar-h, 32px))",
         }}
       >
-        {ICONS.map((icon) => {
+        {icons.map((icon) => {
           const isSelected = selectedIcon === icon.id;
           return (
             <div
@@ -108,31 +98,34 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
             >
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
+                  width: 36,
+                  height: 36,
+                  border: "1px solid #444",
+                  background: "#0a0a0a",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "20px",
-                  color: "#ffffff",
-                  imageRendering: "pixelated",
+                  fontSize: 16,
+                  color: "#fff",
+                  fontFamily: "var(--dm-font-primary)",
                 }}
               >
                 {icon.glyph}
               </div>
-              <span
+              <div
                 style={{
                   fontFamily: "var(--dm-font-primary)",
                   fontSize: "var(--dm-ui-font-xs, 7px)",
-                  color: "#ffffff",
-                  letterSpacing: "1px",
+                  color: "#ccc",
                   textAlign: "center",
-                  wordBreak: "break-all",
-                  lineHeight: "1.25",
+                  letterSpacing: "0.5px",
+                  lineHeight: 1.2,
+                  maxWidth: 60,
+                  wordBreak: "break-word",
                 }}
               >
                 {icon.label}
-              </span>
+              </div>
             </div>
           );
         })}

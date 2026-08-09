@@ -1,0 +1,7 @@
+# Heavy instrument banks live on IPFS / files host — keep out of Vercel payload
+public/Instruments/
+datamoshpit/
+out/
+.next/
+node_modules/
+.git/

@@ -50,6 +50,8 @@ import { LivePads } from "@/components/apps/datamoshpit/live/LivePads";
 import { InputRouter } from "@/lib/InputRouter";
 import type { InputAction } from "@/lib/InputRouter";
 import { AudioEngine } from "@/engine/audio/AudioEngine";
+import { startRenderCapture, type RenderCapture } from "@/lib/datamoshpit/renderCapture";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 import { TrackerEngine } from "@/engine/tracker/TrackerEngine";
 import {
   findPhraseById,
@@ -164,6 +166,11 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
   const [activeScene, setActiveScene] = useState(0);
   const [pendingScene, setPendingScene] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [bouncing, setBouncing] = useState(false);
+  const [bounceUploading, setBounceUploading] = useState(false);
+  const [lastRenderId, setLastRenderId] = useState<number | null>(null);
+  const [bounceError, setBounceError] = useState<string | null>(null);
+  const bounceCaptureRef = useRef<RenderCapture | null>(null);
   const [lastTriggeredPad, setLastTriggeredPad] = useState(0);
   const [patternBank, setPatternBank] = useState(0); // offsets scene indices by 8
   const [playbackInfo, setPlaybackInfo] = useState<Array<{
@@ -1437,6 +1444,54 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
     [activeInstrument],
   );
 
+  const toggleBounce = useCallback(async () => {
+    setBounceError(null);
+    if (bouncing) {
+      bounceCaptureRef.current?.stop();
+      return;
+    }
+    const engine = engineRef.current;
+    if (!engine) return;
+    try {
+      await AudioEngine.getInstance().init();
+      const stream = AudioEngine.getInstance().getRecordingStream();
+      const capture = startRenderCapture(stream);
+      bounceCaptureRef.current = capture;
+      setBouncing(true);
+      if (!engine.isPlaying()) {
+        await engine.play(0);
+        setPlaying(true);
+      }
+      const { blob, mimeType, seconds } = await capture.done;
+      bounceCaptureRef.current = null;
+      setBouncing(false);
+      if (engine.isPlaying()) {
+        engine.stop();
+        setPlaying(false);
+      }
+
+      setBounceUploading(true);
+      const form = new FormData();
+      form.set("file", blob, "render.webm");
+      form.set("title", project.name || "UNTITLED SONG");
+      form.set("kind", "audio");
+      form.set("seconds", String(seconds));
+      const res = await fetch("/api/datamoshpit/renders", { method: "POST", body: form });
+      setBounceUploading(false);
+      if (res.ok) {
+        const saved = (await res.json()) as { id: number };
+        setLastRenderId(saved.id);
+      } else {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        setBounceError(body?.error ?? `Upload failed (mime: ${mimeType})`);
+      }
+    } catch (err) {
+      setBouncing(false);
+      setBounceUploading(false);
+      setBounceError(err instanceof Error ? err.message : "Render failed.");
+    }
+  }, [bouncing, project.name]);
+
   const hasCustomFont = preferences.font !== "kongtext";
 
   return (
@@ -1507,6 +1562,42 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
           >
             VM{sceneVmDemoIdx === null ? "" : sceneVmDemoIdx < SCENE_VM_DEMOS.length ? `:${sceneVmDemoIdx + 1}` : ":FLW"}
           </button>
+          {HAS_BACKEND && (
+            <>
+              <button
+                onClick={toggleBounce}
+                disabled={bounceUploading}
+                title={bouncing ? "Stop and upload the render" : "Bounce to file — records real-time playback"}
+                style={{
+                  fontFamily: "var(--dm-font-primary)",
+                  fontSize: "8px",
+                  color: bouncing ? "#000000" : "#888888",
+                  backgroundColor: bouncing ? "#ff3333" : "transparent",
+                  border: "1px solid #888888",
+                  padding: "0 4px",
+                  cursor: "pointer",
+                  imageRendering: "pixelated",
+                }}
+              >
+                {bounceUploading ? "UPLOADING…" : bouncing ? "● STOP" : "● REC"}
+              </button>
+              {bounceError && (
+                <span style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#ff6666" }}>
+                  {bounceError.toUpperCase()}
+                </span>
+              )}
+              {lastRenderId != null && !bouncing && !bounceUploading && (
+                <a
+                  href={`/render/${lastRenderId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontFamily: "var(--dm-font-primary)", fontSize: "8px", color: "#00ff88" }}
+                >
+                  ▶ RENDER #{lastRenderId}
+                </a>
+              )}
+            </>
+          )}
           <span
             style={{
               fontFamily: "var(--dm-font-primary)",

@@ -164,17 +164,27 @@ Auth.js v5 automatically trusts the request host when it detects Vercel.
    curl https://<preview>.vercel.app/api/auth/providers   # JSON, not 404
    curl https://<preview>.vercel.app/api/ethereum/nonce   # {"nonce":"..."}
    ```
-5. **Domain.** Two options:
-   - `app.2kool.tv` (or `os.2kool.tv`) → CNAME to `cname.vercel-dns.com` in
-     DreamHost's DNS panel. The static `2kool.tv` stays on DreamHost exactly
-     as is (samplepacks/, media/ untouched). Lowest risk.
-   - Apex `2kool.tv` → point A record at Vercel **after** `files.2kool.tv`
-     holds samplepacks/media on DreamHost. Don't flip apex until files is good.
-6. **OAuth + WalletConnect allowlists** — whichever domain you pick:
-   - cloud.reown.com (WalletConnect Cloud) → your project → allowed domains:
-     add the domain.
-   - Google Cloud Console / X Developer Portal → authorized redirect URIs:
-     `https://<domain>/api/auth/callback/google` (and `/twitter`).
+5. **Domain (production shape — 2026-08):**
+   - **`files.2kool.tv`** stays on DreamHost (same docroot) for `/samplepacks`
+     and `/media`. Confirmed before flipping apex.
+   - **Apex `2kool.tv` + `www`** → Vercel (Node app with `/api` + login).
+     DreamHost DNS only (do **not** change nameservers):
+
+     | Type | Name | Value |
+     |---|---|---|
+     | **A** | `@` (`2kool.tv`) | `76.76.21.21` |
+     | **A** | `www` | `76.76.21.21` |
+
+     Remove the old DreamHost A (`67.205.32.77`) for `@` and `www`.
+     Leave **`files`** A → DreamHost. Leave **`app`** CNAME →
+     `cname.vercel-dns.com` as a backup if you want.
+   - Vercel project already has domains `2kool.tv`, `www.2kool.tv`,
+     `app.2kool.tv`. Production env: `AUTH_URL=https://2kool.tv`,
+     `AUTH_TRUST_HOST=true`, `NEXT_PUBLIC_BRAND=2kooltv`.
+6. **OAuth + WalletConnect allowlists** for apex:
+   - cloud.reown.com → allow `2kool.tv` (and `www.2kool.tv` if used)
+   - Google / X redirect URIs:
+     `https://2kool.tv/api/auth/callback/google` (and `/twitter`)
 
 ### After it's live
 

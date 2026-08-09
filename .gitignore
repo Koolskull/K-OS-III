@@ -64,3 +64,6 @@ next-env.d.ts
 # ide
 .vscode/
 .idea/
+
+# vercel local link
+.vercel/

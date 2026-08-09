@@ -64,8 +64,12 @@ export async function saveUploadedAsset(kind: "image" | "audio", file: File): Pr
 /** Delete a previously-saved upload by its public URL path. Best-effort — never throws. */
 export async function deleteUploadedAsset(urlPath: string): Promise<void> {
   if (!urlPath.startsWith("/uploads/")) return;
-  const abs = path.join(process.cwd(), "public", urlPath);
-  if (!abs.startsWith(UPLOAD_ROOT)) return; // guard against path traversal
+  // Stay under UPLOAD_ROOT only — avoid path.join(cwd, "public", dynamic)
+  // which Turbopack treats as scanning the entire public/ tree at build time.
+  const rel = urlPath.slice("/uploads/".length);
+  if (!rel || rel.includes("..") || path.isAbsolute(rel)) return;
+  const abs = path.join(UPLOAD_ROOT, rel);
+  if (!abs.startsWith(UPLOAD_ROOT + path.sep) && abs !== UPLOAD_ROOT) return;
   await unlink(abs).catch(() => {});
 }
 

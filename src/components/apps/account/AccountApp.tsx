@@ -41,6 +41,9 @@ interface Profile {
   show_ethereum?: boolean;
   show_matrix?: boolean;
   show_ens?: boolean;
+  show_install_list?: boolean;
+  show_time_stats?: boolean;
+  show_badges?: boolean;
   ens_name?: string | null;
 }
 
@@ -146,6 +149,9 @@ export function AccountApp() {
   const [showEthereum, setShowEthereum] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [showEns, setShowEns] = useState(false);
+  const [showInstallList, setShowInstallList] = useState(false);
+  const [showTimeStats, setShowTimeStats] = useState(false);
+  const [showBadges, setShowBadges] = useState(true);
   const [ensName, setEnsName] = useState<string | null>(null);
   const [ensBusy, setEnsBusy] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -195,6 +201,9 @@ export function AccountApp() {
       setShowEthereum(p?.show_ethereum ?? false);
       setShowMatrix(p?.show_matrix ?? false);
       setShowEns(p?.show_ens ?? false);
+      setShowInstallList(p?.show_install_list ?? false);
+      setShowTimeStats(p?.show_time_stats ?? false);
+      setShowBadges(p?.show_badges ?? true);
       setEnsName(p?.ens_name ?? null);
     });
     refreshLinked();
@@ -341,6 +350,9 @@ export function AccountApp() {
         show_ethereum: showEthereum,
         show_matrix: showMatrix,
         show_ens: showEns,
+        show_install_list: showInstallList,
+        show_time_stats: showTimeStats,
+        show_badges: showBadges,
       }),
     });
     setSaving(false);
@@ -756,6 +768,40 @@ export function AccountApp() {
                   <button type="button" style={{ ...secondaryBtn, marginTop: 6 }} disabled={ensBusy} onClick={refreshEns}>
                     {ensBusy ? "RESOLVING…" : "REFRESH ENS FROM WALLET"}
                   </button>
+                </div>
+
+                <div style={{ marginTop: 10, borderTop: "1px solid #222", paddingTop: 8 }}>
+                  <span style={{ fontSize: 7, color: "#666", letterSpacing: 1 }}>
+                    APPS ON PUBLIC PROFILE (FROM APP MANAGER)
+                  </span>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={showInstallList}
+                      onChange={(e) => setShowInstallList(e.target.checked)}
+                    />
+                    SHOW INSTALLED APPS
+                  </label>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={showTimeStats}
+                      onChange={(e) => setShowTimeStats(e.target.checked)}
+                    />
+                    SHOW TIME SPENT IN APPS
+                  </label>
+                  <label style={{ ...label, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={showBadges}
+                      onChange={(e) => setShowBadges(e.target.checked)}
+                    />
+                    SHOW INSTALL BADGES
+                  </label>
+                  <div style={{ fontSize: 6, color: "#555", marginTop: 6, lineHeight: 1.4 }}>
+                    DATA LIVES LOCALLY UNTIL YOU OPEN APP MANAGER → SYNC TO PROFILE (OR LAUNCH AN APP WHILE SIGNED IN).
+                    TIME/INSTALLS DEFAULT PRIVATE.
+                  </div>
                 </div>
 
                 <button type="submit" disabled={saving} style={primaryBtn}>

@@ -15,9 +15,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const viewerId = (session?.user as { id?: string } | undefined)?.id;
   const isSelf = viewerId != null && Number(viewerId) === userId;
 
+  // Best-effort columns for app activity (idempotent).
+  try {
+    await pool.query(`
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_install_list BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_time_stats BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_badges BOOLEAN NOT NULL DEFAULT true;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS apps_activity JSONB NOT NULL DEFAULT '{}'::jsonb;
+    `);
+  } catch {
+    /* ignore */
+  }
+
   const result = await pool.query(
     `SELECT p.user_id, p.display_name, p.bio, p.avatar_url, p.is_public,
             p.show_email, p.show_ethereum, p.show_matrix, p.show_ens, p.ens_name,
+            p.show_install_list, p.show_time_stats, p.show_badges, p.apps_activity,
             u.name AS name, u.email
      FROM profiles p
      JOIN users u ON u.id = p.user_id
@@ -50,6 +63,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const showEthereum = Boolean(profile.show_ethereum) || isSelf;
   const showMatrix = Boolean(profile.show_matrix) || isSelf;
   const showEns = Boolean(profile.show_ens) || isSelf;
+  const showInstalls = Boolean(profile.show_install_list) || isSelf;
+  const showTime = Boolean(profile.show_time_stats) || isSelf;
+  const showBadges = profile.show_badges !== false || isSelf;
+
+  const activity = (profile.apps_activity ?? {}) as {
+    installs?: unknown[];
+    badges?: unknown[];
+    usage?: { totals?: Record<string, number> };
+  };
 
   return NextResponse.json({
     user_id: profile.user_id,
@@ -69,6 +91,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     show_ethereum: isSelf ? profile.show_ethereum : undefined,
     show_matrix: isSelf ? profile.show_matrix : undefined,
     show_ens: isSelf ? profile.show_ens : undefined,
+    show_install_list: isSelf ? profile.show_install_list : undefined,
+    show_time_stats: isSelf ? profile.show_time_stats : undefined,
+    show_badges: isSelf ? profile.show_badges : undefined,
+    apps: {
+      installs: showInstalls ? activity.installs ?? [] : undefined,
+      badges: showBadges ? activity.badges ?? [] : undefined,
+      usage: showTime ? activity.usage ?? { totals: {} } : undefined,
+    },
     blocks: blocks.rows,
   });
 }

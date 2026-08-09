@@ -53,9 +53,10 @@ import { NotesApp } from "@/components/apps/notes/NotesApp";
 import { AppManagerApp } from "@/components/apps/appmanager/AppManagerApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 import { HAS_BACKEND } from "@/lib/buildFlags";
-import { APP_CATALOG } from "@/lib/apps/catalog";
-import type { AppId } from "@/lib/apps/types";
-import { isInstalled, recordAppOpen } from "@/lib/apps/installs";
+import { APP_CATALOG, type AppId } from "@/lib/apps/catalog";
+import { canLaunchApp, recordAppOpen } from "@/lib/apps/installStore";
+import { usageClockBlur, usageClockFocus } from "@/lib/apps/usageClock";
+import { syncActivityToAccount } from "@/lib/apps/activitySync";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
@@ -95,16 +96,28 @@ export default function KoolskullOS() {
   const [chatLaunch, setChatLaunch] = useState<KChatLaunchOpts | undefined>(undefined);
   const [shotlistLaunch, setShotlistLaunch] = useState<{ sequenceId: number } | undefined>(undefined);
   const [kooldrawLaunch, setKooldrawLaunch] = useState<{ projectId: number } | undefined>(undefined);
+  const [appManagerHighlight, setAppManagerHighlight] = useState<string | null>(null);
 
   const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number } | { projectId: number }) => {
-    const id = appId as AppId;
+    let id = appId as AppId;
+    // Legacy id from earlier thin implementation
+    if ((appId as string) === "app-manager") id = "appmanager";
+
+    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return;
+
+    // Not installed → open App Manager with that package highlighted
+    if (!canLaunchApp(id) && id !== "appmanager") {
+      setAppManagerHighlight(id);
+      id = "appmanager";
+    }
+
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
-    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return; // no /api/* in a static export
-    // App Manager install gate — core always allowed; others need install
-    if (!isInstalled(id)) return;
 
     recordAppOpen(id);
+    if (id !== "appmanager") {
+      void syncActivityToAccount();
+    }
 
     if (id === "chat" && launchOpts) {
       setChatLaunch(launchOpts as KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string });
@@ -120,6 +133,7 @@ export default function KoolskullOS() {
     const existing = windows.find((w) => w.appId === id);
     if (existing) {
       setFocusedWindowId(existing.id);
+      usageClockFocus(id);
       setNextZIndex((z) => z + 1);
       setWindows((prev) =>
         prev.map((w) =>
@@ -151,26 +165,33 @@ export default function KoolskullOS() {
 
     setWindows((prev) => [...prev, newWindow]);
     setFocusedWindowId(windowId);
+    usageClockFocus(id);
     setNextZIndex((z) => z + 1);
   }, [windows, nextZIndex]);
 
   const focusWindow = useCallback((id: string) => {
     setFocusedWindowId(id);
+    const win = windows.find((w) => w.id === id);
+    if (win) usageClockFocus(win.appId);
     setNextZIndex((z) => {
       setWindows((prev) =>
         prev.map((w) => (w.id === id ? { ...w, zIndex: z } : w)),
       );
       return z + 1;
     });
-  }, []);
+  }, [windows]);
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => prev.filter((w) => w.id !== id));
     setFocusedWindowId((prev) => {
       if (prev !== id) return prev;
       const remaining = windows.filter((w) => w.id !== id);
-      if (remaining.length === 0) return null;
+      if (remaining.length === 0) {
+        usageClockBlur();
+        return null;
+      }
       remaining.sort((a, b) => b.zIndex - a.zIndex);
+      usageClockFocus(remaining[0].appId);
       return remaining[0].id;
     });
   }, [windows]);
@@ -238,10 +259,13 @@ export default function KoolskullOS() {
               <KoolDrawApp isFocused={win.id === focusedWindowId} launchProjectId={kooldrawLaunch?.projectId} />
             )}
             {win.appId === "manual" && <ManualApp />}
-            {win.appId === "app-manager" && (
+            {win.appId === "appmanager" && (
               <AppManagerApp
-                onLaunchApp={(id) => launchApp(id)}
-                onOpenManual={() => launchApp("manual")}
+                highlightAppId={appManagerHighlight}
+                onOpenApp={(id) => {
+                  setAppManagerHighlight(null);
+                  launchApp(id);
+                }}
               />
             )}
             {win.appId === "stardrain-wiki" && <StardrainWikiApp />}

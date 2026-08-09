@@ -183,7 +183,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
                       <button
                         onClick={() => {
                           setMenuOpen(false);
-                          onLaunchApp("app-manager");
+                          onLaunchApp("appmanager");
                         }}
                         style={menuActionBtn}
                       >
@@ -237,7 +237,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
                       <button
                         onClick={() => {
                           setMenuOpen(false);
-                          onLaunchApp("app-manager");
+                          onLaunchApp("appmanager");
                         }}
                         style={menuActionBtn}
                       >

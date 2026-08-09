@@ -5,32 +5,39 @@
  *            ║  DESKTOP         ║
  *            ╚═══════════════════╝
  *
- *   Desktop with icon grid. Double-click to launch apps.
- *   Icons = core packages ∪ App Manager installs (not the full catalog).
- *
- *   Saint Michael the Archangel, defend this desktop.
- *   Holy Guardian Angels, order every window under Heaven.
+ *   Icons = core ∪ installs (App Manager). Double-click to launch.
  */
 
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { useDesktopIcons } from "@/lib/apps/installs";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  desktopPackages,
+  loadInstallState,
+  subscribeInstalls,
+  type InstallStoreState,
+} from "@/lib/apps/installStore";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
 }
 
 export function Desktop({ onLaunchApp }: DesktopProps) {
-  const icons = useDesktopIcons();
+  const [state, setState] = useState<InstallStoreState>({ version: 1, installs: {} });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const lastClickRef = React.useRef<{ id: string; time: number } | null>(null);
+
+  useEffect(() => {
+    setState(loadInstallState());
+    return subscribeInstalls(() => setState(loadInstallState()));
+  }, []);
+
+  const icons = desktopPackages(state);
 
   const handleIconClick = useCallback(
     (id: string) => {
       const now = Date.now();
       const last = lastClickRef.current;
-
       if (last && last.id === id && now - last.time < 400) {
         onLaunchApp(id);
         lastClickRef.current = null;
@@ -44,9 +51,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && selectedIcon) {
-        onLaunchApp(selectedIcon);
-      }
+      if (e.key === "Enter" && selectedIcon) onLaunchApp(selectedIcon);
     },
     [selectedIcon, onLaunchApp],
   );
@@ -119,7 +124,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
                   wordBreak: "break-word",
                 }}
               >
-                {icon.name}
+                {icon.label}
               </div>
             </div>
           );

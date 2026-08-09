@@ -12,18 +12,37 @@ interface ProfilePatch {
   show_ethereum?: boolean;
   show_matrix?: boolean;
   show_ens?: boolean;
+  show_install_list?: boolean;
+  show_time_stats?: boolean;
+  show_badges?: boolean;
   /** If true, reverse-resolve ENS from first linked eth wallet and cache it. */
   refresh_ens?: boolean;
   ens_name?: string | null;
 }
 
 const PROFILE_COLS = `user_id, display_name, bio, avatar_url, is_public,
-  show_email, show_ethereum, show_matrix, ens_name, show_ens`;
+  show_email, show_ethereum, show_matrix, ens_name, show_ens,
+  show_install_list, show_time_stats, show_badges`;
+
+async function ensureActivityColumns(): Promise<void> {
+  await pool.query(`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_install_list BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_time_stats BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_badges BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS apps_activity JSONB NOT NULL DEFAULT '{}'::jsonb;
+  `);
+}
 
 export async function GET() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  try {
+    await ensureActivityColumns();
+  } catch {
+    /* columns may already exist or DB briefly unavailable */
+  }
 
   const result = await pool.query(
     `SELECT ${PROFILE_COLS} FROM profiles WHERE user_id = $1`,
@@ -46,6 +65,17 @@ export async function PATCH(req: Request) {
   const showEthereum = typeof body.show_ethereum === "boolean" ? body.show_ethereum : undefined;
   const showMatrix = typeof body.show_matrix === "boolean" ? body.show_matrix : undefined;
   const showEns = typeof body.show_ens === "boolean" ? body.show_ens : undefined;
+  const showInstallList =
+    typeof body.show_install_list === "boolean" ? body.show_install_list : undefined;
+  const showTimeStats =
+    typeof body.show_time_stats === "boolean" ? body.show_time_stats : undefined;
+  const showBadges = typeof body.show_badges === "boolean" ? body.show_badges : undefined;
+
+  try {
+    await ensureActivityColumns();
+  } catch {
+    /* ignore */
+  }
 
   let ensName: string | null | undefined = undefined;
   if (body.refresh_ens === true) {
@@ -90,6 +120,9 @@ export async function PATCH(req: Request) {
        show_matrix = COALESCE($8, show_matrix),
        show_ens = COALESCE($9, show_ens),
        ens_name = CASE WHEN $10::boolean THEN $11 ELSE ens_name END,
+       show_install_list = COALESCE($12, show_install_list),
+       show_time_stats = COALESCE($13, show_time_stats),
+       show_badges = COALESCE($14, show_badges),
        updated_at = now()
      WHERE user_id = $1
      RETURNING ${PROFILE_COLS}`,
@@ -105,6 +138,9 @@ export async function PATCH(req: Request) {
       showEns,
       ensName !== undefined,
       ensName ?? null,
+      showInstallList,
+      showTimeStats,
+      showBadges,
     ],
   );
   return NextResponse.json(result.rows[0] ?? null);

@@ -50,30 +50,14 @@ import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { NotesApp } from "@/components/apps/notes/NotesApp";
+import { AppManagerApp } from "@/components/apps/appmanager/AppManagerApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
-import { BRAND_NAME, HAS_BACKEND } from "@/lib/buildFlags";
+import { HAS_BACKEND } from "@/lib/buildFlags";
+import { APP_CATALOG } from "@/lib/apps/catalog";
+import type { AppId } from "@/lib/apps/types";
+import { isInstalled, recordAppOpen } from "@/lib/apps/installs";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
-
-type AppId =
-  | "datamoshpit"
-  | "bible"
-  | "games"
-  | "kooldraw"
-  | "manual"
-  | "stardrain-wiki"
-  | "tilemap"
-  | "shotlist"
-  | "skulltext"
-  | "skullmash"
-  | "education"
-  | "nodemap"
-  | "stance"
-  | "notes"
-  | "account"
-  | "browser"
-  | "prodev"
-  | "chat";
 
 interface OpenWindow {
   id: string;
@@ -83,31 +67,23 @@ interface OpenWindow {
   zIndex: number;
 }
 
-const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
-  datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
-  bible: { title: "HOLY BIBLE", width: 640, height: 500 },
-  games: { title: "GAMES", width: 700, height: 550 },
-  kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
-  manual: { title: `${BRAND_NAME} MANUAL`, width: 880, height: 600 },
-  "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
-  tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
-  shotlist: { title: "SHOTLIST", width: 900, height: 640 },
-  skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
-  skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
-  education: { title: "EDUCATION", width: 920, height: 640 },
-  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
-  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
-  notes: { title: "NOTES", width: 860, height: 620 },
-  account: { title: "ACCOUNT", width: 420, height: 560 },
-  browser: { title: "KOS BROWSER", width: 480, height: 560 },
-  prodev: { title: "PRODEV", width: 820, height: 560 },
-  chat: { title: "K-CHAT", width: 520, height: 480 },
-  // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
-};
+/** Window defaults from the versioned app catalog (single source of truth). */
+const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> =
+  Object.fromEntries(
+    APP_CATALOG.map((p) => [
+      p.id,
+      {
+        title: p.defaultWindow.title,
+        width: p.defaultWindow.width,
+        height: p.defaultWindow.height,
+      },
+    ]),
+  ) as Record<AppId, { title: string; width: number; height: number }>;
 
-/** No local-only mode exists for these — entirely useless without /api/*, so
- *  they're hidden from the desktop (see Desktop.tsx) on a static export. */
-const BACKEND_ONLY_APPS = new Set<AppId>(["account", "browser", "prodev", "chat"]);
+/** No local-only mode exists for these — entirely useless without /api/*. */
+const BACKEND_ONLY_APPS = new Set<AppId>(
+  APP_CATALOG.filter((p) => p.requiresCloud).map((p) => p.id),
+);
 
 let windowCounter = 0;
 
@@ -125,6 +101,10 @@ export default function KoolskullOS() {
     const defaults = APP_DEFAULTS[id];
     if (!defaults) return;
     if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return; // no /api/* in a static export
+    // App Manager install gate — core always allowed; others need install
+    if (!isInstalled(id)) return;
+
+    recordAppOpen(id);
 
     if (id === "chat" && launchOpts) {
       setChatLaunch(launchOpts as KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string });
@@ -258,6 +238,12 @@ export default function KoolskullOS() {
               <KoolDrawApp isFocused={win.id === focusedWindowId} launchProjectId={kooldrawLaunch?.projectId} />
             )}
             {win.appId === "manual" && <ManualApp />}
+            {win.appId === "app-manager" && (
+              <AppManagerApp
+                onLaunchApp={(id) => launchApp(id)}
+                onOpenManual={() => launchApp("manual")}
+              />
+            )}
             {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
             {win.appId === "tilemap" && (
               <TilemapApp isFocused={win.id === focusedWindowId} />

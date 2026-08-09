@@ -183,6 +183,15 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
                       <button
                         onClick={() => {
                           setMenuOpen(false);
+                          onLaunchApp("app-manager");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        APP MANAGER
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
                           onLaunchApp("account");
                         }}
                         style={menuActionBtn}
@@ -225,6 +234,15 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
                       NOT SIGNED IN
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onLaunchApp("app-manager");
+                        }}
+                        style={menuActionBtn}
+                      >
+                        APP MANAGER
+                      </button>
                       <button
                         onClick={() => {
                           setMenuOpen(false);

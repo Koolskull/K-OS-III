@@ -1,0 +1,162 @@
+name: Sync and build 2kool.tv
+
+# 1) Fast-forward branch 2kool.tv from master
+# 2) Build a ROOT-path static export for https://2kool.tv/ (Apache docroot)
+#
+# Live host is GCE Apache serving at / — NOT /k-os. Incomplete uploads
+# (new index.html without matching _next/static chunks) cause:
+#   "Application error: a client-side exception has occurred while loading 2kool.tv"
+# Always upload the full out/ folder atomically (rsync --delete).
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-2kool-tv
+  cancel-in-progress: false
+
+# Domain root: empty base path. Brand as 2KOOL.TV.
+env:
+  NEXT_PUBLIC_BASE_PATH: ""
+  NEXT_PUBLIC_SITE_BRAND: "2kool"
+  NEXT_PUBLIC_ASSET_BASE: ""
+  NEXT_PUBLIC_GAMES_BASE: ""
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      head_sha: ${{ steps.sync.outputs.head_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge master into 2kool.tv and push
+        id: sync
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin master 2kool.tv || git fetch origin master
+
+          if ! git show-ref --verify --quiet refs/remotes/origin/2kool.tv; then
+            echo "Creating origin/2kool.tv from master"
+            git checkout -B 2kool.tv origin/master
+            git push -u origin 2kool.tv
+            echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git checkout -B 2kool.tv origin/2kool.tv
+
+          if git merge-base --is-ancestor HEAD origin/master; then
+            git merge --ff-only origin/master || true
+          else
+            git merge origin/master -m "chore: sync master into 2kool.tv"
+          fi
+
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/2kool.tv)" ]; then
+            git push origin 2kool.tv
+          else
+            echo "2kool.tv already at master tip"
+          fi
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 2kool.tv tip
+        uses: actions/checkout@v4
+        with:
+          ref: 2kool.tv
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build static export (domain root)
+        env:
+          K_OS_EXPORT: "true"
+        run: npm run build
+
+      - name: Apache SPA helpers
+        run: |
+          set -e
+          # SPA fallback + no-cache index so phones don't keep a broken HTML shell
+          cat > out/.htaccess << 'HT'
+          # 2kool.tv Apache static export
+          Options -Indexes
+          <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteRule ^index\.html$ - [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule . /index.html [L]
+          </IfModule>
+          <Files "index.html">
+            Header set Cache-Control "no-cache, no-store, must-revalidate"
+          </Files>
+          HT
+          # strip leading spaces from heredoc if any
+          sed -i 's/^          //' out/.htaccess
+          touch out/.nojekyll
+          # ship a deploy note inside the artifact
+          cat > out/DEPLOY_TO_2KOOL.txt << 'NOTE'
+          Upload this entire folder to the 2kool.tv Apache document root.
+          CRITICAL: use rsync --delete so old/new _next chunks never mix.
+
+            rsync -avz --delete ./ user@YOUR_SERVER:/var/www/2kool.tv/
+
+          Partial uploads (new index.html + old _next/) cause:
+            "Application error: a client-side exception has occurred while loading 2kool.tv"
+          NOTE
+
+      - name: Upload 2kool.tv export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2kool-tv-root
+          path: out
+          retention-days: 14
+
+      - name: Zip for manual SCP
+        run: |
+          cd out && zip -r -q ../2kool-tv-root.zip .
+          ls -lh ../2kool-tv-root.zip
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2kool-tv-root-zip
+          path: 2kool-tv-root.zip
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo "### 2kool.tv root export ready"
+            echo "- SHA: \`${{ needs.sync.outputs.head_sha }}\`"
+            echo "- BASE_PATH: _(empty — domain root)_"
+            echo "- Brand: 2KOOL.TV"
+            echo "- Artifacts: **2kool-tv-root** + **2kool-tv-root-zip**"
+            echo ""
+            echo "Redeploy with full replace (never partial):"
+            echo '```bash'
+            echo "rsync -avz --delete ./out/ user@SERVER:/var/www/html/"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          du -sh out

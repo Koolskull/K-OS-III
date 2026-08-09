@@ -1,0 +1,63 @@
+title: Antediluvian Observatory
+slug: antediluvian
+summary: >
+  Expanded survey of alternative theories about deep prehistory and the pre-flood era,
+  grounded in frameworks popularized around Mr Mythos (Watchers, Enoch, Agartha,
+  American giants), Robert Sepehr / Atlantean Gardens (hyperdiffusion, Atlantis as mother
+  culture, Rh-marker rhetoric, Hyperborea), Mind Unveiled and Jon Levi (Tartaria, mud
+  flood, World's Fairs, star forts and EMF architecture, "found not founded"). Younger Dryas,
+  Göbekli Tepe, flood parallels, occult maps. Observe every claim, cite sources, leave
+  contradictions between timelines and mechanisms fully visible. Not a conversion track.
+  Follows EPISTEMIC_STANCE.
+prerequisites: []
+estimated_hours: 28
+flagship: false
+lessons:
+  - file: 01-how-to-read.md
+    title: How to read alternative history
+    status: written
+  - file: 02-younger-dryas.md
+    title: When the sky fell — Younger Dryas
+    status: written
+  - file: 03-gobekli-tepe.md
+    title: Göbekli Tepe before the textbooks
+    status: written
+  - file: 04-floods-and-atlantis.md
+    title: Floods everywhere and Plato's date
+    status: written
+  - file: 05-maps-and-coasts.md
+    title: Maps and underwater coasts
+    status: written
+  - file: 06-watchers-descent.md
+    title: The Watchers' Descent — Book of Enoch
+    status: written
+  - file: 07-watchers-knowledge.md
+    title: Forbidden arts of the Watchers
+    status: written
+  - file: 08-giants-americas.md
+    title: Giants of the Americas and the old world
+    status: written
+  - file: 09-hyperdiffusion.md
+    title: Hyperdiffusion and the mother culture
+    status: written
+  - file: 10-rh-markers.md
+    title: Rh markers and claimed antediluvian bloodlines
+    status: written
+  - file: 11-tartaria-mudflood.md
+    title: Tartaria and the mud flood
+    status: written
+  - file: 12-world-fairs.md
+    title: World's Fairs as alleged capitals
+    status: written
+  - file: 13-star-forts-emf.md
+    title: Star forts, domes, and EMF architecture
+    status: written
+  - file: 14-agartha-hyperborea.md
+    title: Agartha, Hyperborea, and inner earth
+    status: written
+  - file: 15-found-not-founded.md
+    title: Found not founded — architecture claims
+    status: written
+  - file: 16-contradicting-clocks.md
+    title: Contradicting clocks — synthesis
+    status: written

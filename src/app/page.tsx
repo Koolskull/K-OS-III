@@ -45,6 +45,11 @@ import { AccountApp } from "@/components/apps/account/AccountApp";
 import { KOSBrowserApp } from "@/components/apps/browser/KOSBrowserApp";
 import { PRODEVApp } from "@/components/apps/prodev/PRODEVApp";
 import { KChatApp, type KChatLaunchOpts } from "@/components/apps/chat/KChatApp";
+import { EducationApp } from "@/components/apps/education/EducationApp";
+import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
+import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
+import { StanceApp } from "@/components/apps/stance/StanceApp";
+import { NotesApp } from "@/components/apps/notes/NotesApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 import { BRAND_NAME, HAS_BACKEND } from "@/lib/buildFlags";
 // PicoTracker disabled — Datamoshpit covers this workflow
@@ -60,6 +65,11 @@ type AppId =
   | "tilemap"
   | "shotlist"
   | "skulltext"
+  | "skullmash"
+  | "education"
+  | "nodemap"
+  | "stance"
+  | "notes"
   | "account"
   | "browser"
   | "prodev"
@@ -83,6 +93,11 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
   shotlist: { title: "SHOTLIST", width: 900, height: 640 },
   skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
+  skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
+  education: { title: "EDUCATION", width: 920, height: 640 },
+  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
+  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
+  notes: { title: "NOTES", width: 860, height: 620 },
   account: { title: "ACCOUNT", width: 420, height: 560 },
   browser: { title: "KOS BROWSER", width: 480, height: 560 },
   prodev: { title: "PRODEV", width: 820, height: 560 },
@@ -256,6 +271,17 @@ export default function KoolskullOS() {
             )}
             {win.appId === "skulltext" && (
               <SkullTextApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "skullmash" && (
+              <SkullMashApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "education" && <EducationApp />}
+            {win.appId === "nodemap" && (
+              <NodeMapApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "stance" && <StanceApp />}
+            {win.appId === "notes" && (
+              <NotesApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "account" && <AccountApp />}
             {win.appId === "browser" && (

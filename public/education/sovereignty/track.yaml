@@ -1,0 +1,31 @@
+title: Sovereignty
+slug: sovereignty
+summary: >
+  Tools for examining the sources of your beliefs and the historical record of
+  institutional power. Simple spiritual foundations, documented consciousness
+  research, declassified intelligence programs, and competing accounts of
+  monetary and political power. Starts basic, expands with primary sources.
+  Follows the project's epistemic stance: mainstream and dissenting accounts
+  presented, reader decides.
+prerequisites: []
+estimated_hours: 8
+flagship: false
+lessons:
+  - file: 01-introduction.md
+    title: What this track is for
+    status: written
+  - file: 02-simple-salvation.md
+    title: Simple salvation teachings of Jesus
+    status: written
+  - file: 03-monroe-and-obe.md
+    title: Robert Monroe and out-of-body experience
+    status: written
+  - file: 04-mkultra-and-stargate.md
+    title: MKUltra, Stargate, and declassified intelligence programs
+    status: written
+  - file: 05-tesla-and-russell.md
+    title: Nikola Tesla and Walter Russell — documented work and later claims
+    status: written
+  - file: 06-jekyll-island-and-american-system.md
+    title: Jekyll Island, the Federal Reserve, and the American System tradition
+    status: written

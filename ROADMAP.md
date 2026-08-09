@@ -61,3 +61,8 @@ Bigger pieces, not yet sized into individual PRs. Most of these unlock follow-on
 ## How to suggest a roadmap change
 
 Open an issue with the `roadmap` label. Say which horizon you think your idea fits into and why. Big things start as small comments.
+
+## SKULLMASH
+- [x] Desktop app: image-first freehand cutout → balloon inflate → pin keyframes → `.glb` + JSON
+- [ ] Optional user-initiated **NFT mint** of exported objects **for a fee** (K-Wallet / commerce later)
+- [ ] Deeper pin deformation / ARAP-style animation closer to Monster Mash

@@ -1,9 +1,9 @@
 /*
  *                          ☦
- *                  ╔═══════════════╗
+ *                  ╔════════════════╗
  *                  ║    IC    XC   ║
  *                  ║   NIKA NIKA   ║
- *                  ╚═══════════════╝
+ *                  ╚════════════════╝
  *
  *        ┌──────────────────────────────┐
  *        │                              │
@@ -19,6 +19,9 @@
  *
  *   K-OS III DESKTOP SHELL
  *   Boot sequence → Desktop with icons → Windowed apps
+ *
+ *   Saint Benedict, protect this house of code.
+ *   Holy Angels, keep every window in good order.
  */
 
 "use client";
@@ -34,11 +37,35 @@ import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
 import { ManualApp } from "@/components/apps/manual/ManualApp";
+import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWikiApp";
+import TilemapApp from "@/components/apps/tilemap/TilemapApp";
+import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
+import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
+import { EducationApp } from "@/components/apps/education/EducationApp";
+import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
+import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
+import { StanceApp } from "@/components/apps/stance/StanceApp";
+import { NotesApp } from "@/components/apps/notes/NotesApp";
 import { assetUrl } from "@/lib/assets";
+import { CreativeWorkflowProvider } from "@/lib/creative";
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
-type AppId = "datamoshpit" | "bible" | "games" | "kooldraw" | "manual";
+type AppId =
+  | "datamoshpit"
+  | "bible"
+  | "games"
+  | "kooldraw"
+  | "manual"
+  | "stardrain-wiki"
+  | "tilemap"
+  | "shotlist"
+  | "skulltext"
+  | "skullmash"
+  | "education"
+  | "nodemap"
+  | "stance"
+  | "notes";
 
 interface OpenWindow {
   id: string;
@@ -52,8 +79,17 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
-  kooldraw: { title: "SPRITE EDITOR", width: 800, height: 600 },
+  kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
   manual: { title: "K-OS MANUAL", width: 880, height: 600 },
+  "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
+  tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
+  shotlist: { title: "SHOTLIST", width: 900, height: 640 },
+  skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
+  skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
+  education: { title: "EDUCATION", width: 920, height: 640 },
+  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
+  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
+  notes: { title: "NOTES", width: 860, height: 620 },
   // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
 };
 
@@ -87,8 +123,6 @@ export default function KoolskullOS() {
 
     windowCounter++;
     const windowId = `${id}-${windowCounter}`;
-    const centerX = Math.max(0, Math.floor((window.innerWidth - defaults.width) / 2));
-    const centerY = Math.max(0, Math.floor((window.innerHeight - 36 - defaults.height) / 2));
 
     const newWindow: OpenWindow = {
       id: windowId,
@@ -124,7 +158,6 @@ export default function KoolskullOS() {
     setWindows((prev) => prev.filter((w) => w.id !== id));
     setFocusedWindowId((prev) => {
       if (prev !== id) return prev;
-      // Focus the next highest z-index window
       const remaining = windows.filter((w) => w.id !== id);
       if (remaining.length === 0) return null;
       remaining.sort((a, b) => b.zIndex - a.zIndex);
@@ -136,7 +169,6 @@ export default function KoolskullOS() {
     setWindows((prev) =>
       prev.map((w) => (w.id === id ? { ...w, state } : w)),
     );
-    // If minimized, unfocus
     if (state.isMinimized) {
       setFocusedWindowId((prev) => (prev === id ? null : prev));
     }
@@ -147,14 +179,11 @@ export default function KoolskullOS() {
     if (!win) return;
 
     if (win.id === focusedWindowId && !win.state.isMinimized) {
-      // Currently focused and visible: minimize
       updateWindowState(id, { ...win.state, isMinimized: true });
     } else if (win.state.isMinimized) {
-      // Minimized: restore and focus
       updateWindowState(id, { ...win.state, isMinimized: false });
       focusWindow(id);
     } else {
-      // Not focused: bring to front
       focusWindow(id);
     }
   }, [windows, focusedWindowId, updateWindowState, focusWindow]);
@@ -171,62 +200,82 @@ export default function KoolskullOS() {
   }
 
   return (
-    <div
-      className="w-full h-full relative overflow-hidden"
-      style={{ backgroundColor: "#000000" }}
-    >
-      <Desktop onLaunchApp={launchApp} />
-
-      {windows.map((win) => (
-        <AppWindow
-          key={win.id}
-          id={win.id}
-          title={win.title}
-          state={win.state}
-          zIndex={win.zIndex}
-          isFocused={win.id === focusedWindowId}
-          onFocus={() => focusWindow(win.id)}
-          onStateChange={(state) => updateWindowState(win.id, state)}
-          onClose={() => closeWindow(win.id)}
-        >
-          {win.appId === "datamoshpit" && (
-            <DatamoshpitApp isFocused={win.id === focusedWindowId} />
-          )}
-          {win.appId === "bible" && <BibleReader />}
-          {win.appId === "games" && <GameMenu />}
-          {win.appId === "kooldraw" && (
-            <KoolDrawApp isFocused={win.id === focusedWindowId} />
-          )}
-          {win.appId === "manual" && <ManualApp />}
-          {/* {win.appId === "picotracker" && (
-            <PicoTrackerApp isFocused={win.id === focusedWindowId} />
-          )} */}
-        </AppWindow>
-      ))}
-
-      <Taskbar
-        windows={windows.map((w) => ({
-          id: w.id,
-          title: w.title,
-          isMinimized: w.state.isMinimized,
-        }))}
-        focusedId={focusedWindowId}
-        onWindowClick={handleTaskbarClick}
-        onShowDesktop={showDesktop}
-      />
-
-      {/* Screen glitch overlay */}
+    <CreativeWorkflowProvider onLaunchApp={launchApp}>
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.07,
-          zIndex: 999999,
-          mixBlendMode: "screen",
-        }}
-      />
-    </div>
+        className="w-full h-full relative overflow-hidden"
+        style={{ backgroundColor: "#000000" }}
+      >
+        <Desktop onLaunchApp={launchApp} />
+
+        {windows.map((win) => (
+          <AppWindow
+            key={win.id}
+            id={win.id}
+            title={win.title}
+            state={win.state}
+            zIndex={win.zIndex}
+            isFocused={win.id === focusedWindowId}
+            onFocus={() => focusWindow(win.id)}
+            onStateChange={(state) => updateWindowState(win.id, state)}
+            onClose={() => closeWindow(win.id)}
+          >
+            {win.appId === "datamoshpit" && (
+              <DatamoshpitApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "bible" && <BibleReader />}
+            {win.appId === "games" && <GameMenu />}
+            {win.appId === "kooldraw" && (
+              <KoolDrawApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "manual" && <ManualApp />}
+            {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
+            {win.appId === "tilemap" && (
+              <TilemapApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "shotlist" && (
+              <ShotlistApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "skulltext" && (
+              <SkullTextApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "skullmash" && (
+              <SkullMashApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "education" && <EducationApp />}
+            {win.appId === "nodemap" && (
+              <NodeMapApp isFocused={win.id === focusedWindowId} />
+            )}
+            {win.appId === "stance" && <StanceApp />}
+            {win.appId === "notes" && (
+              <NotesApp isFocused={win.id === focusedWindowId} />
+            )}
+          </AppWindow>
+        ))}
+
+        <Taskbar
+          windows={windows.map((w) => ({
+            id: w.id,
+            title: w.title,
+            isMinimized: w.state.isMinimized,
+          }))}
+          focusedId={focusedWindowId}
+          onWindowClick={handleTaskbarClick}
+          onShowDesktop={showDesktop}
+        />
+
+        {/* Screen glitch overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${assetUrl("/gifs/screenglitch.gif")})`,
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+            opacity: 0.07,
+            zIndex: 999999,
+            mixBlendMode: "screen",
+          }}
+        />
+      </div>
+    </CreativeWorkflowProvider>
   );
 }

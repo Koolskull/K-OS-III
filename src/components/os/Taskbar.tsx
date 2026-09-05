@@ -25,8 +25,6 @@ interface TaskbarProps {
   onShowDesktop: () => void;
 }
 
-const TASKBAR_H = 36;
-
 export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: TaskbarProps) {
   const [time, setTime] = useState("");
 
@@ -50,16 +48,16 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
         bottom: 0,
         left: 0,
         right: 0,
-        height: `${TASKBAR_H}px`,
+        height: "var(--dm-taskbar-h, 32px)",
         backgroundColor: "#0a0a0a",
-        borderTop: "2px solid #333333",
+        borderTop: "1px solid #333333",
         display: "flex",
         alignItems: "center",
-        padding: "0 4px",
-        gap: "4px",
+        padding: "0 var(--dm-ui-pad, 4px)",
+        gap: "var(--dm-ui-gap, 4px)",
         zIndex: 99999,
         fontFamily: "var(--dm-font-primary)",
-        fontSize: "9px",
+        fontSize: "var(--dm-ui-font-sm, 8px)",
         imageRendering: "pixelated",
       }}
     >
@@ -67,13 +65,13 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
       <button
         onClick={onShowDesktop}
         style={{
-          height: "28px",
+          height: "var(--dm-ui-btn-h, 22px)",
           padding: "0 8px",
-          border: "2px solid #555555",
+          border: "1px solid #555555",
           backgroundColor: "#000000",
           color: "#ffffff",
           fontFamily: "var(--dm-font-primary)",
-          fontSize: "9px",
+          fontSize: "var(--dm-ui-font-sm, 8px)",
           letterSpacing: "1px",
           cursor: "pointer",
           flexShrink: 0,
@@ -87,7 +85,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
         title="K-OS III 0.2.0-beta.1 — early beta. Expect rough edges."
         style={{
           fontFamily: "var(--dm-font-primary)",
-          fontSize: "9px",
+          fontSize: "var(--dm-ui-font-xs, 7px)",
           color: "#000000",
           backgroundColor: "#ffff00",
           padding: "1px 4px",
@@ -102,7 +100,7 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
       </span>
 
       {/* Divider */}
-      <div style={{ width: "2px", height: "24px", backgroundColor: "#333333", flexShrink: 0 }} />
+      <div style={{ width: "1px", height: "var(--dm-ui-btn-h, 22px)", backgroundColor: "#333333", flexShrink: 0 }} />
 
       {/* Window buttons */}
       <div style={{ flex: 1, display: "flex", gap: "2px", overflow: "hidden" }}>
@@ -113,17 +111,17 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
               key={win.id}
               onClick={() => onWindowClick(win.id)}
               style={{
-                height: "28px",
-                padding: "0 8px",
-                border: `2px solid ${isActive ? "#ffffff" : "#333333"}`,
+                height: "var(--dm-ui-btn-h, 22px)",
+                padding: "0 6px",
+                border: `1px solid ${isActive ? "#ffffff" : "#333333"}`,
                 backgroundColor: isActive ? "#1a1a1a" : "#000000",
                 color: isActive ? "#ffffff" : "#888888",
                 fontFamily: "var(--dm-font-primary)",
-                fontSize: "8px",
+                fontSize: "var(--dm-ui-font-xs, 7px)",
                 letterSpacing: "1px",
                 cursor: "pointer",
-                minWidth: "80px",
-                maxWidth: "160px",
+                minWidth: "64px",
+                maxWidth: "140px",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -137,19 +135,19 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop }: Ta
       </div>
 
       {/* Divider */}
-      <div style={{ width: "2px", height: "24px", backgroundColor: "#333333", flexShrink: 0 }} />
+      <div style={{ width: "1px", height: "var(--dm-ui-btn-h, 22px)", backgroundColor: "#333333", flexShrink: 0 }} />
 
       {/* Clock */}
       <div
         style={{
-          height: "28px",
-          padding: "0 8px",
+          height: "var(--dm-ui-btn-h, 22px)",
+          padding: "0 6px",
           border: "1px solid #333333",
           backgroundColor: "#000000",
           color: "#888888",
           fontFamily: "var(--dm-font-primary)",
-          fontSize: "9px",
-          letterSpacing: "2px",
+          fontSize: "var(--dm-ui-font-sm, 8px)",
+          letterSpacing: "1px",
           display: "flex",
           alignItems: "center",
           flexShrink: 0,

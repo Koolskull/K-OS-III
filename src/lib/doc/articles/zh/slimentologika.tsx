@@ -69,7 +69,7 @@ export default function Slimentologika() {
       <UList>
         <Li>K-OS 启动序列在诗篇之间闪现一些 Slimentologika 字符。</Li>
         <Li>任务栏使用标准 ASCII；Slimentologika 是音轨编辑器独有的。</Li>
-        <Li>精灵编辑器的颜色选择器以标准形式显示十六进制值（Slimentologika 在那里还不能切换 — 待定）。</Li>
+        <Li>KoolDraw 的颜色选择器以标准形式显示十六进制值（Slimentologika 在那里还不能切换 — 待定）。</Li>
         <Li>2KOOL Productions 商品和 K-OS 美学进一步传播它。</Li>
       </UList>
 

@@ -21,7 +21,7 @@ export default function Glossary() {
       <Term name="Hex / Hexadecimal">16進数システム。K-OSではIDとエフェクト値に至る所で使用。<Crossref to="hexadecimal" /> 参照。</Term>
       <Term name="Instrument">音源 + オプションのvisual。K-OSはプロジェクトごとに256楽器をサポート。</Term>
       <Term name="Keyframe">変換値が明示的に設定されるvisualタイムライン上のポイント。<Crossref to="scene-vm" /> 参照。</Term>
-      <Term name="KoolDraw">K-OSのピクセルアートスプライトエディタ。デスクトップのスタンドアロンアプリ；F4楽器visualエディタからスプライト作成サーフェスとして埋め込み可能。</Term>
+      <Term name="KoolDraw">K-OSのピクセルアート描画アプリ（KoolDraw）。デスクトップのスタンドアロンアプリ；F4楽器visualエディタからスプライト作成サーフェスとして埋め込み可能。</Term>
       <Term name="LGPT">LittleGPTracker。K-OSの入力モデルが基づくPSP時代のトラッカー。</Term>
       <Term name="Live Mode">chainが進行する代わりに現在のsong行でループする再生モード。</Term>
       <Term name="Macro">ユーザー割り当て可能な楽器のノブ/スライダー、1つ以上の合成パラメータにマップ。</Term>

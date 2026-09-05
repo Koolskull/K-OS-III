@@ -13,9 +13,15 @@
  *  pre-imported into the ARTICLE_COMPONENTS map below for static-export
  *  compatibility. Cross-references stay slug-based; they resolve into the
  *  current language via NavCtx.
+ *
+ *  Layout rules (2026-07):
+ *  - Left chapter menu and article body scroll independently.
+ *  - On narrow / mobile the chapter menu becomes a CornerChrome toggle
+ *    (same pattern as Tilemap Painter) so the article uses full phone width.
+ *  - On large desktop screens (≥1400px) reading fonts are slightly tighter.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   ARTICLES,
   ARTICLES_BY_SLUG,
@@ -32,6 +38,13 @@ import {
   type Lang,
 } from "@/lib/doc/articles";
 import { NavCtx, ArticleTitle, SubtleNote, SeeAlso, Crossref } from "./elements";
+import {
+  CornerHost,
+  CornerPanel,
+  VerticalChromeToggle,
+  CornerDismissLayer,
+  useIsNarrow,
+} from "@/components/ui/CornerChrome";
 
 // Static article imports — bundled with the Manual chunk.
 // Done this way (not React.lazy) because Turbopack's hot reload occasionally
@@ -49,6 +62,7 @@ import EnEffectCommands from "@/lib/doc/articles/en/effect-commands";
 import EnSlimentologika from "@/lib/doc/articles/en/slimentologika";
 import EnPerInstrumentVisuals from "@/lib/doc/articles/en/per-instrument-visuals";
 import EnSceneVM from "@/lib/doc/articles/en/scene-vm";
+import EnKoolDrawTimeline from "@/lib/doc/articles/en/kooldraw-timeline";
 import EnDmpitFormat from "@/lib/doc/articles/en/dmpit-format";
 import EnTheRules from "@/lib/doc/articles/en/the-rules";
 import EnGlossary from "@/lib/doc/articles/en/glossary";
@@ -111,7 +125,51 @@ const CATEGORY_ORDER: ArticleCategory[] = [
   "reference",
 ];
 
+function useIsLarge(breakpoint = 1400) {
+  const [large, setLarge] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${breakpoint}px)`);
+    const update = () => setLarge(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [breakpoint]);
+  return large;
+}
+
 export function Manual({
+  initialSlug,
+  lang: initialLang = DEFAULT_LANG,
+  mode,
+  onSlugChange,
+  onLangChange,
+}: ManualProps) {
+  // CornerHost only for window mode (desktop app). Route mode uses the page layout.
+  if (mode === "window") {
+    return (
+      <CornerHost storageKey="kos-manual-chrome" style={{ background: "#000" }}>
+        <ManualInner
+          initialSlug={initialSlug}
+          lang={initialLang}
+          mode={mode}
+          onSlugChange={onSlugChange}
+          onLangChange={onLangChange}
+        />
+      </CornerHost>
+    );
+  }
+  return (
+    <ManualInner
+      initialSlug={initialSlug}
+      lang={initialLang}
+      mode={mode}
+      onSlugChange={onSlugChange}
+      onLangChange={onLangChange}
+    />
+  );
+}
+
+function ManualInner({
   initialSlug,
   lang: initialLang = DEFAULT_LANG,
   mode,
@@ -120,6 +178,11 @@ export function Manual({
 }: ManualProps) {
   const [slug, setSlug] = useState<string | null>(initialSlug ?? null);
   const [lang, setLangState] = useState<Lang>(initialLang);
+  const isNarrow = useIsNarrow(720);
+  const isLarge = useIsLarge(1400);
+
+  // Slightly tighter reading sizes on big monitors
+  const bodyFont = isLarge ? 12 : 14;
 
   React.useEffect(() => {
     if (initialSlug !== undefined) setSlug(initialSlug ?? null);
@@ -133,7 +196,7 @@ export function Manual({
       setSlug(target);
       if (mode === "route") onSlugChange?.(target, lang);
       requestAnimationFrame(() => {
-        const el = document.getElementById("manual-scroll");
+        const el = document.getElementById("manual-main-scroll");
         if (el) el.scrollTop = 0;
         else window.scrollTo({ top: 0 });
       });
@@ -152,6 +215,73 @@ export function Manual({
   const article = slug ? ARTICLES_BY_SLUG[slug] : null;
   const ui = UI_STRINGS[lang];
 
+  const sidebarContent = (
+    <>
+      <button
+        onClick={() => navigate(null)}
+        style={{
+          background: "transparent",
+          border: "none",
+          color: slug === null ? "#ffff00" : "#aaaaaa",
+          fontFamily: "inherit",
+          fontSize: "inherit",
+          letterSpacing: "inherit",
+          cursor: "pointer",
+          padding: "2px 4px",
+          marginBottom: 12,
+          display: "block",
+          width: "100%",
+          textAlign: "left",
+        }}
+      >
+        ◇ {ui.backToIndex}
+      </button>
+      {CATEGORY_ORDER.map((cat) => {
+        const list = articlesInCategory(cat);
+        if (list.length === 0) return null;
+        return (
+          <div key={cat} style={{ marginBottom: 14 }}>
+            <div
+              style={{
+                color: "#888",
+                marginBottom: 4,
+                paddingBottom: 2,
+                borderBottom: "1px solid #222",
+              }}
+            >
+              {CATEGORY_LABELS[lang][cat]}
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {list.map((a) => (
+                <li key={a.slug} style={{ marginBottom: 2 }}>
+                  <button
+                    onClick={() => navigate(a.slug)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: a.slug === slug ? "#ffff00" : "#cccccc",
+                      fontFamily: "inherit",
+                      fontSize: "inherit",
+                      letterSpacing: "inherit",
+                      cursor: "pointer",
+                      padding: "2px 4px",
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                    }}
+                  >
+                    {a.slug === slug ? "▶ " : "  "}
+                    {a.i18n[lang].title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </>
+  );
+
   return (
     <NavCtx.Provider value={{ lang, navigate, setLang }}>
       <div
@@ -167,15 +297,151 @@ export function Manual({
           overflow: "hidden",
         }}
       >
-        <Header slug={slug} lang={lang} navigate={navigate} setLang={setLang} ui={ui} />
-        <div id="manual-scroll" style={{ flex: 1, overflowY: "auto", display: "flex" }}>
-          <Sidebar currentSlug={slug} lang={lang} navigate={navigate} ui={ui} />
-          <main style={{ flex: 1, padding: "20px 28px 60px", maxWidth: 760 }}>
-            {article ? <ArticleView article={article} lang={lang} ui={ui} /> : <Index lang={lang} ui={ui} />}
+        <Header
+          slug={slug}
+          lang={lang}
+          navigate={navigate}
+          setLang={setLang}
+          ui={ui}
+        />
+
+        {/* Independent scroll columns */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Desktop sidebar — own scroll */}
+          {!isNarrow && (
+            <aside
+              style={{
+                width: 220,
+                flexShrink: 0,
+                borderRight: "2px solid #222",
+                padding: "16px 12px",
+                fontSize: 10,
+                letterSpacing: 1,
+                backgroundColor: "#0a0a0a",
+                overflowY: "auto",
+                height: "100%",
+              }}
+            >
+              {sidebarContent}
+            </aside>
+          )}
+
+          {/* Main article — independent scroll */}
+          <main
+            id="manual-main-scroll"
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: isNarrow ? "16px 14px 48px" : "20px 28px 60px",
+              maxWidth: isNarrow ? "100%" : 760,
+              height: "100%",
+              // Slight scale-down of nested article components on large screens
+              fontSize: isLarge ? "0.92em" : "1em",
+            }}
+          >
+            {article ? (
+              <ArticleView article={article} lang={lang} ui={ui} />
+            ) : (
+              <Index lang={lang} ui={ui} bodyFont={bodyFont} />
+            )}
           </main>
+
+          {/* Mobile: chapter menu as CornerChrome panel */}
+          {isNarrow && mode === "window" && (
+            <>
+              <CornerPanel id="chapters" corner="top-left" label="CHAP">
+                <div
+                  style={{
+                    padding: "8px 6px",
+                    fontSize: 10,
+                    letterSpacing: 1,
+                    maxHeight: "60vh",
+                    overflowY: "auto",
+                  }}
+                >
+                  {sidebarContent}
+                </div>
+              </CornerPanel>
+              <CornerDismissLayer />
+              <VerticalChromeToggle corner="bottom-right" />
+            </>
+          )}
+
+          {/* Route mode on mobile: simple top-left toggle button (no CornerHost) */}
+          {isNarrow && mode === "route" && (
+            <RouteMobileSidebar sidebarContent={sidebarContent} />
+          )}
         </div>
       </div>
     </NavCtx.Provider>
+  );
+}
+
+/** Simple overlay sidebar for /doc routes on mobile (no CornerHost available). */
+function RouteMobileSidebar({ sidebarContent }: { sidebarContent: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          position: "absolute",
+          top: 8,
+          left: 8,
+          zIndex: 40,
+          width: 36,
+          height: 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: open ? "#ffffff" : "#000000",
+          color: open ? "#000000" : "#888888",
+          border: "1px solid #555555",
+          fontFamily: "var(--dm-font-primary), monospace",
+          fontSize: 8,
+          letterSpacing: 1,
+          cursor: "pointer",
+          imageRendering: "pixelated",
+        }}
+      >
+        CHAP
+      </button>
+      {open && (
+        <>
+          <div
+            style={{ position: "absolute", inset: 0, zIndex: 30 }}
+            onClick={() => setOpen(false)}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 40,
+              left: 4,
+              zIndex: 35,
+              backgroundColor: "#000000",
+              border: "1px solid #333333",
+              color: "#ffffff",
+              fontFamily: "var(--dm-font-primary), monospace",
+              fontSize: 10,
+              maxWidth: "min(92vw, 280px)",
+              maxHeight: "min(70vh, 420px)",
+              overflow: "auto",
+              padding: 8,
+            }}
+          >
+            {sidebarContent}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -263,104 +529,22 @@ function Header({
   );
 }
 
-function Sidebar({
-  currentSlug,
+function Index({
   lang,
-  navigate,
   ui,
+  bodyFont,
 }: {
-  currentSlug: string | null;
   lang: Lang;
-  navigate: (s: string | null) => void;
   ui: Record<string, string>;
+  bodyFont: number;
 }) {
-  return (
-    <aside
-      style={{
-        width: 220,
-        flexShrink: 0,
-        borderRight: "2px solid #222",
-        padding: "16px 12px",
-        fontSize: 10,
-        letterSpacing: 1,
-        backgroundColor: "#0a0a0a",
-        overflowY: "auto",
-      }}
-    >
-      <button
-        onClick={() => navigate(null)}
-        style={{
-          background: "transparent",
-          border: "none",
-          color: currentSlug === null ? "#ffff00" : "#aaaaaa",
-          fontFamily: "inherit",
-          fontSize: "inherit",
-          letterSpacing: "inherit",
-          cursor: "pointer",
-          padding: "2px 4px",
-          marginBottom: 12,
-          display: "block",
-          width: "100%",
-          textAlign: "left",
-        }}
-      >
-        ◇ {ui.backToIndex}
-      </button>
-      {CATEGORY_ORDER.map((cat) => {
-        const list = articlesInCategory(cat);
-        if (list.length === 0) return null;
-        return (
-          <div key={cat} style={{ marginBottom: 14 }}>
-            <div
-              style={{
-                color: "#888",
-                marginBottom: 4,
-                paddingBottom: 2,
-                borderBottom: "1px solid #222",
-              }}
-            >
-              {CATEGORY_LABELS[lang][cat]}
-            </div>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {list.map((a) => (
-                <li key={a.slug} style={{ marginBottom: 2 }}>
-                  <button
-                    onClick={() => navigate(a.slug)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: a.slug === currentSlug ? "#ffff00" : "#cccccc",
-                      fontFamily: "inherit",
-                      fontSize: "inherit",
-                      letterSpacing: "inherit",
-                      cursor: "pointer",
-                      padding: "2px 4px",
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                  >
-                    {a.slug === currentSlug ? "▶ " : "  "}{a.i18n[lang].title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-    </aside>
-  );
-}
-
-function Index({ lang, ui }: { lang: Lang; ui: Record<string, string> }) {
   return (
     <>
       <ArticleTitle>{ui.indexTitle}</ArticleTitle>
       <SubtleNote>{ui.versionLine.replace("{{count}}", String(ARTICLES.length))}</SubtleNote>
 
-      <p style={{ fontSize: 14, lineHeight: 1.6, color: "#ddd", marginBottom: 24 }}>
-        {ui.indexBlurb}
-        {" "}
+      <p style={{ fontSize: bodyFont, lineHeight: 1.6, color: "#ddd", marginBottom: 24 }}>
+        {ui.indexBlurb}{" "}
         <Crossref to="welcome" />.
       </p>
 
@@ -404,7 +588,8 @@ function Index({ lang, ui }: { lang: Lang; ui: Record<string, string> }) {
           letterSpacing: 1,
         }}
       >
-        ☦ K-OS III · 2KOOL PRODUCTIONS<br />
+        ☦ K-OS III · 2KOOL PRODUCTIONS
+        <br />
         {ui.epistemicNote}{" "}
         <a
           href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md"
@@ -473,6 +658,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     slimentologika: EnSlimentologika,
     "per-instrument-visuals": EnPerInstrumentVisuals,
     "scene-vm": EnSceneVM,
+    "kooldraw-timeline": EnKoolDrawTimeline,
     "dmpit-format": EnDmpitFormat,
     "the-rules": EnTheRules,
     glossary: EnGlossary,

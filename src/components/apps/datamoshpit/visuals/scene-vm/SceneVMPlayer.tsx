@@ -23,7 +23,7 @@
  */
 
 import React, { useMemo } from "react";
-import type { SceneLayer, SceneManifest, BlendMode } from "./lib/types";
+import type { SceneLayer, SceneManifest, BlendMode, PositionOverride } from "./lib/types";
 import { TIMELINE_FPS } from "./lib/types";
 import { findAssetRef, resolveAssetURL } from "./lib/asset-resolver";
 import { interpolateTransformKeyframes, buildCSSFilter } from "./lib/keyframe-interpolation";
@@ -40,6 +40,8 @@ export interface SceneVMPlayerProps {
   height: number;
   /** Optional: visual debug overlay (frame counter, layer count) */
   debug?: boolean;
+  /** Live x/y/rotation override from the tracker's VX/VY/VR columns, applied to every layer. */
+  positionOverride?: PositionOverride | null;
 }
 
 /**
@@ -110,6 +112,46 @@ function computeLayerValues(
   };
 }
 
+/**
+ * Which exposure index a "vmi-sprite" layer shows at a given Scene VM frame.
+ * The sprite has its own fps/loop clock, independent of the transform
+ * keyframe frame count — it just reads off the same `frame` counter that
+ * drives everything else (TIMELINE_FPS=24), converted to sprite-time via the
+ * bundle's own fps.
+ */
+function resolveSpriteExposureIndex(
+  len: number,
+  fps: number,
+  loopMode: "oneshot" | "loop" | "pingpong" | "random" | undefined,
+  frame: number,
+): number {
+  if (len <= 0) return 0;
+  const t = (frame - 1) / TIMELINE_FPS;
+  const raw = Math.max(0, Math.floor(t * Math.max(1, fps)));
+  switch (loopMode) {
+    case "oneshot":
+      return Math.min(raw, len - 1);
+    case "pingpong": {
+      if (len === 1) return 0;
+      const period = (len - 1) * 2;
+      const m = raw % period;
+      return m < len ? m : period - m;
+    }
+    case "random": {
+      // Deterministic hash of the raw step so the same frame always shows
+      // the same pick (no flicker on re-render), yet it changes every step.
+      let h = raw ^ 0x9e3779b9;
+      h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+      h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+      h ^= h >>> 16;
+      return Math.abs(h) % len;
+    }
+    case "loop":
+    default:
+      return raw % len;
+  }
+}
+
 /** CSS mix-blend-mode value for our BlendMode union */
 function cssBlend(mode: BlendMode | undefined): string {
   if (!mode || mode === "normal") return "normal";
@@ -124,14 +166,21 @@ function LayerView({
   frame,
   viewportW,
   viewportH,
+  positionOverride,
 }: {
   layer: SceneLayer;
   manifest: SceneManifest;
   frame: number;
   viewportW: number;
   viewportH: number;
+  positionOverride?: PositionOverride | null;
 }) {
   const v = computeLayerValues(layer, frame);
+  if (positionOverride) {
+    if (positionOverride.x !== null) v.x = positionOverride.x;
+    if (positionOverride.y !== null) v.y = positionOverride.y;
+    if (positionOverride.rotation !== null) v.rotation = positionOverride.rotation;
+  }
   const asset = findAssetRef(manifest, layer.assetRef);
   const url = resolveAssetURL(asset);
 
@@ -208,6 +257,20 @@ function LayerView({
     );
   }
 
+  if (layer.type === "vmi-sprite") {
+    const exposures = layer.spriteExposures ?? [];
+    if (exposures.length === 0) return null;
+    const idx = resolveSpriteExposureIndex(exposures.length, layer.spriteFps ?? 12, layer.spriteLoopMode, frame);
+    const hexId = exposures[idx];
+    const assetRef = layer.spriteFrames?.find((f) => f.hexId === hexId)?.assetRef;
+    const spriteUrl = resolveAssetURL(findAssetRef(manifest, assetRef));
+    if (!spriteUrl) return null;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={spriteUrl} alt={layer.id} style={baseStyle} draggable={false} />
+    );
+  }
+
   if (layer.type === "3d-model") {
     // v0: 3d-model layers render a placeholder badge so the manifest stays valid.
     // Replaced in a follow-on PR with a Three.js Canvas mounted as a sibling layer.
@@ -238,6 +301,7 @@ export function SceneVMPlayer({
   width,
   height,
   debug = false,
+  positionOverride = null,
 }: SceneVMPlayerProps) {
   // Layers sorted by z so the DOM order matches stacking order
   const layers = useMemo(
@@ -265,6 +329,7 @@ export function SceneVMPlayer({
           frame={frame}
           viewportW={width}
           viewportH={height}
+          positionOverride={positionOverride}
         />
       ))}
 

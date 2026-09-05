@@ -26,16 +26,14 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Path prefix the app is served under. Same value works for any host
-  # mounting K-OS at /k-os (koolskull.github.io/k-os, 2kool.tv/k-os, ...).
-  # Change this if you want a different URL path.
-  NEXT_PUBLIC_BASE_PATH: /k-os
+  # Path prefix must match the GitHub repo name for project Pages sites.
+  # Repo is K-OS-III → https://koolskull.github.io/K-OS-III/
+  NEXT_PUBLIC_BASE_PATH: /K-OS-III
   # Optional: absolute URL of an external assets host. Leave empty to serve
   # assets from the same Pages deploy at <BASE_PATH>/.
   # Example: https://koolskull.github.io/k-os-assets
   NEXT_PUBLIC_ASSET_BASE: ""
-  # Optional: absolute URL where game WASM bundles live (often a GitHub
-  # Releases artifact since SuperTux's data file is too big for repos).
+  # Optional: absolute URL where game WASM bundles live (often a GitHub Releases artifact since SuperTux's data file is too big for repos).
   # Example: https://github.com/Koolskull/K-OS-III/releases/download/v0.2.0-beta.1
   NEXT_PUBLIC_GAMES_BASE: ""
 
@@ -49,7 +47,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies

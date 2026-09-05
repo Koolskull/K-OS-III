@@ -45,6 +45,25 @@ export interface NoteEvent {
   type: "on" | "off";
 }
 
+/**
+ * Emitted whenever a row carrying VX/VY/VR data is reached — like an effect
+ * column, this applies on every row reached regardless of whether that row
+ * also triggers a note. Scene VMs use these to drive an instrument's visual
+ * position/rotation live, in lockstep with playback (see
+ * useInstrumentSceneVM.ts's onVisualKeyframe subscription).
+ */
+export interface VisualKeyframeEvent {
+  channel: number;
+  /** Instrument currently active on this channel (from the last INST column set) */
+  instrument: number | null;
+  tick: number;
+  phraseRow: number;
+  /** Raw 0x00-0xFF row values, or null for an axis the row didn't set. */
+  x: number | null;
+  y: number | null;
+  rotation: number | null;
+}
+
 export class TrackerEngine {
   private audio: AudioEngine;
   private project: ProjectData | null = null;
@@ -54,6 +73,8 @@ export class TrackerEngine {
   private tickCallback: ((tick: number, channel: number, row: number) => void) | null = null;
   /** Per-note event listeners. Multiple Scene VMs / visualizers can subscribe. */
   private noteListeners: Set<(ev: NoteEvent) => void> = new Set();
+  /** Visual-keyframe (VX/VY/VR column) listeners. */
+  private visualListeners: Set<(ev: VisualKeyframeEvent) => void> = new Set();
 
   /** Scene queueing — pending song row to jump to at next phrase boundary */
   private pendingSongRow: number | null = null;
@@ -186,6 +207,18 @@ export class TrackerEngine {
   private emitNote(ev: NoteEvent): void {
     this.noteListeners.forEach((l) => {
       try { l(ev); } catch (e) { console.error("[ENGINE] note listener error", e); }
+    });
+  }
+
+  /** Subscribe to VX/VY/VR visual-keyframe events. Returns an unsubscribe function. */
+  onVisualKeyframe(cb: (ev: VisualKeyframeEvent) => void): () => void {
+    this.visualListeners.add(cb);
+    return () => { this.visualListeners.delete(cb); };
+  }
+
+  private emitVisual(ev: VisualKeyframeEvent): void {
+    this.visualListeners.forEach((l) => {
+      try { l(ev); } catch (e) { console.error("[ENGINE] visual listener error", e); }
     });
   }
 
@@ -474,6 +507,25 @@ export class TrackerEngine {
 
     if (row.effect1) this.applyEffect(row.effect1, state, time);
     if (row.effect2) this.applyEffect(row.effect2, state, time);
+
+    // Visual keyframe columns — apply on every row reached, note or not,
+    // same as effects. Needs a resolved instrument to know which Scene VM
+    // to drive.
+    if (
+      (row.visualX !== null || row.visualY !== null || row.visualRotation !== null) &&
+      state.currentInstrument !== null &&
+      this.visualListeners.size > 0
+    ) {
+      this.emitVisual({
+        channel: ch,
+        instrument: state.currentInstrument,
+        tick,
+        phraseRow: state.phraseRow,
+        x: row.visualX,
+        y: row.visualY,
+        rotation: row.visualRotation,
+      });
+    }
   }
 
   private processTableTick(table: Table, state: ChannelState, time: number): void {

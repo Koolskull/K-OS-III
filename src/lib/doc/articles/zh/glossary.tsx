@@ -20,7 +20,7 @@ export default function Glossary() {
       <Term name="Hex / Hexadecimal">基数 16 数字系统。在 K-OS 中各处用于 ID 和效果值。<Crossref to="hexadecimal" /> 参见。</Term>
       <Term name="Instrument">声源加可选视觉。K-OS 每个项目支持 256 个乐器。</Term>
       <Term name="Keyframe">视觉时间线上变换值显式设置的点。<Crossref to="scene-vm" /> 参见。</Term>
-      <Term name="KoolDraw">K-OS 的像素艺术精灵编辑器。桌面上的独立应用；可从 F4 乐器视觉编辑器作为精灵创建表面嵌入。</Term>
+      <Term name="KoolDraw">K-OS 的像素艺术绘图应用（KoolDraw）。桌面上的独立应用；可从 F4 乐器视觉编辑器作为精灵创建表面嵌入。</Term>
       <Term name="LGPT">LittleGPTracker。K-OS 输入模型基于的 PSP 时代音轨编辑器。</Term>
       <Term name="Live Mode">chain 在当前 song 行循环而不是前进的播放模式。</Term>
       <Term name="Macro">乐器上的用户可分配旋钮/滑块，映射到一个或多个合成参数。</Term>

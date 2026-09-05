@@ -1,12 +1,15 @@
 /*
  *                    ☦
- *            ╔══════════════════╗
+ *            ╔═══════════════════╗
  *            ║  K-OS III        ║
  *            ║  DESKTOP         ║
- *            ╚══════════════════╝
+ *            ╚═══════════════════╝
  *
  *   Desktop with icon grid. Double-click to launch apps.
  *   Classic Win98 layout: icons flow top-left, down then right.
+ *
+ *   Saint Michael the Archangel, defend this desktop.
+ *   Holy Guardian Angels, order every window under Heaven.
  */
 
 "use client";
@@ -26,10 +29,18 @@ interface DesktopIcon {
 const ICONS: DesktopIcon[] = [
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
-  { id: "kooldraw", label: "SPRITE EDITOR", glyph: "◻" },
+  { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
+  { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
+  { id: "tilemap", label: "TILEMAP", glyph: "▤" },
+  { id: "nodemap", label: "NODEMAP", glyph: "◈" },
+  { id: "stance", label: "EPISTEMIC STANCE", glyph: "¶" },
+  { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
+  { id: "skullmash", label: "SKULLMASH", glyph: "◎" },
+  { id: "notes", label: "NOTES", glyph: "✎" },
   { id: "games", label: "GAMES", glyph: ">" },
   { id: "manual", label: "MANUAL", glyph: "?" },
-  // { id: "picotracker", label: "PICOTRACKER", glyph: "♫" },
+  { id: "education", label: "EDUCATION", glyph: "§" },
+  { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
 ];
 
 export function Desktop({ onLaunchApp }: DesktopProps) {
@@ -41,11 +52,9 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
     const last = lastClickRef.current;
 
     if (last && last.id === id && now - last.time < 400) {
-      // Double-click: launch
       onLaunchApp(id);
       lastClickRef.current = null;
     } else {
-      // Single click: select
       setSelectedIcon(id);
       lastClickRef.current = { id, time: now };
     }
@@ -67,16 +76,15 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      {/* Icon grid */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           flexWrap: "wrap",
           alignContent: "flex-start",
-          gap: "8px",
-          padding: "16px",
-          height: "calc(100% - 40px)",
+          gap: "var(--dm-ui-gap, 4px)",
+          padding: "var(--dm-ui-pad, 4px)",
+          height: "calc(100% - var(--dm-taskbar-h, 32px))",
         }}
       >
         {ICONS.map((icon) => {
@@ -86,43 +94,41 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               key={icon.id}
               onClick={() => handleIconClick(icon.id)}
               style={{
-                width: "80px",
+                width: "64px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "4px",
-                padding: "8px 4px",
+                gap: "2px",
+                padding: "4px 2px",
                 cursor: "pointer",
                 backgroundColor: isSelected ? "rgba(255,255,255,0.1)" : "transparent",
                 border: isSelected ? "1px solid #555555" : "1px solid transparent",
                 userSelect: "none",
               }}
             >
-              {/* Icon glyph */}
               <div
                 style={{
-                  width: "48px",
-                  height: "48px",
+                  width: "36px",
+                  height: "36px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "28px",
+                  fontSize: "20px",
                   color: "#ffffff",
                   imageRendering: "pixelated",
                 }}
               >
                 {icon.glyph}
               </div>
-              {/* Label */}
               <span
                 style={{
                   fontFamily: "var(--dm-font-primary)",
-                  fontSize: "8px",
+                  fontSize: "var(--dm-ui-font-xs, 7px)",
                   color: "#ffffff",
                   letterSpacing: "1px",
                   textAlign: "center",
                   wordBreak: "break-all",
-                  lineHeight: "1.3",
+                  lineHeight: "1.25",
                 }}
               >
                 {icon.label}

@@ -1,6 +1,6 @@
 # K-OS III
 
-> **🟡 EARLY BETA — `0.2.0-beta.1`.** Working, buildable, but rough. Datamoshpit's tracker, sprite editor, and per-instrument visual system are in. Save format may break before `0.3`. Save your projects locally and don't ship anything you can't afford to lose.
+> **🟡 EARLY BETA — `0.2.0-beta.1`.** Working, buildable, but rough. Datamoshpit's tracker, KoolDraw, and per-instrument visual system are in. **New in this update:** dual-plane Tilemap Painter (with SGDK export) and a lightweight Mega Drive / Genesis emulator. Save format may still break before `0.3`. Save your projects locally and don't ship anything you can't afford to lose.
 
 **A fake operating system that runs in your browser and actually makes music, art, and on-chain work.** Built for Ethereum developers, artists, and makers — first.
 
@@ -14,7 +14,7 @@
 
 ## Screenshots
 
-| Boot sequence | Datamoshpit (Phrase) | Sprite editor | Desktop |
+| Boot sequence | Datamoshpit (Phrase) | KoolDraw | Desktop |
 |---|---|---|---|
 | ![boot](./public/screenshots/boot.png) | ![datamoshpit](./public/screenshots/datamoshpit-phrase.png) | ![sprite](./public/screenshots/sprite-editor.png) | ![desktop](./public/screenshots/desktop.png) |
 
@@ -72,6 +72,7 @@ K-OS III is a desktop environment that runs in your browser. It boots with a ter
 - [Apps Overview](#apps-overview)
 - [Datamoshpit](#datamoshpit)
 - [Other Apps](#other-apps)
+- [Recent Additions](#recent-additions-july-2026)
 - [Input Devices](#input-devices)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -87,7 +88,7 @@ K-OS III is a desktop environment that runs in your browser. It boots with a ter
 K-OS III is for people who want to make things on their own machine, without a platform sitting in between them and the work. In priority order, the people who get the most out of this project are:
 
 - **Tracker heads and chiptune people** — LSDJ, LGPT, Renoise, Furnace, Polyend Tracker. Datamoshpit is built in this lineage.
-- **Pixel artists and animators** who want a sprite editor and animation tools that respect 1px-per-pixel rendering.
+- **Pixel artists and animators** who want KoolDraw animation tools that respect 1px-per-pixel rendering.
 - **Handheld gamers and Linux tinkerers** — Miyoo Mini, Anbernic, Steam Deck, anything with a small screen and arrow keys.
 - **Christian creatives** who appreciate that the project is openly devotional in its identity, and who don't have to apologize for being so themselves.
 - **Ethereum / EVM developers** — see [`VISION.md`](./VISION.md) for the priority builder audience and what the contribution surface looks like for you specifically.
@@ -119,9 +120,10 @@ That's it. You're in.
 | App | What It Does |
 |-----|-------------|
 | **DATAMOSHPIT** | Music tracker — make beats, melodies, full songs |
-| **SPRITE EDITOR** | Pixel art and animation tool |
+| **KOOLDRAW** | Pixel art and animation tool |
+| **TILEMAP** | Dual-plane tilemap painter for Genesis-style levels + SGDK export |
 | **HOLY BIBLE** | King James Bible reader with highlights and notes |
-| **GAMES** | Open-source arcade cabinet (SuperTux, Commander Keen) |
+| **GAMES** | Open-source arcade cabinet (Commander Keen + Mega Drive emulator) |
 
 Each app opens in its own draggable, resizable window on the desktop. You can run multiple apps at once.
 
@@ -129,7 +131,7 @@ Each app opens in its own draggable, resizable window on the desktop. You can ru
 
 ## Datamoshpit
 
-Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Slimentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.
+Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Silmentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.
 
 If you've used a tracker before — LSDJ, LGPT, Renoise, Furnace — Datamoshpit will feel familiar fast. If you haven't, the **full beginner's guide** walks you from "what is a tracker" to "you just wrote music":
 
@@ -143,9 +145,33 @@ For deeper technical references, see the docs index further down this README.
 
 ## Other Apps
 
-### SPRITE EDITOR — Pixel Art & Animation
+### KOOLDRAW — Pixel Art & Animation
 
-A Piskel-inspired sprite editor for creating pixel art and animations. Tools include pen, eraser, fill, line, and rectangle. Manage layers and animation frames. Export as PNG sequences or sprite sheets for use in Datamoshpit visual layers.
+KoolDraw is a Piskel-inspired pixel art and animation app. Tools include pen, soft paint, eraser, fill, line, and rectangle. Export as PNG sequences or sprite sheets for use in Datamoshpit visual layers.
+
+**Timeline & layers** (see [`docs/doc/en/kooldraw-timeline`](./src/lib/doc/articles/en/kooldraw-timeline.tsx) in-app for the full manual page):
+
+- Every frame gets a permanent **3-digit hex id** (`000`–`FFF`). Layers keep a drawing *pool* (every distinct drawing) separate from the timeline's *exposure track* (which pool drawing plays at each position) — so a drawing can be **reused** at multiple non-contiguous points in the sequence (Clip Studio Paint / OpenToonz style) without duplicating pixel data. `Shift+F` inserts a new blank frame, `Shift+D` duplicates the active one into an independent copy; the **REUSE** picker points a slot at an existing drawing instead.
+- Layers and frames both drag-reorder in place (press-and-drag, same interaction as the color picker/knob controls — not browser drag-and-drop), with an `Alt+↑`/`Alt+↓` keyboard path on a focused layer row. Layers also support delete, rename, and an opacity knob.
+- The timeline toggles between a **horizontal filmstrip** (docked under the canvas) and a **vertical X-Sheet-style grid** (rows = frames top-to-bottom, columns = layers, docked in a thin column beside the preview/color/export rail) — the same row order OpenToonz and Tahoma2D use for their Xsheet panel. A header button cycles **AUTO → FILM → X-SHEET**: AUTO follows the window's own shape live (taller-than-wide → filmstrip, wider-than-tall → X-Sheet column); FILM/X-SHEET pin an explicit choice. Opening a shot from Shotlist pins X-Sheet mode and mirrors that shot's fps/duration/row layout.
+
+On phones the editor uses the **Corner-Collapsible Panels** pattern (toolbars and side panels collapse into the four screen corners + a full-canvas “zen” mode). See [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md).
+
+### TILEMAP — Dual-Plane Level Painter (New)
+
+A bare-bones but capable tilemap editor aimed at Sega Genesis / Mega Drive style levels:
+
+- Load any spritesheet (PNG / GIF / WebP)
+- Two independent planes (Plane A / Plane B)
+- Custom tile size (default 8×8) and map size (default 40×28)
+- Per-tile palette index (0–3)
+- Paint / Erase / Pick tools
+- Export composed PNG of both planes
+- **Export SGDK `.h`** — generates `TILE_ATTR_FULL`-compatible `u16` arrays ready to drop into an SGDK project
+
+Keyboard: `A` / `S` / `Tab` switch plane · `B` paint · `E` erase · `I` pick · `1-4` palette · `[` `]` zoom
+
+Same mobile corner-collapse + vertical hide pattern as KoolDraw (documented in [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md)).
 
 ### HOLY BIBLE — King James Version
 
@@ -153,12 +179,21 @@ An integrated e-reader for the King James Bible. Navigate by book, chapter, and 
 
 ### GAMES — Open Source Arcade Cabinet
 
-K-OS III ships with open-source games compiled to WebAssembly:
+K-OS III ships with open-source games compiled to WebAssembly / browser emulators:
 
 | Game | Description |
 |------|-------------|
-| **SuperTux** | Open-source platformer inspired by Super Mario |
 | **Commander Keen** | Classic DOS platformer by id Software (all three episodes via [Chocolate Keen](https://github.com/nicerloop/chocolatekeen)) |
+| **MEGA DRIVE** | Lightweight Sega Genesis / Mega Drive emulator (PicoDrive core via EmulatorJS). Load any `.md` / `.bin` / `.gen` / `.smd` ROM. |
+
+---
+
+## Recent Additions (July 2026)
+
+- **Tilemap Painter** — new desktop app for dual-plane tilemap editing + SGDK header export. Designed for people making Genesis-style homebrew levels.
+- **Mega Drive emulator** — added to the Games app. Uses the lightest practical core (PicoDrive) so it stays responsive even on modest hardware / handheld browsers.
+- Both features keep the existing K-OS window system (draggable, resizable, maximizable, taskbar integration).
+- **Mobile Creative UI pattern** documented for KoolDraw + Tilemap (and future creative tools): menus collapse into the four corners of the screen and can be fully hidden for maximum canvas space on cell phones.
 
 ---
 
@@ -176,6 +211,8 @@ Datamoshpit works with whatever you have:
 
 See [docs/CONTROLLER_SUPPORT.md](docs/CONTROLLER_SUPPORT.md) for full device-specific details and button mappings.
 
+Creative apps (KoolDraw, Tilemap) use the additional **[Mobile Creative UI](docs/MOBILE_CREATIVE_UI.md)** pattern on phones so the canvas stays large.
+
 ---
 
 ## Tech Stack
@@ -188,7 +225,7 @@ See [docs/CONTROLLER_SUPPORT.md](docs/CONTROLLER_SUPPORT.md) for full device-spe
 | 3D / Shaders | Three.js |
 | Animation | Theatre.js |
 | Synthesis | YM2612-style 4-operator FM |
-| Games | Emscripten / WebAssembly |
+| Games | Emscripten / WebAssembly + EmulatorJS (PicoDrive) |
 
 ---
 
@@ -204,7 +241,8 @@ K-OS-III/
 │   │       ├── datamoshpit/  # Tracker, instruments, live pads
 │   │       ├── bible/        # Scripture reader
 │   │       ├── games/        # Game menu + iframe launcher
-│   │       └── kooldraw/     # Sprite editor
+│   │       ├── kooldraw/     # KoolDraw
+│   │       └── tilemap/      # Dual-plane tilemap painter + SGDK export
 │   ├── engine/               # Audio, synth, tracker, project I/O
 │   ├── lib/                  # InputRouter, BibleDataLoader, SpriteUtils
 │   ├── types/                # TypeScript types
@@ -213,8 +251,8 @@ K-OS-III/
 │   ├── bible/                # KJV Bible JSON
 │   ├── fonts/                # Pixel fonts (kongtext, sometype-mono)
 │   ├── games/
-│   │   ├── supertux/         # SuperTux WebAssembly build
-│   │   └── keen/             # Commander Keen WebAssembly build
+│   │   ├── keen/             # Commander Keen WebAssembly build
+│   │   └── genesis/          # Mega Drive emulator page (PicoDrive)
 │   ├── sprites/              # Slimentologika glyphs
 │   └── gifs/                 # Screen effects
 └── docs/                     # Detailed specs (commands, controllers, etc.)
@@ -248,6 +286,7 @@ For deeper technical specifications, see the docs folder:
 | [`docs/COMMANDS.md`](./docs/COMMANDS.md) | Full effect command reference |
 | [`docs/NAVIGATION_AND_INPUT.md`](./docs/NAVIGATION_AND_INPUT.md) | Complete input system specification |
 | [`docs/CONTROLLER_SUPPORT.md`](./docs/CONTROLLER_SUPPORT.md) | MIDI, gamepad, handheld, and touch support |
+| [`docs/MOBILE_CREATIVE_UI.md`](./docs/MOBILE_CREATIVE_UI.md) | **Corner-collapsible menus + vertical hide for KoolDraw, Tilemap & future creative tools** |
 | [`docs/SOUND_ENGINES.md`](./docs/SOUND_ENGINES.md) | All sound engines and their parameters |
 | [`docs/GROOVE_AND_TIMING.md`](./docs/GROOVE_AND_TIMING.md) | Groove system and timing math |
 | [`docs/SLIMENTOLOGIKA_GUIDE.md`](./docs/SLIMENTOLOGIKA_GUIDE.md) | Full guide to the base-16 glyph system |

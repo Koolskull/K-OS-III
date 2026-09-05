@@ -45,11 +45,11 @@ function sampleInstrument(id: number, name: string, sampleId: number): Instrumen
 }
 
 function row(note: number | null, instrument: number | null): PhraseRow {
-  return { note, instrument, effect1: null, effect2: null, slice: null };
+  return { note, instrument, effect1: null, effect2: null, slice: null, visualX: null, visualY: null, visualRotation: null };
 }
 
 function emptyRow(): PhraseRow {
-  return { note: null, instrument: null, effect1: null, effect2: null, slice: null };
+  return { note: null, instrument: null, effect1: null, effect2: null, slice: null, visualX: null, visualY: null, visualRotation: null };
 }
 
 export async function createDemoProject(): Promise<ProjectData> {

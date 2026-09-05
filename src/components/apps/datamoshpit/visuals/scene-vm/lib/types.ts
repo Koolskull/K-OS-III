@@ -112,6 +112,17 @@ export interface SceneLayer {
   solidColor?: string;
   /** For "solid" layers: pixel size before scale is applied. Defaults to 64. */
   solidSize?: { w: number; h: number };
+  /**
+   * For "vmi-sprite" layers — a resolved KoolDraw animation bundle layer.
+   * `spriteExposures` is the playback order (hex ids, may repeat/reuse);
+   * `spriteFrames` maps each distinct hex id to an asset in `manifest.assets`.
+   * The player steps through `spriteExposures` at `spriteFps`, independent of
+   * the manifest's own transform-keyframe clock, honoring `spriteLoopMode`.
+   */
+  spriteFrames?: { hexId: string; assetRef: string }[];
+  spriteExposures?: string[];
+  spriteFps?: number;
+  spriteLoopMode?: "oneshot" | "loop" | "pingpong" | "random";
 }
 
 /* ------------------------------------------------------------------ */
@@ -132,6 +143,18 @@ export type NoteTriggerMode =
   | "pitch-mapped"
   | "velocity-amp"
   | "none";
+
+/**
+ * Live x/y/rotation override for the currently-playing instrument, driven by
+ * the tracker's VX/VY/VR phrase columns (see TrackerEngine's
+ * VisualKeyframeEvent). Applied on top of whatever the manifest's own
+ * transform keyframes compute, for every layer.
+ */
+export interface PositionOverride {
+  x: number | null;
+  y: number | null;
+  rotation: number | null;
+}
 
 export interface SceneVMBinding {
   /** 0–7 — which Datamoshpit channel triggers this scene */

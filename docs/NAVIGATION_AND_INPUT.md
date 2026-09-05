@@ -19,6 +19,8 @@ On a Miyoo Mini or Anbernic handheld, it runs in the browser natively.
 
 **See also: [CONTROLLER_SUPPORT.md](CONTROLLER_SUPPORT.md)** for MIDI, gamepad, and handheld device specifications.
 
+**Creative apps (KoolDraw, Tilemap Painter, and future drawing/animation tools)** use a different mobile pattern so the canvas can stay large on phones. See **[MOBILE_CREATIVE_UI.md](MOBILE_CREATIVE_UI.md)** — Corner-Collapsible Panels + Vertical Menu Toggle.
+
 ---
 
 ## Core Input Model
@@ -195,6 +197,15 @@ When no keyboard is attached, a virtual controller overlay appears:
 - Virtual D-pad has generous hit zones with diagonal dead zones
 - Haptic feedback on button presses (if device supports it)
 - Touch controls can be hidden when a keyboard is detected
+
+### Creative Apps (KoolDraw, Tilemap, future tools)
+
+These apps prioritize a large free-hand canvas on phones. They do **not** use the bottom virtual Game Boy controller by default. Instead they use the **Corner-Collapsible Panels** system:
+
+- Toolbars and side panels collapse into the four screen corners (top-left, top-right, bottom-left, bottom-right).
+- A vertical “hide all chrome / zen mode” toggle lets the canvas occupy the entire window; a single corner affordance remains to restore the UI.
+
+Full specification, interaction rules, aesthetic constraints, and the shared component contract are in **[MOBILE_CREATIVE_UI.md](MOBILE_CREATIVE_UI.md)**. New creative software added to K-OS III should reuse this pattern.
 
 ---
 

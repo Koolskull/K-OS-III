@@ -1,9 +1,9 @@
 /*
  *                    ☦
- *            ╔══════════════════╗
+ *            ╔═══════════════════╗
  *            ║  K-OS III        ║
  *            ║  BOOT SEQUENCE   ║
- *            ╚══════════════════╝
+ *            ╚═══════════════════╝
  *
  *   Fast POST-style terminal scroll (~8 seconds):
  *   1. K-OS III ASCII header
@@ -11,7 +11,7 @@
  *   3. Essential Psalm verses (23, 91, 121)
  *   4. System ready POST
  *
- *   Press any key to skip.
+ *   Tap screen or press any key to skip.
  */
 
 "use client";
@@ -55,7 +55,7 @@ const BOOT_LINES: string[] = [
   "  for thou art with me; thy rod and thy staff",
   "  they comfort me.",
   "",
-  "  [PSALM 091:001]", 
+  "  [PSALM 091:001]",
   "  He that dwelleth in the secret place",
   "  of the most High shall abide under the shadow",
   "  of the Almighty.",
@@ -108,14 +108,19 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
     onComplete();
   }, [onComplete]);
 
-  // Skip on any key press or click
+  // Skip on any key, click, or touch (mobile)
   useEffect(() => {
-    const skip = (e: Event) => { e.preventDefault(); finish(); };
+    const skip = (e: Event) => {
+      e.preventDefault();
+      finish();
+    };
     window.addEventListener("keydown", skip);
-    window.addEventListener("click", skip);
+    window.addEventListener("pointerdown", skip);
+    window.addEventListener("touchstart", skip, { passive: false });
     return () => {
       window.removeEventListener("keydown", skip);
-      window.removeEventListener("click", skip);
+      window.removeEventListener("pointerdown", skip);
+      window.removeEventListener("touchstart", skip);
     };
   }, [finish]);
 
@@ -146,6 +151,17 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
         fontFamily: "var(--dm-font-primary)",
         fontSize: "10px",
         imageRendering: "pixelated",
+        // Full-screen hit target for mobile tap-to-skip
+        touchAction: "manipulation",
+        cursor: "pointer",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+      }}
+      role="button"
+      aria-label="Tap or press any key to skip boot sequence"
+      onClick={(e) => {
+        e.preventDefault();
+        finish();
       }}
     >
       <div
@@ -156,34 +172,44 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
         {lines.map((line, i) => {
           const l = line ?? "";
           return (
-          <div
-            key={i}
-            style={{
-              color: l.includes("══") || l.includes("──")
-                ? "#555555"
-                : l.includes("[PSALM")
-                  ? "#888888"
-                  : l.includes("OK")
-                    ? "#00ff00"
-                    : l.includes("☦")
-                      ? "#ffcc00"
-                      : "#cccccc",
-              whiteSpace: "pre-wrap",
-              lineHeight: "1.4",
-              letterSpacing: "1px",
-            }}
-          >
-            {l || "\u00A0"}
-          </div>
+            <div
+              key={i}
+              style={{
+                color: l.includes("══") || l.includes("──")
+                  ? "#555555"
+                  : l.includes("[PSALM")
+                    ? "#888888"
+                    : l.includes("OK")
+                      ? "#00ff00"
+                      : l.includes("☦")
+                        ? "#ffcc00"
+                        : "#cccccc",
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.4",
+                letterSpacing: "1px",
+              }}
+            >
+              {l || "\u00A0"}
+            </div>
           );
         })}
         <div style={{ color: "#ffffff", animation: "blink 1s step-end infinite" }}>_</div>
       </div>
+
+      {/* Skip prompt — larger + higher contrast for mobile */}
       <div
-        className="flex-shrink-0 px-2 py-1 border-t-2"
-        style={{ borderColor: "#1a1a1a", color: "#555555", fontSize: "8px", letterSpacing: "1px" }}
+        className="flex-shrink-0 px-3 py-3 border-t-2 text-center"
+        style={{
+          borderColor: "#333333",
+          color: "#ffff00",
+          fontSize: "11px",
+          letterSpacing: "2px",
+          backgroundColor: "#0a0a0a",
+          // Keep clear of iOS home indicator / Android nav
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        }}
       >
-        PRESS ANY KEY TO SKIP
+        TAP SCREEN OR PRESS ANY KEY TO SKIP
       </div>
       <style>{`@keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }`}</style>
     </div>

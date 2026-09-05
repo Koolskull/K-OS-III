@@ -37,6 +37,7 @@ function blankPhrase(id: number): Phrase {
     id,
     rows: Array.from({ length: 16 }, () => ({
       note: null, instrument: null, effect1: null, effect2: null, slice: null,
+      visualX: null, visualY: null, visualRotation: null,
     })),
   };
 }

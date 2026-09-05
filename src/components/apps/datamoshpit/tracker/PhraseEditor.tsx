@@ -17,7 +17,7 @@
  *   Cursor stays vertically centered on screen.
  *   Pattern data scrolls around it.
  *
- *   Columns (0-7):
+ *   Columns (0-9):
  *     0: NOTE  (C-0 to B-9, --- = empty)
  *     1: IN    (instrument hex 00-FF)
  *     2: SL    (slice hex 00-FF, dim when not sample)
@@ -25,6 +25,9 @@
  *     4: VAL1  (effect 1 value hex 00-FF)
  *     5: CMD2  (2-char effect command)
  *     6: VAL2  (effect 2 value hex 00-FF)
+ *     7: VX    (visual X keyframe, hex 00-FF, sticky until next value)
+ *     8: VY    (visual Y keyframe, hex 00-FF, sticky until next value)
+ *     9: VR    (visual rotation keyframe, hex 00-FF, sticky until next value)
  *
  *   Row number (#) is not a selectable column.
  */
@@ -43,9 +46,12 @@ export const PHRASE_COLS = {
   VAL1: 4,
   CMD2: 5,
   VAL2: 6,
+  VX: 7,
+  VY: 8,
+  VR: 9,
 } as const;
 
-export const PHRASE_COL_COUNT = 7;
+export const PHRASE_COL_COUNT = 10;
 
 interface PhraseEditorProps {
   phrase: Phrase;
@@ -94,6 +100,9 @@ const COLUMNS = [
   { key: "VAL1",  chars: 2, label: "V1" },     // "FF"  = 2 chars
   { key: "CMD2",  chars: 2, label: "C2" },     // "--"  = 2 chars
   { key: "VAL2",  chars: 2, label: "V2" },     // "FF"  = 2 chars
+  { key: "VX",    chars: 2, label: "VX" },     // "FF"  = 2 chars
+  { key: "VY",    chars: 2, label: "VY" },     // "FF"  = 2 chars
+  { key: "VR",    chars: 2, label: "VR" },     // "FF"  = 2 chars
 ];
 const ROW_NUM_CHARS = 2; // "FF" = 2 chars
 
@@ -127,6 +136,9 @@ function PhraseRowComponent({
     { text: toHex(row.effect1?.value ?? null) },
     { text: formatCmd(row.effect2?.command) },
     { text: toHex(row.effect2?.value ?? null) },
+    { text: toHex(row.visualX) },
+    { text: toHex(row.visualY) },
+    { text: toHex(row.visualRotation) },
   ];
 
   const hasData = row.note !== null;

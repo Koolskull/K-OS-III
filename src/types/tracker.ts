@@ -79,6 +79,13 @@ export interface PhraseRow {
   effect2: Effect | null;     // second effect column
   slice: number | null;       // sample slice offset 0x00-0xFF (used when instrument is "sample" type)
                               // high nibble = coarse (1/16th), low nibble = fine (1/256th)
+  // Visual keyframe columns — insert x/y/rotation values on any row, the
+  // same way you'd insert a note, to drive the active instrument's Scene VM
+  // position live during playback. Unset (null) axes hold their last value
+  // (sticky, like the effect columns), rather than resetting to center.
+  visualX: number | null;        // 0x00-0xFF, normalized /255 -> 0..1 of viewport
+  visualY: number | null;        // 0x00-0xFF, normalized /255 -> 0..1 of viewport
+  visualRotation: number | null; // 0x00-0xFF, mapped to -180..+180 degrees
 }
 
 /** Phrase: 2–256 rows of note/instrument/effect data (default 16) */
@@ -213,7 +220,8 @@ export type VisualSource =
   | "video"     // MP4 / WebM
   | "shader"    // GLSL fragment shader from registry (id)
   | "model"     // GLTF / GLB
-  | "iframe";   // arbitrary HTML5 visualizer URL
+  | "iframe"    // arbitrary HTML5 visualizer URL
+  | "sprite";   // KoolDraw animation bundle (hex-named frame sequence, see SpriteBundle)
 
 /** How the instrument's notes drive the scene playhead */
 export type VisualTriggerMode =
@@ -265,6 +273,45 @@ export interface InstrumentVisual {
    * x/y are normalized 0..1 of the viewport.
    */
   customKeyframes?: VisualKeyframe[];
+  /** For "sprite" — an imported KoolDraw animation bundle. */
+  spriteBundle?: SpriteBundle;
+}
+
+/**
+ * A KoolDraw animation bundle imported into an instrument's visual — the
+ * hex-named per-layer frame sequence produced by KoolDraw's "BUNDLE" export
+ * (`downloadAnimationBundle` in src/lib/SpriteUtils.ts), parsed back in by
+ * `parseSpriteBundleZip` (scene-vm/lib/sprite-bundle.ts). Frames are embedded
+ * as data: URLs directly on the instrument, the same convention already used
+ * by `InstrumentVisual.assetUrl` for drawn/loaded images, so the whole thing
+ * round-trips through `.dmpit` project save/load with no extra file handling.
+ */
+export type SpriteLoopMode = "oneshot" | "loop" | "pingpong" | "random";
+
+export interface SpriteBundleFrame {
+  /** Permanent hex id from the KoolDraw pool ("000"-"FFF") */
+  hexId: string;
+  /** Embedded PNG, e.g. "data:image/png;base64,..." */
+  dataUrl: string;
+}
+
+export interface SpriteBundleLayer {
+  name: string;
+  opacity: number;
+  visible: boolean;
+  /** Hex id shown at each timeline position — the playback order. */
+  exposures: string[];
+  /** Deduplicated pool of distinct frames referenced by `exposures`. */
+  frames: SpriteBundleFrame[];
+}
+
+export interface SpriteBundle {
+  name: string;
+  width: number;
+  height: number;
+  fps: number;
+  loopMode: SpriteLoopMode;
+  layers: SpriteBundleLayer[];
 }
 
 /** Mirrors TransformKeyframe from the Scene VM; redeclared here so tracker.ts

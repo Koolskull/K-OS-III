@@ -74,6 +74,7 @@ import {
   DEMO_KICK_PUNCH,
   DEMO_SNARE_SPIN,
   DEMO_PITCH_SCRUB,
+  parseSpriteBundleZip,
 } from "@/components/apps/datamoshpit/visuals/scene-vm";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
 import type { SceneVMBinding, SceneVMWindowMode } from "@/components/apps/datamoshpit/visuals/scene-vm";
@@ -424,6 +425,45 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         return;
       }
 
+      if (key === "v_sprite_clear") {
+        setProject((prev) => ({
+          ...prev,
+          instruments: prev.instruments.map((inst) =>
+            inst.id === instId && inst.visual
+              ? { ...inst, visual: { ...inst.visual, spriteBundle: undefined } }
+              : inst,
+          ),
+        }));
+        return;
+      }
+
+      if (key === "v_sprite_load") {
+        // Native file picker → unzip a KoolDraw "BUNDLE" export → embed as data URLs
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".zip";
+        input.onchange = async () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          try {
+            const bundle = await parseSpriteBundleZip(file);
+            setProject((prev) => ({
+              ...prev,
+              instruments: prev.instruments.map((inst) =>
+                inst.id === instId && inst.visual
+                  ? { ...inst, visual: { ...inst.visual, spriteBundle: bundle } }
+                  : inst,
+              ),
+            }));
+          } catch (err) {
+            console.error("[Datamoshpit] Failed to import sprite bundle:", err);
+            window.alert(err instanceof Error ? err.message : "Failed to import animation bundle.");
+          }
+        };
+        input.click();
+        return;
+      }
+
       if (key === "v_timeline_open") {
         setTimelineEditorInstId(instId);
         return;
@@ -713,6 +753,21 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
                   }
                   break;
                 }
+                case PHRASE_COLS.VX: {
+                  const step = coarse ? 0x10 * dir : dir;
+                  row.visualX = Math.max(0, Math.min(0xFF, (row.visualX ?? 0) + step));
+                  break;
+                }
+                case PHRASE_COLS.VY: {
+                  const step = coarse ? 0x10 * dir : dir;
+                  row.visualY = Math.max(0, Math.min(0xFF, (row.visualY ?? 0) + step));
+                  break;
+                }
+                case PHRASE_COLS.VR: {
+                  const step = coarse ? 0x10 * dir : dir;
+                  row.visualRotation = Math.max(0, Math.min(0xFF, (row.visualRotation ?? 0) + step));
+                  break;
+                }
                 case PHRASE_COLS.CMD1:
                 case PHRASE_COLS.CMD2:
                   break;
@@ -806,7 +861,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               if (p.rows.length >= 256) return p;
               return {
                 ...p,
-                rows: [...p.rows, { note: null, instrument: null, effect1: null, effect2: null, slice: null }],
+                rows: [...p.rows, { note: null, instrument: null, effect1: null, effect2: null, slice: null, visualX: null, visualY: null, visualRotation: null }],
               };
             }));
           } else if (activeScreenRef.current === "song") {
@@ -902,6 +957,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
                         }))
                       : Array.from({ length: 16 }, () => ({
                           note: null, instrument: null, effect1: null, effect2: null, slice: null,
+                          visualX: null, visualY: null, visualRotation: null,
                         })),
                   };
                   const withCloned = { ...prev, phrases: [...prev.phrases, cloned] };
@@ -987,6 +1043,15 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
                   break;
                 case PHRASE_COLS.SLICE:
                   if (row.slice === null) row.slice = 0;
+                  break;
+                case PHRASE_COLS.VX:
+                  if (row.visualX === null) row.visualX = 0x80;
+                  break;
+                case PHRASE_COLS.VY:
+                  if (row.visualY === null) row.visualY = 0x80;
+                  break;
+                case PHRASE_COLS.VR:
+                  if (row.visualRotation === null) row.visualRotation = 0x80;
                   break;
               }
 
@@ -1087,6 +1152,15 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
                 case PHRASE_COLS.CMD2:
                 case PHRASE_COLS.VAL2:
                   row.effect2 = null;
+                  break;
+                case PHRASE_COLS.VX:
+                  row.visualX = null;
+                  break;
+                case PHRASE_COLS.VY:
+                  row.visualY = null;
+                  break;
+                case PHRASE_COLS.VR:
+                  row.visualRotation = null;
                   break;
               }
 

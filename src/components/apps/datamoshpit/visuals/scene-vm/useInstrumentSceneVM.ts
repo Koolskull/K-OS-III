@@ -13,9 +13,9 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { TrackerEngine, NoteEvent } from "@/engine/tracker/TrackerEngine";
+import type { TrackerEngine, NoteEvent, VisualKeyframeEvent } from "@/engine/tracker/TrackerEngine";
 import type { ProjectData } from "@/types/tracker";
-import type { SceneManifest } from "./lib/types";
+import type { SceneManifest, PositionOverride } from "./lib/types";
 import { TIMELINE_FPS } from "./lib/types";
 import { manifestFromInstrumentVisual } from "./instrument-visual";
 
@@ -44,6 +44,8 @@ export interface InstrumentSceneVMResult {
   frame: number;
   /** ID of the instrument the current manifest came from, or null if idle */
   activeInstrumentId: number | null;
+  /** Live position override from the active instrument's VX/VY/VR columns, or null if none set yet. */
+  positionOverride: PositionOverride | null;
 }
 
 export function useInstrumentSceneVM(
@@ -55,6 +57,8 @@ export function useInstrumentSceneVM(
   const [manifest, setManifest] = useState<SceneManifest>(idleManifest);
   const [activeInstrumentId, setActiveInstrumentId] = useState<number | null>(null);
   const [frame, setFrame] = useState(1);
+  const [positionOverride, setPositionOverride] = useState<PositionOverride | null>(null);
+  const activeInstrumentIdRef = useRef<number | null>(null);
 
   const playheadRef = useRef(1);
   const playingRef = useRef(false);
@@ -113,9 +117,30 @@ export function useInstrumentSceneVM(
       totalFramesRef.current = totalFrames;
       triggerModeRef.current = inst.visual.triggerMode;
       lastTickAtRef.current = performance.now();
+      // Fresh instrument context — drop any live position override left over
+      // from whichever instrument played last. Retriggering the SAME
+      // instrument keeps its override (sticky, like the effect columns).
+      if (inst.id !== activeInstrumentIdRef.current) {
+        setPositionOverride(null);
+      }
+      activeInstrumentIdRef.current = inst.id;
       setManifest(next);
       setActiveInstrumentId(inst.id);
       setFrame(playheadRef.current);
+    });
+    return unsub;
+  }, [engine]);
+
+  // Subscribe to VX/VY/VR visual-keyframe events for the active instrument
+  useEffect(() => {
+    if (!engine) return;
+    const unsub = engine.onVisualKeyframe((ev: VisualKeyframeEvent) => {
+      if (ev.instrument !== activeInstrumentIdRef.current) return;
+      setPositionOverride((prev) => ({
+        x: ev.x !== null ? ev.x / 255 : (prev?.x ?? null),
+        y: ev.y !== null ? ev.y / 255 : (prev?.y ?? null),
+        rotation: ev.rotation !== null ? (ev.rotation / 255) * 360 - 180 : (prev?.rotation ?? null),
+      }));
     });
     return unsub;
   }, [engine]);
@@ -150,5 +175,5 @@ export function useInstrumentSceneVM(
     };
   }, []);
 
-  return { manifest, frame, activeInstrumentId };
+  return { manifest, frame, activeInstrumentId, positionOverride };
 }

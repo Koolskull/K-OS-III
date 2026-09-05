@@ -16,7 +16,10 @@ import type {
 import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
 
 function emptyPhraseRow(): PhraseRow {
-  return { note: null, instrument: null, effect1: null, effect2: null, slice: null };
+  return {
+    note: null, instrument: null, effect1: null, effect2: null, slice: null,
+    visualX: null, visualY: null, visualRotation: null,
+  };
 }
 
 function emptyTableRow(): TableRow {

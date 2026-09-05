@@ -497,6 +497,16 @@ button, input, select, textarea, div, span, a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Text selection — monochrome grey, not the default OS blue */
+::selection {
+  background: #555555;
+  color: #ffffff;
+}
+::-moz-selection {
+  background: #555555;
+  color: #ffffff;
+}
+
 /* Touch controller - circle buttons override global border-radius: 0 */
 .dm-touch-btn-circle {
   border-radius: 50% !important;

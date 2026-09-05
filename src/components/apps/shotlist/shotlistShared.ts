@@ -25,6 +25,26 @@ export interface XFrame {
   assetRef: string | null;
 }
 
+export type ShotStatus = "draft" | "review" | "approved";
+
+/** Crew row shared with PRODEV / STUDIO. Hours feed CreditLedger workUnits. */
+export interface ShotCredit {
+  account: string;
+  role: string;
+  weight: string;
+  hours: string;
+}
+
+/** On-chain CreditLedger pointer. Missing ledgerShotId = local only. */
+export interface ShotChain {
+  ledgerShotId: string;
+  parentShotId: string;
+  branch: string;
+  workUnits: string;
+  frozen: boolean;
+  published: boolean;
+}
+
 export interface Shot {
   id: number;
   title: string;
@@ -38,7 +58,9 @@ export interface Shot {
   thumbnail: string | null;
   hasCommittedThumbnail: boolean;
   xsheet: XFrame[];
-  status: "draft" | "review" | "approved";
+  status: ShotStatus;
+  credits: ShotCredit[];
+  chain?: ShotChain;
 }
 
 export interface Sequence {
@@ -46,6 +68,30 @@ export interface Sequence {
   name: string;
   fps: number;
   shots: Shot[];
+}
+
+export function emptyCredit(role = "animator"): ShotCredit {
+  return { account: "", role, weight: "1", hours: "0" };
+}
+
+export function chainStatusLabel(shot: Shot): string {
+  const id = shot.chain?.ledgerShotId;
+  if (!id) return "LOCAL";
+  if (shot.chain?.published) return `NFT #${id}`;
+  if (shot.chain?.frozen) return `FROZEN #${id}`;
+  return `LEDGER #${id}`;
+}
+
+export function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
+  return { id: uid(), name, fps: 24, shots: [] };
+}
+
+export function seedUidFromSequence(seq: Sequence) {
+  bumpUid(seq.id);
+  for (const shot of seq.shots) {
+    bumpUid(shot.id);
+    for (const row of shot.xsheet) bumpUid(row.id);
+  }
 }
 
 /** Cumulative [startFrame, endFrame] (inclusive, 1-based) for each xsheet row. */
@@ -67,6 +113,12 @@ export function xsheetTotalFrames(xsheet: XFrame[]): number {
 let nextId = 1;
 export function uid(): number {
   return nextId++;
+}
+
+export function bumpUid(...ids: number[]) {
+  for (const id of ids) {
+    if (Number.isFinite(id) && id >= nextId) nextId = id + 1;
+  }
 }
 
 export function createEmptyXFrame(): XFrame {

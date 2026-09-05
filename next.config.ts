@@ -33,7 +33,23 @@ const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  turbopack: {},
+  // jspdf optionally pulls canvg (SVG). Shotlist only embeds PNG canvases.
+  turbopack: {
+    resolveAlias: {
+      canvg: "./src/lib/optional-stub.ts",
+      html2canvas: "./src/lib/optional-stub.ts",
+      dompurify: "./src/lib/optional-stub.ts",
+    },
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvg: false,
+      html2canvas: false,
+      dompurify: false,
+    };
+    return config;
+  },
 
   // CodeMirror / Lezer ship as pure ESM — ensure Next bundles them for SKULLTEXT.
   transpilePackages: [

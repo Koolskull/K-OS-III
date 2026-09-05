@@ -19,13 +19,9 @@ The point of this file: a single, auditable surface where every wallet-touching 
 
 ## Active dependencies
 
-> **No wallet dependencies are installed yet.** This file is scaffolded ahead of implementation so the discipline is in place from day one.
-
-When the first wallet PR adds dependencies, it should populate the table below:
-
 | Library | Version | Purpose | Audited? | Reviewer | Added in PR | Notes |
 |---|---|---|---|---|---|---|
-| *(none yet)* | | | | | | |
+| `viem` | `2.56.3` | EVM reads/writes for the 2Kool Studio desk (injected wallet only) | Ecosystem-standard client; not a keystore | pending second reviewer | Studio desk | **No local keys.** Talks to `window.ethereum` / EIP-1193. Chosen per `K_WALLET_SPEC.md` over ethers.js. Pinned exact. |
 
 ### Planned (per `K_WALLET_SPEC.md` v0)
 

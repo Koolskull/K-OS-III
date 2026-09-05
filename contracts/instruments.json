@@ -1,0 +1,29 @@
+{
+  "studio": "2Kool Productions",
+  "notes": "On-chain registry of fundraising instruments whose proceeds count as company profit and must enter StudioTreasury. Fill collection addresses before mainnet deploy. This file is the off-chain source of truth; InstrumentRegistry is the on-chain book.",
+  "legacyJuicebox": {
+    "protocol": "Juicebox V2",
+    "projectId": 402,
+    "chainId": 1,
+    "ui": "https://old.juicebox.money/v2/p/402",
+    "jbProjects": "0xD8e9d4cf0C2d464BC0759d1C1B8a99D7A4159b0F",
+    "status": "deprecated-ui",
+    "migration": "Withdraw remaining ETH from the Juicebox terminal, swap to USDC/USDT/USAT, deposit into StudioTreasury. Register this project so historical fundraising is recognized as company profit."
+  },
+  "stablecoins": {
+    "USDC": { "chainId": 1, "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "decimals": 6 },
+    "USDT": { "chainId": 1, "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7", "decimals": 6 },
+    "USAT": { "chainId": null, "address": null, "decimals": null, "note": "Add with StudioTreasury.setStablecoin when a canonical USAT ERC-20 exists." }
+  },
+  "collections": [
+    {
+      "label": "REPLACE — existing 2Kool NFT drop",
+      "kind": "Erc721",
+      "chainId": 1,
+      "collection": "0x0000000000000000000000000000000000000000",
+      "tokenId": null,
+      "countsAsProfit": true,
+      "notes": "Paste the deployed collection address from the NFT minting app. tokenId null means the whole collection."
+    }
+  ]
+}

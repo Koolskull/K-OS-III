@@ -32,6 +32,7 @@ Step-by-step. Someone reviewing the PR should be able to follow these and verify
 Tick any that apply. These require a **second reviewer** before merge per [`CONTRIBUTING.md`](../CONTRIBUTING.md#sensitive-areas).
 
 - [ ] Touches K-Wallet (anything under a future `src/wallet/`, or any change implied by `docs/K_WALLET_SPEC.md`)
+- [ ] Touches 2Kool production contracts (`contracts/`, `docs/PRODUCTION_PROTOCOL.md`)
 - [ ] Touches Commerce Layer (anything implied by `docs/COMMERCE_SPEC.md`)
 - [ ] Touches Reference content (`public/reference/`) or Reader Notes (`docs/READER_NOTES/`)
 - [ ] Adds or upgrades a wallet-touching dependency (must update `docs/WALLET_DEPENDENCIES.md`)

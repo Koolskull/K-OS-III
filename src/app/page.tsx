@@ -46,10 +46,12 @@ import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { NotesApp } from "@/components/apps/notes/NotesApp";
+import { IdentityApp } from "@/components/apps/identity/IdentityApp";
+import { StudioApp } from "@/components/apps/studio/StudioApp";
+import { ProdevApp } from "@/components/apps/prodev/ProdevApp";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
-// PicoTracker disabled — Datamoshpit covers this workflow
-// import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
+
 
 type AppId =
   | "datamoshpit"
@@ -65,7 +67,10 @@ type AppId =
   | "education"
   | "nodemap"
   | "stance"
-  | "notes";
+  | "notes"
+  | "identity"
+  | "studio"
+  | "prodev";
 
 interface OpenWindow {
   id: string;
@@ -90,7 +95,9 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   nodemap: { title: "NODEMAP", width: 1000, height: 700 },
   stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
   notes: { title: "NOTES", width: 860, height: 620 },
-  // picotracker: { title: "PICOTRACKER", width: 700, height: 550 },
+  identity: { title: "IDENTITY", width: 640, height: 560 },
+  studio: { title: "2KOOL STUDIO", width: 900, height: 640 },
+  prodev: { title: "PRODEV", width: 900, height: 640 },
 };
 
 let windowCounter = 0;
@@ -249,6 +256,9 @@ export default function KoolskullOS() {
             {win.appId === "notes" && (
               <NotesApp isFocused={win.id === focusedWindowId} />
             )}
+            {win.appId === "identity" && <IdentityApp />}
+            {win.appId === "studio" && <StudioApp />}
+            {win.appId === "prodev" && <ProdevApp />}
           </AppWindow>
         ))}
 

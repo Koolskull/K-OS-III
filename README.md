@@ -195,6 +195,10 @@ K-OS III ships with open-source games compiled to WebAssembly / browser emulator
 - Both features keep the existing K-OS window system (draggable, resizable, maximizable, taskbar integration).
 - **Mobile Creative UI pattern** documented for KoolDraw + Tilemap (and future creative tools): menus collapse into the four corners of the screen and can be fully hidden for maximum canvas space on cell phones.
 
+### STUDIO — 2Kool production desk
+
+Credits, shot NFTs, and `settleSale` for the Production Protocol. Connect an injected wallet, load a StudioKit address, commit shots like git, mint cels, settle the 5% team royalty. Counsel briefing is under the COUNSEL tab. See [`docs/PRODUCTION_PROTOCOL.md`](./docs/PRODUCTION_PROTOCOL.md).
+
 ---
 
 ## Input Devices
@@ -242,7 +246,10 @@ K-OS-III/
 │   │       ├── bible/        # Scripture reader
 │   │       ├── games/        # Game menu + iframe launcher
 │   │       ├── kooldraw/     # KoolDraw
-│   │       └── tilemap/      # Dual-plane tilemap painter + SGDK export
+│   │       ├── tilemap/      # Dual-plane tilemap painter + SGDK export
+│   │       ├── identity/     # Local accounts + in-app ETH wallet
+│   │       ├── studio/       # 2Kool production desk (credits, mint, sales)
+│   │       └── prodev/       # Production spreadsheet (shared board with Shotlist)
 │   ├── engine/               # Audio, synth, tracker, project I/O
 │   ├── lib/                  # InputRouter, BibleDataLoader, SpriteUtils
 │   ├── types/                # TypeScript types
@@ -255,7 +262,8 @@ K-OS-III/
 │   │   └── genesis/          # Mega Drive emulator page (PicoDrive)
 │   ├── sprites/              # Slimentologika glyphs
 │   └── gifs/                 # Screen effects
-└── docs/                     # Detailed specs (commands, controllers, etc.)
+├── contracts/                # 2Kool production protocol (vault, credits, shot NFTs)
+└── docs/                     # Detailed specs (commands, controllers, production protocol)
 ```
 
 ---
@@ -295,7 +303,7 @@ For deeper technical specifications, see the docs folder:
 
 **Stance docs:** [`docs/EPISTEMIC_STANCE.md`](./docs/EPISTEMIC_STANCE.md) · [`docs/ECONOMIC_STANCE.md`](./docs/ECONOMIC_STANCE.md) · [`docs/SPONSOR_POLICY.md`](./docs/SPONSOR_POLICY.md)
 
-**Design specs:** [`docs/K_WALLET_SPEC.md`](./docs/K_WALLET_SPEC.md) · [`docs/COMMERCE_SPEC.md`](./docs/COMMERCE_SPEC.md) · [`docs/CHAT_SPEC.md`](./docs/CHAT_SPEC.md) · [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md) · [`docs/FUNDING_PLAN.md`](./docs/FUNDING_PLAN.md)
+**Design specs:** [`docs/K_WALLET_SPEC.md`](./docs/K_WALLET_SPEC.md) · [`docs/COMMERCE_SPEC.md`](./docs/COMMERCE_SPEC.md) · [`docs/CHAT_SPEC.md`](./docs/CHAT_SPEC.md) · [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md) · [`docs/FUNDING_PLAN.md`](./docs/FUNDING_PLAN.md) · [`docs/PRODUCTION_PROTOCOL.md`](./docs/PRODUCTION_PROTOCOL.md)
 
 ---
 

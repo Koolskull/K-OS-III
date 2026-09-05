@@ -27,6 +27,7 @@ interface DesktopIcon {
 }
 
 const ICONS: DesktopIcon[] = [
+  { id: "identity", label: "IDENTITY", glyph: "◉" },
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
   { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
   { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
@@ -41,6 +42,8 @@ const ICONS: DesktopIcon[] = [
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "education", label: "EDUCATION", glyph: "§" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
+  { id: "studio", label: "STUDIO", glyph: "▣" },
+  { id: "prodev", label: "PRODEV", glyph: "▥" },
 ];
 
 export function Desktop({ onLaunchApp }: DesktopProps) {
@@ -92,6 +95,8 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
           return (
             <div
               key={icon.id}
+              role="button"
+              aria-label={icon.label}
               onClick={() => handleIconClick(icon.id)}
               style={{
                 width: "64px",

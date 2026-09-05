@@ -7,6 +7,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   CornerHost,
   CornerPanel,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/CornerChrome";
 import { ShotCanvas } from "./ShotCanvas";
 import { XSheetEditor } from "./XSheetEditor";
-import { ExportView } from "./ExportView";
 import {
   SHOT_H,
   SHOT_W,
@@ -30,8 +30,11 @@ import {
   type ShotBg,
 } from "./monoDraw";
 import { useCreativeWorkflow } from "@/lib/creative";
+import { useProduction } from "@/lib/production";
+import { ShotChainPanel } from "@/components/apps/production/ShotChainPanel";
 import {
   btn,
+  chainStatusLabel,
   createEmptyXFrame,
   fieldStyle,
   uid,
@@ -39,8 +42,14 @@ import {
   xsheetTotalFrames,
   type Sequence,
   type Shot,
+  type ShotStatus,
   type XFrame,
 } from "./shotlistShared";
+
+const ExportView = dynamic(
+  () => import("./ExportView").then((m) => m.ExportView),
+  { ssr: false },
+);
 
 export type { Sequence, Shot, XFrame } from "./shotlistShared";
 export {
@@ -77,6 +86,7 @@ function createEmptyShot(
     hasCommittedThumbnail: false,
     xsheet: [createEmptyXFrame()],
     status: "draft",
+    credits: [],
   };
 }
 
@@ -87,10 +97,6 @@ type EditorState =
   | { mode: "draw"; shotId: number; isNew: boolean }
   | { mode: "xsheet"; shotId: number }
   | { mode: "export" };
-
-function createEmptySequence(name = "UNTITLED SEQUENCE"): Sequence {
-  return { id: uid(), name, fps: 24, shots: [] };
-}
 
 interface ShotlistAppProps {
   isFocused?: boolean;
@@ -109,11 +115,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
   const isNarrow = chrome?.isNarrow ?? false;
   const workflow = useCreativeWorkflow();
 
-  const [sequence, setSequence] = useState<Sequence>(() => createEmptySequence());
+  const { sequence, setSequence } = useProduction();
   const [selectedShotId, setSelectedShotId] = useState<number | null>(null);
   const [expandedShotId, setExpandedShotId] = useState<number | null>(null);
   const [statusLine, setStatusLine] = useState(
-    `SHOTLIST · offline · thumb ${SHOT_W}×${SHOT_H} / landscape · 24 fps`,
+    `SHOTLIST · shared board · ${SHOT_W}×${SHOT_H} / landscape · 24 fps`,
   );
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
   /** Defaults: landscape + white (incl. mobile browsers) */
@@ -539,6 +545,20 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
         />
       </label>
       <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
+        STATUS
+        <select
+          value={shot.status}
+          onChange={(e) =>
+            updateShotField(shot.id, { status: e.target.value as ShotStatus })
+          }
+          style={fieldStyle}
+        >
+          <option value="draft">draft</option>
+          <option value="review">review</option>
+          <option value="approved">approved</option>
+        </select>
+      </label>
+      <label style={{ fontSize: 9, color: "#666", letterSpacing: 1 }}>
         AUDIO TIMING NOTES
         <textarea
           value={shot.audioNotes}
@@ -548,6 +568,7 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
           style={{ ...fieldStyle, resize: "vertical" }}
         />
       </label>
+      <ShotChainPanel shot={shot} />
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
         {shot.hasCommittedThumbnail &&
           availableUpgrades(true, shot.plateW, shot.plateH).length > 0 && (
@@ -677,7 +698,11 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
                     <span style={{ color: "#666", fontSize: 9 }}>
                       {shot.orientation === "portrait" ? "P" : "L"} · {shot.plateW}×
                       {shot.plateH}
-                      {shot.hasCommittedThumbnail ? "" : " · draft"}
+                      {" · "}
+                      {shot.status}
+                      {shot.hasCommittedThumbnail ? "" : " · draw"}
+                      {" · "}
+                      {chainStatusLabel(shot)}
                     </span>
                   </div>
                   <div
@@ -833,13 +858,20 @@ function ShotlistInner({ isFocused = true }: ShotlistAppProps) {
       <div style={{ marginTop: 8, color: "#555" }}>
         Draw: SPACE pan · SHIFT/ALT rotate · scroll zoom · pinch · 2-finger undo
       </div>
+      <div style={{ marginTop: 8, color: "#666" }}>
+        Credits/hours sync to PRODEV. Chain writes also live in STUDIO.
+      </div>
     </div>
   );
 
   const infoPanel = (
     <div style={{ padding: 6, fontSize: 9, color: "#888" }}>
-      <div>{sequence.name}</div>
-      <div>
+      <input
+        value={sequence.name}
+        onChange={(e) => setSequence((s) => ({ ...s, name: e.target.value }))}
+        style={{ ...fieldStyle, marginTop: 0 }}
+      />
+      <div style={{ marginTop: 4 }}>
         {sequence.shots.length} shots · {sequence.fps} fps
       </div>
       <div style={{ marginTop: 4 }}>{statusLine}</div>

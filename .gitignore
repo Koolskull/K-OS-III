@@ -55,10 +55,11 @@ dist/
 # debug
 npm-debug.log*
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
 # ide
 .vscode/
 .idea/
+
+# foundry (2Kool production protocol)
+contracts/cache/
+contracts/out/
+contracts/broadcast/

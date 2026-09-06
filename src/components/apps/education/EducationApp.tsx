@@ -35,6 +35,9 @@ import {
   CornerDismissLayer,
   useIsNarrow,
 } from "@/components/ui/CornerChrome";
+import { Academy } from "@/components/academy/Academy";
+
+type Surface = "lessons" | "observatory";
 
 type View =
   | { kind: "home" }
@@ -55,10 +58,97 @@ function statusColor(status: string | undefined): string {
   return "#666";
 }
 
+function SurfaceTabs({
+  surface,
+  onChange,
+}: {
+  surface: Surface;
+  onChange: (next: Surface) => void;
+}) {
+  return (
+    <div
+      style={{
+        flexShrink: 0,
+        display: "flex",
+        background: "#000",
+        borderBottom: "2px solid #fff",
+        fontFamily: "var(--dm-font-primary), monospace",
+        fontSize: 10,
+        letterSpacing: 2,
+      }}
+    >
+      {(
+        [
+          ["lessons", "LESSONS"],
+          ["observatory", "OBSERVATORY"],
+        ] as const
+      ).map(([id, label]) => {
+        const active = surface === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onChange(id)}
+            style={{
+              background: active ? "#ffff00" : "transparent",
+              color: active ? "#000" : "#fff",
+              border: "none",
+              borderRight: "2px solid #fff",
+              padding: "6px 14px",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              letterSpacing: "inherit",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function EducationApp() {
+  const [surface, setSurface] = useState<Surface>("lessons");
+
+  if (surface === "lessons") {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "#000",
+          overflow: "hidden",
+        }}
+      >
+        <SurfaceTabs surface={surface} onChange={setSurface} />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <Academy mode="window" initialRef={null} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <CornerHost storageKey="kos-education-chrome" style={{ background: "#000" }}>
-      <EducationInner />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <SurfaceTabs surface={surface} onChange={setSurface} />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <EducationInner />
+        </div>
+      </div>
     </CornerHost>
   );
 }

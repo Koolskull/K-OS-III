@@ -145,6 +145,8 @@ const LESSON_COMPONENTS: LessonBundle = {
       "robert-sepehr": EnRobertSepehr,
       "robert-david-steele": EnRobertDavidSteele,
       "leo-frank": EnLeoFrank,
+      "john-mcafee": EnJohnMcAfee,
+      "kim-dotcom": EnKimDotcom,
     },
     "figures-privacy": {
       "john-mcafee": EnJohnMcAfee,

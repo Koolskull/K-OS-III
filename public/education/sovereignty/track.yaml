@@ -9,7 +9,7 @@ summary: >
   Follows the project's epistemic stance: mainstream and dissenting accounts
   presented, reader decides.
 prerequisites: []
-estimated_hours: 9
+estimated_hours: 10
 flagship: false
 lessons:
   - file: 01-introduction.md
@@ -32,4 +32,7 @@ lessons:
     status: written
   - file: 07-weinstein-and-institutional-physics.md
     title: Eric Weinstein and institutional physics
+    status: written
+  - file: 08-weinstein-alternative-hero.md
+    title: Eric Weinstein — dejected insider
     status: written

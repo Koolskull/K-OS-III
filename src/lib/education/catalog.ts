@@ -34,7 +34,7 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
     slug: "sovereignty",
     title: "Sovereignty",
     summary:
-      "Sources of belief, consciousness research, declassified programs, and monetary history. Primary sources first.",
+      "Sources of belief, consciousness research, declassified programs, monetary history, and institutional science as a consensus machine. Primary sources first.",
     lessons: [
       { id: "sovereignty/01", file: "01-introduction.md", title: "What this track is for", estimatedMinutes: 12 },
       { id: "sovereignty/02", file: "02-simple-salvation.md", title: "Simple salvation teachings of Jesus", estimatedMinutes: 15 },
@@ -42,6 +42,7 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "sovereignty/04", file: "04-mkultra-and-stargate.md", title: "MKUltra, Stargate, and declassified programs", estimatedMinutes: 22 },
       { id: "sovereignty/05", file: "05-tesla-and-russell.md", title: "Tesla and Russell — record vs later claims", estimatedMinutes: 20 },
       { id: "sovereignty/06", file: "06-jekyll-island-and-american-system.md", title: "Jekyll Island, Fed, American System", estimatedMinutes: 25 },
+      { id: "sovereignty/07", file: "07-weinstein-and-institutional-physics.md", title: "Eric Weinstein and institutional physics", estimatedMinutes: 22 },
     ],
   },
   {

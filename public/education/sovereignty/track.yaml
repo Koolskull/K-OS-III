@@ -9,7 +9,7 @@ summary: >
   Follows the project's epistemic stance: mainstream and dissenting accounts
   presented, reader decides.
 prerequisites: []
-estimated_hours: 10
+estimated_hours: 11
 flagship: false
 lessons:
   - file: 01-introduction.md
@@ -35,4 +35,7 @@ lessons:
     status: written
   - file: 08-weinstein-alternative-hero.md
     title: Eric Weinstein — dejected insider
+    status: written
+  - file: 09-russell-weinstein-two-poles.md
+    title: Russell and Weinstein — two poles, no lineage
     status: written

@@ -3,12 +3,13 @@ slug: sovereignty
 summary: >
   Tools for examining the sources of your beliefs and the historical record of
   institutional power. Simple spiritual foundations, documented consciousness
-  research, declassified intelligence programs, and competing accounts of
-  monetary and political power. Starts basic, expands with primary sources.
+  research, declassified intelligence programs, competing accounts of
+  monetary and political power, and institutional science as a consensus machine.
+  Starts basic, expands with primary sources.
   Follows the project's epistemic stance: mainstream and dissenting accounts
   presented, reader decides.
 prerequisites: []
-estimated_hours: 8
+estimated_hours: 9
 flagship: false
 lessons:
   - file: 01-introduction.md
@@ -28,4 +29,7 @@ lessons:
     status: written
   - file: 06-jekyll-island-and-american-system.md
     title: Jekyll Island, the Federal Reserve, and the American System tradition
+    status: written
+  - file: 07-weinstein-and-institutional-physics.md
+    title: Eric Weinstein and institutional physics
     status: written

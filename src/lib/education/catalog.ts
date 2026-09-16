@@ -44,6 +44,7 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "sovereignty/06", file: "06-jekyll-island-and-american-system.md", title: "Jekyll Island, Fed, American System", estimatedMinutes: 25 },
       { id: "sovereignty/07", file: "07-weinstein-and-institutional-physics.md", title: "Eric Weinstein and institutional physics", estimatedMinutes: 22 },
       { id: "sovereignty/08", file: "08-weinstein-alternative-hero.md", title: "Eric Weinstein — dejected insider", estimatedMinutes: 20 },
+      { id: "sovereignty/09", file: "09-russell-weinstein-two-poles.md", title: "Russell and Weinstein — two poles, no lineage", estimatedMinutes: 22 },
     ],
   },
   {

@@ -11,17 +11,7 @@
    and k-os-ui archives
    ══════════════════════════════════════ */
 
-/* PRIMARY: Kongtext - pixel bitmap, the KOOLSKULL standard */
-@font-face {
-  font-family: 'kongtext';
-  src: url('/fonts/kongtext-webfont.woff2') format('woff2'),
-       url('/fonts/kongtext-webfont.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: block;
-}
-
-/* SECONDARY: Courier Pixel - monospaced pixel */
+/* PRIMARY: Courier Pixel - monospaced pixel */
 @font-face {
   font-family: 'courier-pixel';
   src: url('/fonts/courier-pixel-monospaced-webfont.woff2') format('woff2'),
@@ -400,9 +390,9 @@
   --dm-highlight: #2a2a2a;
 
   /* Font stacks */
-  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  --dm-font-primary: 'courier-pixel', 'sometype-mono', 'Courier New', monospace;
   --dm-font-secondary: 'courier-pixel', 'Courier New', monospace;
-  --dm-font-display: 'coralpixels', 'jazzypixel', 'kongtext', monospace;
+  --dm-font-display: 'coralpixels', 'jazzypixel', 'courier-pixel', monospace;
   --dm-font-japanese: 'jvmiyopro', 'hina-mincho', 'remilia-mincho', serif;
   --dm-font-fallback: 'Courier New', monospace;
 
@@ -742,10 +732,10 @@ body.dm-scale-2x {
   transform: scale(2) !important;
   transform-origin: top left !important;
   overflow: hidden !important;
-  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  font-family: 'courier-pixel', 'sometype-mono', 'Courier New', monospace !important;
   --dm-slime-size: 24px;
   --dm-scale: 2;
-  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  --dm-font-primary: 'courier-pixel', 'sometype-mono', 'Courier New', monospace;
   --dm-ui-font: 10px;
 }
 
@@ -755,10 +745,10 @@ body.dm-scale-3x {
   transform: scale(3) !important;
   transform-origin: top left !important;
   overflow: hidden !important;
-  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  font-family: 'courier-pixel', 'sometype-mono', 'Courier New', monospace !important;
   --dm-slime-size: 32px;
   --dm-scale: 3;
-  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  --dm-font-primary: 'courier-pixel', 'sometype-mono', 'Courier New', monospace;
   --dm-ui-font: 10px;
 }
 
@@ -768,10 +758,10 @@ body.dm-scale-4x {
   transform: scale(4) !important;
   transform-origin: top left !important;
   overflow: hidden !important;
-  font-family: 'sometype-mono', 'kongtext', 'Courier New', monospace !important;
+  font-family: 'courier-pixel', 'sometype-mono', 'Courier New', monospace !important;
   --dm-slime-size: 32px;
   --dm-scale: 4;
-  --dm-font-primary: 'sometype-mono', 'kongtext', 'Courier New', monospace;
+  --dm-font-primary: 'courier-pixel', 'sometype-mono', 'Courier New', monospace;
   --dm-ui-font: 10px;
 }
 

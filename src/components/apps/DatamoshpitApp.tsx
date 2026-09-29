@@ -171,7 +171,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
   }>>([]);
   const [preferences, setPreferences] = useState<PreferencesData>({
     displayScale: "auto",
-    font: "kongtext",
+    font: "courier-pixel",
     fontSize: 10,
     defaultSampleRate: 44100,
     defaultBitDepth: 16,
@@ -1437,7 +1437,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
     [activeInstrument],
   );
 
-  const hasCustomFont = preferences.font !== "kongtext";
+  const hasCustomFont = preferences.font !== "courier-pixel";
 
   return (
     <div

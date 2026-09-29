@@ -15,7 +15,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { BiblePrefs } from "@/types/bible";
 
 const AVAILABLE_FONTS = [
-  "kongtext",
   "courier-pixel",
   "sometype-mono",
   "hina-mincho",

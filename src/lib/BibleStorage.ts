@@ -39,7 +39,7 @@ export function saveBibleUserData(data: BibleUserData): void {
 }
 
 export function defaultBiblePrefs(): BiblePrefs {
-  return { font: "kongtext", fontSize: 10, autoSave: true };
+  return { font: "courier-pixel", fontSize: 10, autoSave: true };
 }
 
 export function loadBiblePrefs(): BiblePrefs {
@@ -49,6 +49,7 @@ export function loadBiblePrefs(): BiblePrefs {
     if (!raw) return defaultBiblePrefs();
     const parsed = JSON.parse(raw);
     const merged = { ...defaultBiblePrefs(), ...parsed };
+    if (merged.font === "kongtext") merged.font = "courier-pixel";
     if (typeof merged.fontSize !== "number" || isNaN(merged.fontSize)) {
       merged.fontSize = 10;
     }

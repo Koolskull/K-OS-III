@@ -46,7 +46,6 @@ const SCALE_DESCS: Record<ScalePreset, string> = {
 };
 
 const AVAILABLE_FONTS = [
-  "kongtext",
   "courier-pixel",
   "sometype-mono",
   "hina-mincho",

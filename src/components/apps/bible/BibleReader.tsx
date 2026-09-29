@@ -285,7 +285,7 @@ export function BibleReader() {
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [nav, bible, noteEditing, handleBack, handleOpenNote, handleToggleHighlight]);
 
-  const hasCustomFont = prefs.font !== "kongtext" && prefs.font !== "sometype-mono";
+  const hasCustomFont = prefs.font !== "courier-pixel" && prefs.font !== "sometype-mono";
   const resolvedFont = hasCustomFont
     ? `'${prefs.font}', var(--dm-font-primary)`
     : "var(--dm-font-primary)";

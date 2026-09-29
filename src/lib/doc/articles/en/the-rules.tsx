@@ -54,9 +54,9 @@ export default function TheRules() {
       <H2>What this means in practice</H2>
       <UList>
         <Li>
-          <Strong>Use bitmap fonts.</Strong> Kongtext is the primary face. Sometype
-          Mono at HD scales (1280px+). Other pixel/bitmap fonts are fine; modern
-          system fonts (San Francisco, Segoe UI, Roboto) are not.
+          <Strong>Use bitmap fonts.</Strong> Courier Pixel is the primary face.
+          Sometype Mono stays available. Other pixel/bitmap fonts are fine;
+          modern system fonts (San Francisco, Segoe UI, Roboto) are not.
         </Li>
         <Li>
           <Strong>Color is monochromatic for text.</Strong> White on black or

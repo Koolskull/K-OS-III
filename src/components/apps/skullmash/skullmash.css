@@ -10,7 +10,7 @@
   --sm-border-hi: #555555;
   --sm-accent: #ffff00;
   --sm-danger: #ff4444;
-  --sm-font: var(--dm-font-primary, "sometype-mono", "kongtext", "Courier New", monospace);
+  --sm-font: var(--dm-font-primary, "courier-pixel", "sometype-mono", "Courier New", monospace);
   height: 100%;
   width: 100%;
   display: flex;

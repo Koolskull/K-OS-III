@@ -32,7 +32,7 @@ export default function TheRules() {
 
       <H2>这在实践中意味着什么</H2>
       <UList>
-        <Li><Strong>使用位图字体。</Strong>Kongtext 是主要字体。HD 比例（1280px+）下的 Sometype Mono。其他像素/位图字体可以；现代系统字体（San Francisco、Segoe UI、Roboto）不行。</Li>
+        <Li><Strong>使用位图字体。</Strong>Courier Pixel 是主要字体。Sometype Mono 仍可选用。其他像素/位图字体可以；现代系统字体（San Francisco、Segoe UI、Roboto）不行。</Li>
         <Li><Strong>文本颜色是单色的。</Strong>白底黑字或黑底白字。交叉引用和 BETA 徽章使用黄色重音。代码用绿色。错误和危险操作用红色。占位符用品红色。</Li>
         <Li><Strong>VMI 资源用于按钮。</Strong>"Visual Machine Interface"系统使用分层 PNG 序列用于按钮状态（默认、悬停、按下）。</Li>
         <Li><Strong>在发明前询问。</Strong>如果你需要没有现有模板的按钮或窗口，请询问维护者。不要自由创造新的装饰。</Li>

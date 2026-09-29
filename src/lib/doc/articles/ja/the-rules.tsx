@@ -35,7 +35,7 @@ export default function TheRules() {
 
       <H2>実践的にどう意味するか</H2>
       <UList>
-        <Li><Strong>ビットマップフォントを使う。</Strong>Kongtextが主要顔。HDスケール（1280px+）でSometype Mono。他のピクセル/ビットマップフォントは構わない；現代のシステムフォント（San Francisco、Segoe UI、Roboto）はダメ。</Li>
+        <Li><Strong>ビットマップフォントを使う。</Strong>Courier Pixelが主要顔。Sometype Monoも選べる。他のピクセル/ビットマップフォントは構わない；現代のシステムフォント（San Francisco、Segoe UI、Roboto）はダメ。</Li>
         <Li><Strong>テキストはモノクロ。</Strong>白地に黒、または黒地に白。クロスリファレンスとBETAバッジに黄色アクセント。コードに緑。エラーと危険なアクションに赤。プレースホルダーにマゼンタ。</Li>
         <Li><Strong>ボタンにはVMIアセット。</Strong>「Visual Machine Interface」システムは、ボタン状態（default、hover、pressed）に階層化PNGシーケンスを使用。</Li>
         <Li><Strong>発明する前に尋ねる。</Strong>既存テンプレートのないボタンやウィンドウが必要な場合、メンテナーに尋ねる。新しいクロムをフリーランスで作らない。</Li>

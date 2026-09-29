@@ -60,10 +60,9 @@ export default function TheRules() {
       <H2>Qué significa esto en la práctica</H2>
       <UList>
         <Li>
-          <Strong>Usa fuentes bitmap.</Strong> Kongtext es la cara primaria.
-          Sometype Mono en escalas HD (1280px+). Otras fuentes pixel/bitmap
-          están bien; las fuentes modernas del sistema (San Francisco, Segoe
-          UI, Roboto) no.
+          <Strong>Usa fuentes bitmap.</Strong> Courier Pixel es la cara primaria.
+          Sometype Mono sigue disponible. Otras fuentes pixel/bitmap están bien;
+          las fuentes modernas del sistema (San Francisco, Segoe UI, Roboto) no.
         </Li>
         <Li>
           <Strong>El color es monocromático para texto.</Strong> Blanco sobre

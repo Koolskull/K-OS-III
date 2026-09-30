@@ -131,9 +131,18 @@ interface DatamoshpitAppProps {
   isFocused: boolean;
   /** Mobile experiment: disable background visuals and soften on-screen controls */
   disableVisuals?: boolean;
+  /** Controls layout: auto (portrait bottom, landscape side rails) or bottom-only */
+  controlsLayout?: "auto" | "bottom-only";
+  /** Where to place bottom controls: below the content or below the bottom bar */
+  controlsPosition?: "below-content" | "below-bar";
 }
 
-export function DatamoshpitApp({ isFocused, disableVisuals = false }: DatamoshpitAppProps) {
+export function DatamoshpitApp({
+  isFocused,
+  disableVisuals = false,
+  controlsLayout = "auto",
+  controlsPosition = "below-bar",
+}: DatamoshpitAppProps) {
   const { isPortrait } = useOrientation();
   const [project, setProject] = useState<ProjectData>(() => createBlankProject("UNTITLED"));
   const [activeScreen, setActiveScreen] = useState<TrackerScreen>("instrument");
@@ -1440,6 +1449,8 @@ export function DatamoshpitApp({ isFocused, disableVisuals = false }: Datamoshpi
   );
 
   const hasCustomFont = preferences.font !== "kongtext";
+  const showSideRails = controlsLayout === "auto" && !isPortrait && activeScreen !== "live";
+  const showBottomControls = (controlsLayout === "bottom-only" || isPortrait) && activeScreen !== "live";
 
   return (
     <div
@@ -1581,7 +1592,7 @@ export function DatamoshpitApp({ isFocused, disableVisuals = false }: Datamoshpi
 
       {/* Main row: optional left rail, content, optional right rail */}
       <div className="flex-1 flex min-h-0" style={{ flexDirection: "row" }}>
-        {!isPortrait && activeScreen !== "live" && (
+        {showSideRails && (
           <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
             <TouchRailLeft inputRouter={inputRef.current} />
           </div>
@@ -1864,12 +1875,22 @@ export function DatamoshpitApp({ isFocused, disableVisuals = false }: Datamoshpi
           </div>
         )}
         </div>
-        {!isPortrait && activeScreen !== "live" && (
+        {showSideRails && (
           <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
             <TouchRailRight inputRouter={inputRef.current} />
           </div>
         )}
       </div>
+
+      {/* Touch controller — optionally placed directly under content */}
+      {controlsPosition === "below-content" && showBottomControls && (
+        <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
+          <TouchController
+            inputRouter={inputRef.current}
+            isTextInput={activeScreen === "project" && projCursorRow === PROJ_ROWS.NAME}
+          />
+        </div>
+      )}
 
       {/* Bottom bar */}
       <div
@@ -1906,8 +1927,8 @@ export function DatamoshpitApp({ isFocused, disableVisuals = false }: Datamoshpi
         </span>
       </div>
 
-      {/* Touch controller — bottom bar in portrait only (landscape uses side rails) */}
-      {isPortrait && activeScreen !== "live" && (
+      {/* Touch controller — default placement below bar (unless below-content chosen) */}
+      {controlsPosition !== "below-content" && showBottomControls && (
         <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
           <TouchController
             inputRouter={inputRef.current}

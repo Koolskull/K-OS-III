@@ -22,7 +22,12 @@ export default function TrackerPage() {
         overflow: "hidden",
       }}
     >
-      <DatamoshpitApp isFocused disableVisuals />
+      <DatamoshpitApp
+        isFocused
+        disableVisuals
+        controlsLayout="bottom-only"
+        controlsPosition="below-content"
+      />
     </div>
   );
 }

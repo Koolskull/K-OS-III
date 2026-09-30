@@ -32,7 +32,7 @@ import { Desktop } from "@/components/os/Desktop";
 import { Taskbar } from "@/components/os/Taskbar";
 import { AppWindow } from "@/components/os/AppWindow";
 import type { WindowState } from "@/components/os/AppWindow";
-import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
+import { ThrashPhoneShell } from "@/components/apps/thrash-tracker/ThrashPhoneShell";
 import { TRACKER_TITLE } from "@/components/apps/thrash-tracker/dm2/model";
 import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
@@ -228,7 +228,7 @@ export default function KoolskullOS() {
             onClose={() => closeWindow(win.id)}
           >
             {win.appId === "thrash-tracker" && (
-              <ThrashTrackerApp isFocused={win.id === focusedWindowId} />
+              <ThrashPhoneShell isFocused={win.id === focusedWindowId} embedded />
             )}
             {win.appId === "bible" && <BibleReader />}
             {win.appId === "games" && <GameMenu />}

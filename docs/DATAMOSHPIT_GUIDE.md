@@ -1,8 +1,35 @@
-# Datamoshpit — Beginner's Guide
+# Thrash Tracker — Beginner's Guide
 
-This guide walks you through everything you need to start making music in Datamoshpit, step by step, even if you've never used a tracker before.
+This guide walks you through everything you need to start making music in Thrash Tracker, step by step, even if you've never used a tracker before.
 
-For deeper technical references, see [`COMMANDS.md`](./COMMANDS.md), [`NAVIGATION_AND_INPUT.md`](./NAVIGATION_AND_INPUT.md), [`SOUND_ENGINES.md`](./SOUND_ENGINES.md), [`GROOVE_AND_TIMING.md`](./GROOVE_AND_TIMING.md), [`SLIMENTOLOGIKA_GUIDE.md`](./SLIMENTOLOGIKA_GUIDE.md), and [`CONTROLLER_SUPPORT.md`](./CONTROLLER_SUPPORT.md).
+The Thrash Tracker icon currently opens the browser port of desktop Thrash Tracker. That window is documented in the manual article **Thrash Tracker in the Browser** (`src/lib/doc/articles/en/datamoshpit-browser.tsx`) and in the section below. The rest of this file describes the earlier K-OS tracker: groove, Slimentologika, Q+arrows, and the long effect list. Those controls are not what the window does now.
+
+## Browser Thrash Tracker
+
+Eight channels. Chains are 16 steps. Phrases, tables, oscillators, samples, and four-operator FM. No VST, AU, or LV2. A plugin row is stored and stays silent; the status line says `PLUGIN STAYS ON THE DESKTOP` once.
+
+The canvas is 960×540. The corner map is:
+
+```
+S  C  P  L     song, chain, phrase, rack
+T  I  V  R     table, instrument, visualiser, project
+```
+
+Shift+F1 through Shift+F8 jump there. Shift+arrows move across the map and stop at the edge. The V tile hides the grid and shows the background plus the scope.
+
+Space on the song page plays from the cursor row. Space again, or Escape, stops. Space on a chain or phrase auditions that pattern. Closing the window closes the audio.
+
+A new project is not empty. Instrument `00` is `AMEN`, the Amen break at `public/samples/Amen_184bpm.wav`. Phrase `00` is `80` rows (128), eight rows to the beat, and row `00` is `C-4` so the sample plays at its recorded speed. Tempo is locked so four bars match the file. Space on the song page plays the break and, because the next song cell is empty, the channel wraps and the break starts again until Space or Escape. Ctrl+Shift+N still makes the short square, named `SQ` plus its hex id: attack `00`, decay `40`, sustain `00`, release `40`. That pluck does not replace `AMEN` until a cell points at it.
+
+One row is one tick: `60 / (BPM × ticks per beat)` seconds. A new project is 8 ticks per beat, so a beat is eight rows. Tempo comes from the Amen file so those 128 rows match the recording. Envelope time is `(value / 127)² × 4` seconds.
+
+Phrase columns are `NT IN VL SL LP FX VA ST`. The note column is a piano: lower `zsxdcvgbhnjm,l.;/` and upper `q2w3er5t6y7ui9o0p`. Octave 4 puts `z` on C-4. Hex digits write chain, phrase, instrument, volume, slice, and effect value, two digits each. The phrase effects the worklet sounds are `KL` (kill the note) and `VO` (row gain, `7F` near unity). Other command letters can be typed and do not change the sound yet. A table transpose is heard when it is on. Slice, retrigger, filter, crush, and the table’s own effects are stored and drawn, not applied.
+
+Every edit autosaves in this browser at `dm2-web-pattern`, without sample audio. Ctrl+S downloads `NAME.dm2.json` with samples as little-endian 16-bit audio in base64. `version` is `dm2.web`. A desktop `.dm2` is a different JSON. A `.dmpit` is a zip from the older tracker. Neither opens here yet.
+
+2kool.tv is still the previous site. This tracker is the Thrash Tracker window in the copy you are running.
+
+For deeper technical references of the older tracker, see [`COMMANDS.md`](./COMMANDS.md), [`NAVIGATION_AND_INPUT.md`](./NAVIGATION_AND_INPUT.md), [`SOUND_ENGINES.md`](./SOUND_ENGINES.md), [`GROOVE_AND_TIMING.md`](./GROOVE_AND_TIMING.md), [`SLIMENTOLOGIKA_GUIDE.md`](./SLIMENTOLOGIKA_GUIDE.md), and [`CONTROLLER_SUPPORT.md`](./CONTROLLER_SUPPORT.md).
 
 ---
 
@@ -10,7 +37,7 @@ For deeper technical references, see [`COMMANDS.md`](./COMMANDS.md), [`NAVIGATIO
 
 A tracker is a type of music software that uses a **spreadsheet-style grid** instead of a piano roll. Notes are entered as text in rows that scroll from top to bottom. Each row is a "step" in time — when the sequencer reaches that row, it plays whatever note or command is there.
 
-Trackers were invented in the late 1980s on the Commodore Amiga. They've been used to create everything from chiptune to breakcore to film scores. Famous trackers include ProTracker, FastTracker II, LSDJ (Game Boy), and LGPT (handheld). Datamoshpit carries that tradition forward into the browser.
+Trackers were invented in the late 1980s on the Commodore Amiga. They've been used to create everything from chiptune to breakcore to film scores. Famous trackers include ProTracker, FastTracker II, LSDJ (Game Boy), and LGPT (handheld). Thrash Tracker carries that tradition forward into the browser.
 
 **If you've used a DAW like Ableton or FL Studio:** Think of the tracker grid like a piano roll turned on its side and compressed into text. It looks alien at first, but once it clicks, many people find it faster than clicking notes on a grid.
 
@@ -23,7 +50,7 @@ Trackers were invented in the late 1980s on the Commodore Amiga. They've been us
 
 ## The Screen Map
 
-Datamoshpit is organized into screens arranged in a spatial grid. You move between them using **Shift + Arrow Keys**:
+Thrash Tracker is organized into screens arranged in a spatial grid. You move between them using **Shift + Arrow Keys**:
 
 ```
 ┌─────────┬─────────┬─────────┐
@@ -51,7 +78,7 @@ Datamoshpit is organized into screens arranged in a spatial grid. You move betwe
 
 ## Controls Cheat Sheet
 
-Datamoshpit uses a simple control scheme inspired by Game Boy trackers. You only need a few keys:
+Thrash Tracker uses a simple control scheme inspired by Game Boy trackers. You only need a few keys:
 
 ```
 CORE CONTROLS
@@ -146,7 +173,7 @@ Congratulations — you just wrote music in a tracker.
 
 ## Understanding the Data Model
 
-Datamoshpit organizes music in a hierarchy. Think of it like building blocks:
+Thrash Tracker organizes music in a hierarchy. Think of it like building blocks:
 
 ```
 SONG (the whole piece)
@@ -173,7 +200,7 @@ You don't have to use all levels right away. Many people just write phrases and 
 
 ## Sound Engines
 
-Datamoshpit has multiple sound engines you can assign to any of its 8 channels:
+Thrash Tracker has multiple sound engines you can assign to any of its 8 channels:
 
 | Engine | Description | Good For |
 |--------|------------|----------|
@@ -249,7 +276,7 @@ Use the **G** command in a phrase to switch grooves on the fly. Different channe
 
 ## Slimentologika (the Weird Symbols)
 
-When you first open Datamoshpit, you might notice unfamiliar symbols instead of regular numbers. That's **Slimentologika** — a custom base-16 glyph system unique to KOOLSKULL OS.
+When you first open Thrash Tracker, you might notice unfamiliar symbols instead of regular numbers. That's **Slimentologika** — a custom base-16 glyph system unique to KOOLSKULL OS.
 
 **Don't panic.** Press **Tab** at any time to switch between Slimentologika and standard hex digits. You can compose entirely in hex mode if you prefer.
 

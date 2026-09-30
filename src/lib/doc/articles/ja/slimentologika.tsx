@@ -50,7 +50,7 @@ export default function Slimentologika() {
       <P>
         完全な参照画像はK-OSの <Code>public/sprites/ST0.png</Code> から{" "}
         <Code>STF.png</Code> にあります。<Code>SlimeDigit</Code> コンポーネント
-        (<Code>src/components/apps/datamoshpit/ui/SlimeDigit.tsx</Code>) 経由で
+        (<Code>src/components/apps/thrash-tracker/ui/SlimeDigit.tsx</Code>) 経由で
         レンダリングされます。
       </P>
 

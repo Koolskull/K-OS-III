@@ -4,7 +4,7 @@ export default function PerInstrumentVisuals() {
   return (
     <>
       <Lead>
-        Datamoshpit 中的每个乐器都可以携带一个小型视觉场景 — 一个平面颜色、
+        Thrash Tracker 中的每个乐器都可以携带一个小型视觉场景 — 一个平面颜色、
         一个图像、一个着色器、一个 3D 模型 — 当其音符触发时触发。视觉设置
         位于 F4 乐器页面；渲染由{" "}
         <Crossref to="scene-vm">Scene VM</Crossref> 处理。它默认关闭；打开

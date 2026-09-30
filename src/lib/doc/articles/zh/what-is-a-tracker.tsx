@@ -6,7 +6,7 @@ export default function WhatIsATracker() {
       <Lead>
         <Strong>音轨编辑器</Strong>是一种使用文本垂直电子表格而非钢琴卷的
         音乐软件。乍看令人生畏，然后却被证明是有史以来发明的最快速的作曲
-        方法之一。K-OS 的旗舰应用 <Strong>Datamoshpit</Strong> 就是一个音轨
+        方法之一。K-OS 的旗舰应用 <Strong>Thrash Tracker</Strong> 就是一个音轨
         编辑器。
       </Lead>
 
@@ -19,7 +19,7 @@ export default function WhatIsATracker() {
       </P>
       <P>
         现代的后代包括 Renoise (PC，专业级)、Polyend Tracker (硬件)、Furnace
-        (开源、多系统) 和 PicoTracker (RP2040 硬件)。Datamoshpit 从 LSDJ / LGPT
+        (开源、多系统) 和 PicoTracker (RP2040 硬件)。Thrash Tracker 从 LSDJ / LGPT
         家族继承 UI 约定 — 少量按键、密集屏幕、每个键击都做事。
       </P>
 
@@ -59,7 +59,7 @@ export default function WhatIsATracker() {
         <Li><Strong>速度。</Strong>一旦你知道了快捷键，你就不再使用鼠标。整首歌写出来不点击任何东西。</Li>
         <Li><Strong>精度。</Strong>每个音符都有精确的整数位置。无拖放捕捉，无事后量化。你输入的就是你听到的。</Li>
         <Li><Strong>小巧。</Strong>一首音轨编辑器歌曲是几千字节的纯数据。Demoscene 作曲家写了能放入 64 KB 的整张原声带 — 包括播放器代码。</Li>
-        <Li><Strong>硬件可移植性。</Strong>数据模型如此紧凑，可以在 Game Boy、计算器、微控制器上运行。Datamoshpit 在浏览器中运行；同样的想法在 10 美元的设备上工作。</Li>
+        <Li><Strong>硬件可移植性。</Strong>数据模型如此紧凑，可以在 Game Boy、计算器、微控制器上运行。Thrash Tracker 在浏览器中运行；同样的想法在 10 美元的设备上工作。</Li>
       </UList>
 
       <H2>层级</H2>

@@ -4,7 +4,7 @@ export default function PerInstrumentVisuals() {
   return (
     <>
       <Lead>
-        Datamoshpitの各楽器は、ノートが鳴ったときに発火する小さなビジュアル
+        Thrash Trackerの各楽器は、ノートが鳴ったときに発火する小さなビジュアル
         シーン — フラットな色、画像、シェーダー、3Dモデル — を持てます。
         ビジュアル設定はF4楽器ページにあります；レンダリングは{" "}
         <Crossref to="scene-vm">Scene VM</Crossref> が処理します。デフォルトは

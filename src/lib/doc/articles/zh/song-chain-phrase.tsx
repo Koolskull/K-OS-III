@@ -4,11 +4,15 @@ export default function SongChainPhrase() {
   return (
     <>
       <Lead>
-        Datamoshpit 歌曲由三个嵌套层构成 — <Strong>phrase</Strong> 嵌套在
+        Thrash Tracker 歌曲由三个嵌套层构成 — <Strong>phrase</Strong> 嵌套在
         <Strong>chain</Strong> 中，chain 嵌套在 <Strong>song</Strong> 中。
         每层由一个两位十六进制 ID 标识。一旦你理解了它们如何相互引用，整个
         音轨编辑器就不再像字母汤，而是开始看起来像一个小而密集的音乐语言。
       </Lead>
+
+      <Aside title="你现在打开的窗口比这一页新" variant="warn">
+        Thrash Tracker 图标现在打开的是 Thrash Tracker 的浏览器版。页面、按键、出厂的 Amen break，以及哪些命令真的会出声，写在 <Crossref to="datamoshpit-browser" />。下面的分层仍然是一首歌的搭法。再往下的播放走法描述的是旧循环：在当前窗口里，空的 chain 步会结束这条 chain，song 行随之前进。
+      </Aside>
 
       <H2>用平实语言说三层</H2>
       <UList>

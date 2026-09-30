@@ -50,7 +50,7 @@ export default function Glossary() {
         <Crossref to="effect-commands" />.
       </Term>
 
-      <Term name="Datamoshpit">
+      <Term name="Thrash Tracker">
         La aplicación principal de K-OS — el music tracker. Incluye los
         editores Song / Chain / Phrase, edición de instrumentos, carga de
         samples, live pads, el Scene VM. Nombrado por la estética visual de

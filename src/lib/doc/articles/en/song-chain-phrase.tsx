@@ -4,12 +4,21 @@ export default function SongChainPhrase() {
   return (
     <>
       <Lead>
-        Datamoshpit songs are built from three nested layers — <Strong>phrases</Strong>{" "}
+        Thrash Tracker songs are built from three nested layers — <Strong>phrases</Strong>{" "}
         nest into <Strong>chains</Strong>, chains nest into the <Strong>song</Strong>.
         Each layer is identified by a two-digit hex ID. Once you understand how
         they reference each other, the whole tracker stops looking like alphabet
         soup and starts looking like a small, dense music language.
       </Lead>
+
+      <Aside title="The window you open is newer than this page" variant="warn">
+        The Thrash Tracker icon now opens the browser port of Thrash Tracker.
+        Pages, keys, the Amen break, and which commands actually sound are
+        in <Crossref to="datamoshpit-browser" />. The layers below are still
+        how a song is built. The playback walk further down describes an older
+        loop: in the current window, an empty chain step ends the chain and
+        the song row advances.
+      </Aside>
 
       <H2>The three layers in plain words</H2>
       <UList>

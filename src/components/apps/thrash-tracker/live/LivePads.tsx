@@ -33,7 +33,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { toSlimeKeys } from "@/types/tracker";
 import type { SlimeHexKey } from "@/types/tracker";
-import { SlimeGlyph } from "@/components/apps/datamoshpit/ui/SlimeDigit";
+import { SlimeGlyph } from "@/components/apps/thrash-tracker/ui/SlimeDigit";
 
 export interface PlaybackChannelInfo {
   chainId: number | null;

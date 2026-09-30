@@ -11,6 +11,10 @@ export default function EffectCommands() {
         <Crossref to="hexadecimal">hex</Crossref>桁です。
       </Lead>
 
+      <Aside title="この一覧は前のトラッカー" variant="warn">
+        いまのThrash Trackerウィンドウが鳴らすphraseコマンドは <Code>KL</Code> と <Code>VO</Code> の二つです。このページの残りは前のブラウザトラッカーのコマンドです。ウィンドウが実際に鳴らすものは <Crossref to="datamoshpit-browser" /> にあります。
+      </Aside>
+
       <H2>形</H2>
       <CodeBlock>
 {`row  note  inst  cmd1 val1   cmd2 val2

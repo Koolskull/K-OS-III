@@ -19,7 +19,7 @@ export default function SceneVM() {
       </P>
       <P>
         在代码库中位于{" "}
-        <Code>src/components/apps/datamoshpit/visuals/scene-vm/</Code>。总共
+        <Code>src/components/apps/thrash-tracker/visuals/scene-vm/</Code>。总共
         约 1,200 行。lib 文件夹中的纯函数，同一文件夹中的 React 组件。
       </P>
 
@@ -30,7 +30,7 @@ export default function SceneVM() {
         DOM 基于 CSS 变换；3D 模型的 Three.js 是计划中的）。
       </P>
       <P>
-        <Strong>视觉模块</Strong>是绑定到 Datamoshpit 乐器的场景。当音轨
+        <Strong>视觉模块</Strong>是绑定到 Thrash Tracker 乐器的场景。当音轨
         编辑器触发音符时，引擎发出音符事件；绑定场景的播放头根据触发模式
         前进、跳跃或擦洗。
       </P>

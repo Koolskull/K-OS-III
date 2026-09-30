@@ -15,6 +15,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { TRACKER_TITLE } from "@/components/apps/thrash-tracker/dm2/model";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
@@ -24,12 +25,13 @@ interface DesktopIcon {
   id: string;
   label: string;
   glyph: string;
+  width?: number;
 }
 
 const ICONS: DesktopIcon[] = [
   { id: "identity", label: "IDENTITY", glyph: "◉" },
   { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
-  { id: "datamoshpit", label: "DATAMOSHPIT", glyph: "☦" },
+  { id: "thrash-tracker", label: TRACKER_TITLE, glyph: "☦", width: 96 },
   { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
   { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
   { id: "tilemap", label: "TILEMAP", glyph: "▤" },
@@ -99,7 +101,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               aria-label={icon.label}
               onClick={() => handleIconClick(icon.id)}
               style={{
-                width: "64px",
+                width: icon.width ? `${icon.width}px` : "64px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -132,7 +134,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
                   color: "#ffffff",
                   letterSpacing: "1px",
                   textAlign: "center",
-                  wordBreak: "break-all",
+                  wordBreak: "break-word",
                   lineHeight: "1.25",
                 }}
               >

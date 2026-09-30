@@ -11,6 +11,13 @@ export default function EffectCommands() {
         son dos dígitos <Crossref to="hexadecimal">hex</Crossref>.
       </Lead>
 
+      <Aside title="Esta lista es el tracker anterior" variant="warn">
+        La ventana actual de Thrash Tracker suena dos comandos de phrase,{" "}
+        <Code>KL</Code> y <Code>VO</Code>. El resto de esta página es el conjunto
+        del tracker anterior. Lo que la ventana toca de verdad está en{" "}
+        <Crossref to="datamoshpit-browser" />.
+      </Aside>
+
       <H2>La forma</H2>
       <CodeBlock>
 {`row  note  inst  cmd1 val1   cmd2 val2

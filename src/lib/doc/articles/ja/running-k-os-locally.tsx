@@ -166,7 +166,7 @@ npm install --legacy-peer-deps`}</CodeBlock>
         K-OSが動いたら、実際のアプリに飛び込みましょう：
       </P>
       <UList>
-        <Li><Crossref to="what-is-a-tracker" /> — Datamoshpitを使い始めたいなら。</Li>
+        <Li><Crossref to="what-is-a-tracker" /> — Thrash Trackerを使い始めたいなら。</Li>
         <Li><Crossref to="dmpit-format" /> — 保存されたプロジェクトの保存方法に興味があるなら。</Li>
         <Li><Crossref to="the-rules" /> — コードに貢献したいなら。</Li>
       </UList>

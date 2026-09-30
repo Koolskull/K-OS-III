@@ -317,7 +317,7 @@ export interface SpriteBundle {
 /** Mirrors TransformKeyframe from the Scene VM; redeclared here so tracker.ts
  *  doesn't take a runtime dependency on the Scene VM module. Shape MUST stay
  *  compatible with TransformKeyframe in
- *  components/apps/datamoshpit/visuals/scene-vm/lib/types.ts. */
+ *  components/apps/thrash-tracker/visuals/scene-vm/lib/types.ts. */
 export interface VisualKeyframe {
   frame: number;
   mode: "linear" | "bezier" | "hold" | "bounce-in" | "bounce-out" | "bounce-both";

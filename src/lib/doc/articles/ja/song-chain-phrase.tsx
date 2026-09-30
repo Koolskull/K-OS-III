@@ -4,12 +4,16 @@ export default function SongChainPhrase() {
   return (
     <>
       <Lead>
-        Datamoshpitの曲は3つの入れ子になったレイヤーから構築されます —
+        Thrash Trackerの曲は3つの入れ子になったレイヤーから構築されます —
         <Strong>phrase</Strong>が<Strong>chain</Strong>に入れ子になり、chainが
         <Strong>song</Strong>に入れ子になります。各レイヤーは2桁hex IDで識別されます。
         どのように相互参照するかを理解すれば、トラッカー全体がアルファベットスープに
         見えなくなり、小さく密度の高い音楽言語に見え始めます。
       </Lead>
+
+      <Aside title="いま開くウィンドウは、このページより新しい" variant="warn">
+        Thrash Trackerのアイコンは、Thrash Trackerのブラウザ版を開きます。ページ、キー、最初から入っているAmen break、実際に鳴るコマンドは <Crossref to="datamoshpit-browser" /> にあります。下のレイヤーの説明は、曲がどう組まれるかとしてはそのままです。さらに下の再生の歩き方は古いループの説明です。いまのウィンドウでは、空のchainステップでchainが終わり、songの行が進みます。
+      </Aside>
 
       <H2>3つのレイヤーを平易な言葉で</H2>
       <UList>

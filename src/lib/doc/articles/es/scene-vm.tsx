@@ -23,7 +23,7 @@ export default function SceneVM() {
       </P>
       <P>
         Vive en el codebase en{" "}
-        <Code>src/components/apps/datamoshpit/visuals/scene-vm/</Code>.
+        <Code>src/components/apps/thrash-tracker/visuals/scene-vm/</Code>.
         Aproximadamente 1.200 líneas en total. Funciones puras en la carpeta
         lib, componentes React en la misma carpeta.
       </P>
@@ -38,7 +38,7 @@ export default function SceneVM() {
       </P>
       <P>
         Un <Strong>módulo visual</Strong> es una escena vinculada a un
-        instrumento de Datamoshpit. Cuando el tracker dispara una nota, el
+        instrumento de Thrash Tracker. Cuando el tracker dispara una nota, el
         engine emite un evento de nota; el playhead de la escena vinculada
         avanza, salta o scrubea basado en el modo de trigger.
       </P>
@@ -185,7 +185,7 @@ export default function SceneVM() {
       <P>
         v0 renderiza una ventana Scene VM a la vez. El diseño completo (ver{" "}
         <Code>docs/DATAMOSHPIT_VIDEO_SPEC.md</Code> en el repo) es un
-        compositor de 8 capas donde cada canal de Datamoshpit puede llevar su
+        compositor de 8 capas donde cada canal de Thrash Tracker puede llevar su
         propia escena, y las capas se mezclan en un canvas de salida. Hoy,
         múltiples ventanas coexisten; mañana, un solo canvas compuesto.
       </P>

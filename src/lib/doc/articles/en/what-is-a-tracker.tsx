@@ -7,7 +7,7 @@ export default function WhatIsATracker() {
         A <Strong>tracker</Strong> is a kind of music software that uses a vertical
         spreadsheet of text instead of a piano roll. It looks intimidating at first
         and then turns out to be one of the fastest ways to write music ever invented.
-        K-OS's flagship app, <Strong>Datamoshpit</Strong>, is a tracker.
+        K-OS's flagship app, <Strong>Thrash Tracker</Strong>, is a tracker.
       </Lead>
 
       <H2>Where they came from</H2>
@@ -21,7 +21,7 @@ export default function WhatIsATracker() {
       <P>
         Modern descendants include Renoise (PC, professional), Polyend Tracker
         (hardware), Furnace (open source, multi-system), and PicoTracker (RP2040
-        hardware). Datamoshpit takes its UI conventions from the LSDJ / LGPT family —
+        hardware). Thrash Tracker takes its UI conventions from the LSDJ / LGPT family —
         few keys, dense screens, every keystroke does work.
       </P>
 
@@ -62,7 +62,7 @@ export default function WhatIsATracker() {
         <Li><Strong>Speed.</Strong> Once you know the keystrokes, you stop using a mouse. Whole songs get written without clicking anything.</Li>
         <Li><Strong>Precision.</Strong> Every note has an exact integer position. No drag-and-snap, no quantize after the fact. What you typed is what you hear.</Li>
         <Li><Strong>Smallness.</Strong> A tracker song is a few kilobytes of plain data. Demoscene composers wrote whole soundtracks that fit in 64 KB total — including the player code.</Li>
-        <Li><Strong>Hardware portability.</Strong> The data model is so compact it runs on Game Boys, calculators, microcontrollers. Datamoshpit runs in a browser; the same ideas work on a $10 device.</Li>
+        <Li><Strong>Hardware portability.</Strong> The data model is so compact it runs on Game Boys, calculators, microcontrollers. Thrash Tracker runs in a browser; the same ideas work on a $10 device.</Li>
       </UList>
 
       <H2>The hierarchy</H2>

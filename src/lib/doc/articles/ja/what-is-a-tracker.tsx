@@ -7,7 +7,7 @@ export default function WhatIsATracker() {
         <Strong>トラッカー</Strong>とは、ピアノロールの代わりに垂直な
         スプレッドシート状のテキストを使う音楽ソフトのことです。一見威圧的に
         見えますが、実際には今までに発明された中で最速の作曲方法のひとつです。
-        K-OSの主力アプリ <Strong>Datamoshpit</Strong> はトラッカーです。
+        K-OSの主力アプリ <Strong>Thrash Tracker</Strong> はトラッカーです。
       </Lead>
 
       <H2>どこから来たか</H2>
@@ -21,7 +21,7 @@ export default function WhatIsATracker() {
       <P>
         現代の子孫としてはRenoise（PC、プロ向け）、Polyend Tracker（ハードウェア）、
         Furnace（オープンソース、マルチシステム）、PicoTracker（RP2040ハード
-        ウェア）があります。DatamoshpitはLSDJ / LGPTファミリーからUI規約を
+        ウェア）があります。Thrash TrackerはLSDJ / LGPTファミリーからUI規約を
         受け継いでいます — 少ないキー、密集した画面、すべてのキー入力が
         仕事をする。
       </P>
@@ -64,7 +64,7 @@ export default function WhatIsATracker() {
         <Li><Strong>速度。</Strong>キーストロークを覚えれば、マウスを使わなくなります。何もクリックせずに曲全体が書けます。</Li>
         <Li><Strong>精度。</Strong>すべてのノートに正確な整数位置があります。ドラッグ＆スナップなし、後からのクオンタイズなし。タイプしたものがそのまま聞こえます。</Li>
         <Li><Strong>小ささ。</Strong>トラッカーの曲は数キロバイトのプレーンデータです。デモシーンの作曲家たちは、プレーヤーコードも含めて合計64KBに収まるサウンドトラックを書きました。</Li>
-        <Li><Strong>ハードウェア互換性。</Strong>データモデルはGame Boy、電卓、マイコンで動くほどコンパクトです。Datamoshpitはブラウザで動きますが、同じアイデアは10ドルのデバイスでも動作します。</Li>
+        <Li><Strong>ハードウェア互換性。</Strong>データモデルはGame Boy、電卓、マイコンで動くほどコンパクトです。Thrash Trackerはブラウザで動きますが、同じアイデアは10ドルのデバイスでも動作します。</Li>
       </UList>
 
       <H2>階層</H2>

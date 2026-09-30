@@ -35,7 +35,7 @@ export default function Slimentologika() {
       <P>
         完整的参考图像在 K-OS 的 <Code>public/sprites/ST0.png</Code> 到{" "}
         <Code>STF.png</Code>。它们通过 <Code>SlimeDigit</Code> 组件
-        （<Code>src/components/apps/datamoshpit/ui/SlimeDigit.tsx</Code>）
+        （<Code>src/components/apps/thrash-tracker/ui/SlimeDigit.tsx</Code>）
         渲染。
       </P>
 

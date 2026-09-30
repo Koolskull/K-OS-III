@@ -48,11 +48,10 @@ export default function Glossary() {
         <Crossref to="effect-commands" />.
       </Term>
 
-      <Term name="Datamoshpit">
-        K-OS's flagship app — the music tracker. Includes the Song / Chain /
-        Phrase editors, instrument editing, sample loading, live pads, the
-        Scene VM. Named after the visual datamoshing aesthetic of the
-        crt-feedback shader.
+      <Term name="Thrash Tracker">
+        K-OS's tracker, 0.2.0. Song, chain, and phrase editors,
+        oscillators, samples, four-operator FM, and a step lane for later
+        in-browser charts. Plugins stay in the file and stay silent.
       </Term>
 
       <Term name=".dmpit">

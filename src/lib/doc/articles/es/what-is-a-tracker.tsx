@@ -8,7 +8,7 @@ export default function WhatIsATracker() {
         una hoja de cálculo vertical de texto en lugar de un piano roll. Al
         principio parece intimidante y luego resulta ser una de las formas más
         rápidas jamás inventadas para escribir música. La aplicación principal
-        de K-OS, <Strong>Datamoshpit</Strong>, es un tracker.
+        de K-OS, <Strong>Thrash Tracker</Strong>, es un tracker.
       </Lead>
 
       <H2>De dónde vienen</H2>
@@ -22,7 +22,7 @@ export default function WhatIsATracker() {
       <P>
         Los descendientes modernos incluyen Renoise (PC, profesional), Polyend
         Tracker (hardware), Furnace (open source, multi-sistema), y PicoTracker
-        (hardware RP2040). Datamoshpit toma sus convenciones de UI de la familia
+        (hardware RP2040). Thrash Tracker toma sus convenciones de UI de la familia
         LSDJ / LGPT — pocas teclas, pantallas densas, cada pulsación hace
         trabajo.
       </P>
@@ -65,7 +65,7 @@ export default function WhatIsATracker() {
         <Li><Strong>Velocidad.</Strong> Una vez que conoces los atajos, dejas de usar el ratón. Canciones enteras se escriben sin clicar nada.</Li>
         <Li><Strong>Precisión.</Strong> Cada nota tiene una posición entera exacta. Sin arrastrar y soltar, sin cuantizar después. Lo que escribiste es lo que escuchas.</Li>
         <Li><Strong>Tamaño pequeño.</Strong> Una canción de tracker son unos pocos kilobytes de datos planos. Los compositores demoscene escribieron bandas sonoras enteras que cabían en 64 KB en total — incluyendo el código del reproductor.</Li>
-        <Li><Strong>Portabilidad de hardware.</Strong> El modelo de datos es tan compacto que funciona en Game Boys, calculadoras, microcontroladores. Datamoshpit corre en un navegador; las mismas ideas funcionan en un dispositivo de $10.</Li>
+        <Li><Strong>Portabilidad de hardware.</Strong> El modelo de datos es tan compacto que funciona en Game Boys, calculadoras, microcontroladores. Thrash Tracker corre en un navegador; las mismas ideas funcionan en un dispositivo de $10.</Li>
       </UList>
 
       <H2>La jerarquía</H2>

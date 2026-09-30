@@ -14,7 +14,7 @@ export default function Glossary() {
       <Term name="Chain">最多 16 个 phrase ID 按顺序播放的序列，带可选的每步移调。<Crossref to="song-chain-phrase" /> 参见。</Term>
       <Term name="Channel">8 个音频输出通道之一。每个通道在任何给定时间播放一个 chain。</Term>
       <Term name="CMD1 / CMD2">phrase 行中的两个效果命令列。<Crossref to="effect-commands" /> 参见。</Term>
-      <Term name="Datamoshpit">K-OS 的旗舰应用 — 音乐音轨编辑器。包括 Song / Chain / Phrase 编辑器、乐器编辑、样本加载、实时垫、Scene VM。</Term>
+      <Term name="Thrash Tracker">K-OS 的旗舰应用 — 音乐音轨编辑器。包括 Song / Chain / Phrase 编辑器、乐器编辑、样本加载、实时垫、Scene VM。</Term>
       <Term name=".dmpit">K-OS 项目文件扩展名。包含 <Code>project.json</Code> 和二进制样本文件的 ZIP 归档。<Crossref to="dmpit-format" /> 参见。</Term>
       <Term name="FM Synthesis">频率调制合成。K-OS 的主要合成引擎，模型基于 Sega Genesis / Mega Drive 中使用的 Yamaha YM2612。</Term>
       <Term name="Hex / Hexadecimal">基数 16 数字系统。在 K-OS 中各处用于 ID 和效果值。<Crossref to="hexadecimal" /> 参见。</Term>

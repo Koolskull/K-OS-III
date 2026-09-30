@@ -21,7 +21,9 @@ export default function Welcome() {
         Start with <Crossref to="what-is-a-tracker" />. It explains the kind of music
         software K-OS is built around — different from anything in Spotify or
         GarageBand, but easier than it looks. From there, <Crossref to="hexadecimal" />{" "}
-        (one short page) teaches you the only weird math you'll ever need.
+        (one short page) teaches you the only weird math you'll ever need. The
+        window that opens from the Thrash Tracker icon is described in{" "}
+        <Crossref to="datamoshpit-browser" />.
       </P>
 
       <H2>If you've used LSDJ, LGPT, or PicoTracker</H2>

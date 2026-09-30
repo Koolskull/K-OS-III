@@ -22,7 +22,7 @@ export default function SceneVM() {
       </P>
       <P>
         コードベースでは{" "}
-        <Code>src/components/apps/datamoshpit/visuals/scene-vm/</Code> にあります。
+        <Code>src/components/apps/thrash-tracker/visuals/scene-vm/</Code> にあります。
         合計約1,200行。libフォルダに純粋関数、同じフォルダにReactコンポーネント。
       </P>
 
@@ -35,7 +35,7 @@ export default function SceneVM() {
         ベース；3DモデルのThree.jsは計画中）。
       </P>
       <P>
-        <Strong>ビジュアルモジュール</Strong>はDatamoshpitの楽器に
+        <Strong>ビジュアルモジュール</Strong>はThrash Trackerの楽器に
         バインドされたシーン。トラッカーがノートを発火すると、エンジンが
         ノートイベントを発行；バインドされたシーンの再生ヘッドがトリガー
         モードに基づいて進む、ジャンプ、またはスクラブします。

@@ -10,6 +10,10 @@ export default function EffectCommands() {
         字符的代码；值是两个 <Crossref to="hexadecimal">十六进制</Crossref> 位。
       </Lead>
 
+      <Aside title="这份列表是旧音轨器" variant="warn">
+        当前 Thrash Tracker 窗口会发声的 phrase 命令只有 <Code>KL</Code> 和 <Code>VO</Code>。这一页其余部分是以前那个浏览器音轨器的命令。窗口实际播放什么，见 <Crossref to="datamoshpit-browser" />。
+      </Aside>
+
       <H2>形式</H2>
       <CodeBlock>
 {`row  note  inst  cmd1 val1   cmd2 val2

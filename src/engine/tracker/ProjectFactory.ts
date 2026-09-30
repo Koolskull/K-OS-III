@@ -13,7 +13,7 @@ import type {
   ProjectData, Song, Chain, Phrase, Table,
   Instrument, PhraseRow, TableRow, FMOperator,
 } from "@/types/tracker";
-import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
+import { defaultVisualForInstrument } from "@/components/apps/thrash-tracker/visuals/scene-vm";
 
 function emptyPhraseRow(): PhraseRow {
   return {

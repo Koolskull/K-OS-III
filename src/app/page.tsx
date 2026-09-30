@@ -32,7 +32,8 @@ import { Desktop } from "@/components/os/Desktop";
 import { Taskbar } from "@/components/os/Taskbar";
 import { AppWindow } from "@/components/os/AppWindow";
 import type { WindowState } from "@/components/os/AppWindow";
-import { DatamoshpitApp } from "@/components/apps/DatamoshpitApp";
+import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
+import { TRACKER_TITLE } from "@/components/apps/thrash-tracker/dm2/model";
 import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
@@ -54,7 +55,7 @@ import { CreativeWorkflowProvider } from "@/lib/creative";
 
 
 type AppId =
-  | "datamoshpit"
+  | "thrash-tracker"
   | "bible"
   | "games"
   | "kooldraw"
@@ -81,7 +82,7 @@ interface OpenWindow {
 }
 
 const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
-  datamoshpit: { title: "DATAMOSHPIT", width: 800, height: 600 },
+  "thrash-tracker": { title: TRACKER_TITLE, width: 1000, height: 620 },
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
   kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
@@ -226,8 +227,8 @@ export default function KoolskullOS() {
             onStateChange={(state) => updateWindowState(win.id, state)}
             onClose={() => closeWindow(win.id)}
           >
-            {win.appId === "datamoshpit" && (
-              <DatamoshpitApp isFocused={win.id === focusedWindowId} />
+            {win.appId === "thrash-tracker" && (
+              <ThrashTrackerApp isFocused={win.id === focusedWindowId} />
             )}
             {win.appId === "bible" && <BibleReader />}
             {win.appId === "games" && <GameMenu />}

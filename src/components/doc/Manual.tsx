@@ -57,6 +57,7 @@ import EnWhatIsATracker from "@/lib/doc/articles/en/what-is-a-tracker";
 import EnHexadecimal from "@/lib/doc/articles/en/hexadecimal";
 import EnTerminalBasics from "@/lib/doc/articles/en/terminal-basics";
 import EnRunningKOSLocally from "@/lib/doc/articles/en/running-k-os-locally";
+import EnDatamoshpitBrowser from "@/lib/doc/articles/en/datamoshpit-browser";
 import EnSongChainPhrase from "@/lib/doc/articles/en/song-chain-phrase";
 import EnEffectCommands from "@/lib/doc/articles/en/effect-commands";
 import EnSlimentologika from "@/lib/doc/articles/en/slimentologika";
@@ -72,6 +73,7 @@ import EsWhatIsATracker from "@/lib/doc/articles/es/what-is-a-tracker";
 import EsHexadecimal from "@/lib/doc/articles/es/hexadecimal";
 import EsTerminalBasics from "@/lib/doc/articles/es/terminal-basics";
 import EsRunningKOSLocally from "@/lib/doc/articles/es/running-k-os-locally";
+import EsDatamoshpitBrowser from "@/lib/doc/articles/es/datamoshpit-browser";
 import EsSongChainPhrase from "@/lib/doc/articles/es/song-chain-phrase";
 import EsEffectCommands from "@/lib/doc/articles/es/effect-commands";
 import EsSlimentologika from "@/lib/doc/articles/es/slimentologika";
@@ -86,6 +88,7 @@ import JaWhatIsATracker from "@/lib/doc/articles/ja/what-is-a-tracker";
 import JaHexadecimal from "@/lib/doc/articles/ja/hexadecimal";
 import JaTerminalBasics from "@/lib/doc/articles/ja/terminal-basics";
 import JaRunningKOSLocally from "@/lib/doc/articles/ja/running-k-os-locally";
+import JaDatamoshpitBrowser from "@/lib/doc/articles/ja/datamoshpit-browser";
 import JaSongChainPhrase from "@/lib/doc/articles/ja/song-chain-phrase";
 import JaEffectCommands from "@/lib/doc/articles/ja/effect-commands";
 import JaSlimentologika from "@/lib/doc/articles/ja/slimentologika";
@@ -100,6 +103,7 @@ import ZhWhatIsATracker from "@/lib/doc/articles/zh/what-is-a-tracker";
 import ZhHexadecimal from "@/lib/doc/articles/zh/hexadecimal";
 import ZhTerminalBasics from "@/lib/doc/articles/zh/terminal-basics";
 import ZhRunningKOSLocally from "@/lib/doc/articles/zh/running-k-os-locally";
+import ZhDatamoshpitBrowser from "@/lib/doc/articles/zh/datamoshpit-browser";
 import ZhSongChainPhrase from "@/lib/doc/articles/zh/song-chain-phrase";
 import ZhEffectCommands from "@/lib/doc/articles/zh/effect-commands";
 import ZhSlimentologika from "@/lib/doc/articles/zh/slimentologika";
@@ -653,6 +657,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     hexadecimal: EnHexadecimal,
     "terminal-basics": EnTerminalBasics,
     "running-k-os-locally": EnRunningKOSLocally,
+    "datamoshpit-browser": EnDatamoshpitBrowser,
     "song-chain-phrase": EnSongChainPhrase,
     "effect-commands": EnEffectCommands,
     slimentologika: EnSlimentologika,
@@ -669,6 +674,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     hexadecimal: EsHexadecimal,
     "terminal-basics": EsTerminalBasics,
     "running-k-os-locally": EsRunningKOSLocally,
+    "datamoshpit-browser": EsDatamoshpitBrowser,
     "song-chain-phrase": EsSongChainPhrase,
     "effect-commands": EsEffectCommands,
     slimentologika: EsSlimentologika,
@@ -684,6 +690,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     hexadecimal: JaHexadecimal,
     "terminal-basics": JaTerminalBasics,
     "running-k-os-locally": JaRunningKOSLocally,
+    "datamoshpit-browser": JaDatamoshpitBrowser,
     "song-chain-phrase": JaSongChainPhrase,
     "effect-commands": JaEffectCommands,
     slimentologika: JaSlimentologika,
@@ -699,6 +706,7 @@ const ARTICLE_COMPONENTS: Record<Lang, Record<string, React.ComponentType>> = {
     hexadecimal: ZhHexadecimal,
     "terminal-basics": ZhTerminalBasics,
     "running-k-os-locally": ZhRunningKOSLocally,
+    "datamoshpit-browser": ZhDatamoshpitBrowser,
     "song-chain-phrase": ZhSongChainPhrase,
     "effect-commands": ZhEffectCommands,
     slimentologika: ZhSlimentologika,

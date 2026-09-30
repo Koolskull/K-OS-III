@@ -7,7 +7,7 @@
 export type CreativeAppId =
   | "kooldraw"
   | "shotlist"
-  | "datamoshpit"
+  | "thrash-tracker"
   | "tilemap";
 
 /** What kind of asset is traveling */

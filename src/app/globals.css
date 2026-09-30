@@ -1,6 +1,6 @@
 /*
  * ☦ Blessed be these styles. ☦
- * DATAMOSHPIT - Global Stylesheet
+ * THRASH TRACKER PRO - Global Stylesheet
  * No rounded corners. No anti-aliasing. No compromise.
  */
 
@@ -21,6 +21,16 @@
   font-weight: normal;
   font-style: normal;
   font-display: block;
+}
+
+/* Kongtext - phone tracker only. Desktop window stays courier-pixel. */
+@font-face {
+  font-family: 'kongtext';
+  src: url('/fonts/kongtext-webfont.woff2') format('woff2'),
+       url('/fonts/kongtext-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
 /* Hina Mincho - Japanese serif */

@@ -17,7 +17,7 @@ import { SAMPLE_MANIFEST, sampleIndexFromUrl } from "@/engine/instruments/sample
 import {
   defaultVisualForInstrument,
   rollVisualForInstrument,
-} from "@/components/apps/datamoshpit/visuals/scene-vm";
+} from "@/components/apps/thrash-tracker/visuals/scene-vm";
 
 export interface InstrumentField {
   key: string;

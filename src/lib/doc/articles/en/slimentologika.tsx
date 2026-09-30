@@ -53,7 +53,7 @@ export default function Slimentologika() {
       <P>
         The full reference image is in K-OS at <Code>public/sprites/ST0.png</Code>{" "}
         through <Code>STF.png</Code>. They render via the <Code>SlimeDigit</Code>{" "}
-        component (<Code>src/components/apps/datamoshpit/ui/SlimeDigit.tsx</Code>).
+        component (<Code>src/components/apps/thrash-tracker/ui/SlimeDigit.tsx</Code>).
       </P>
 
       <H2>Orientation rule</H2>

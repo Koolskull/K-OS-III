@@ -4,7 +4,7 @@ export default function PerInstrumentVisuals() {
   return (
     <>
       <Lead>
-        Every instrument in Datamoshpit can carry a tiny visual scene — a flat
+        Every instrument in Thrash Tracker can carry a tiny visual scene — a flat
         color, an image, a shader, a 3D model — that fires when its notes
         trigger. The visual settings live on the F4 Instrument page; the
         rendering is handled by the <Crossref to="scene-vm">Scene VM</Crossref>.

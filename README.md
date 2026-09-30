@@ -131,13 +131,13 @@ Each app opens in its own draggable, resizable window on the desktop. You can ru
 
 ## Datamoshpit
 
-Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Silmentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.
+Datamoshpit is the OS's tracker window. The icon opens the browser port of desktop Datamoshpit 2: eight channels, chains, phrases, oscillators, samples, and four-operator FM, without VST, AU, or LV2. A fresh song starts on the Amen break, instrument `00`. Space plays it. Space again or Escape stops it.
 
-If you've used a tracker before — LSDJ, LGPT, Renoise, Furnace — Datamoshpit will feel familiar fast. If you haven't, the **full beginner's guide** walks you from "what is a tracker" to "you just wrote music":
+The manual article **Datamoshpit in the Browser** is the current description: pages, keys, what sounds, and the save file. The beginner's guide still contains the earlier tracker after that section:
 
 → [`docs/DATAMOSHPIT_GUIDE.md`](./docs/DATAMOSHPIT_GUIDE.md)
 
-Quick orientation: arrow keys move the cursor, **Q + arrows** edit values (Q+Right or Q+Up to increase, Q+Left or Q+Down to decrease), **W** places a note, **Space** plays / stops, **Shift + arrows** move between screens, **Tab** toggles Slimentologika ↔ hex display.
+Quick orientation for the window that opens now: arrows move, Shift+F1–F8 or Shift+arrows change page, hex digits edit values, Space plays and stops, Escape stops, Ctrl+S downloads `NAME.dm2.json`.
 
 For deeper technical references, see the docs index further down this README.
 
@@ -242,7 +242,7 @@ K-OS-III/
 │   ├── components/
 │   │   ├── os/               # Desktop, Taskbar, AppWindow, BootSequence
 │   │   └── apps/
-│   │       ├── datamoshpit/  # Tracker, instruments, live pads
+│   │       ├── thrash-tracker/  # Thrash Tracker, instruments, live pads
 │   │       ├── bible/        # Scripture reader
 │   │       ├── games/        # Game menu + iframe launcher
 │   │       ├── kooldraw/     # KoolDraw
@@ -290,7 +290,7 @@ For deeper technical specifications, see the docs folder:
 
 | Document | Contents |
 |----------|---------|
-| [`docs/DATAMOSHPIT_GUIDE.md`](./docs/DATAMOSHPIT_GUIDE.md) | Full Datamoshpit beginner's guide |
+| [`docs/DATAMOSHPIT_GUIDE.md`](./docs/DATAMOSHPIT_GUIDE.md) | Browser Datamoshpit 2, then the earlier tracker guide |
 | [`docs/COMMANDS.md`](./docs/COMMANDS.md) | Full effect command reference |
 | [`docs/NAVIGATION_AND_INPUT.md`](./docs/NAVIGATION_AND_INPUT.md) | Complete input system specification |
 | [`docs/CONTROLLER_SUPPORT.md`](./docs/CONTROLLER_SUPPORT.md) | MIDI, gamepad, handheld, and touch support |

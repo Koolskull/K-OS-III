@@ -15,7 +15,7 @@ export default function Glossary() {
       <Term name="Chain">最大16のphrase IDが順番に再生されるシーケンス、オプションのステップごとtransposeあり。<Crossref to="song-chain-phrase" /> 参照。</Term>
       <Term name="Channel">8つのオーディオ出力チャンネルの1つ。各チャンネルは任意の時点で1つのchainを再生。</Term>
       <Term name="CMD1 / CMD2">phrase行の2つのエフェクトコマンド列。<Crossref to="effect-commands" /> 参照。</Term>
-      <Term name="Datamoshpit">K-OSの主力アプリ — 音楽トラッカー。Song / Chain / Phraseエディタ、楽器編集、サンプルローディング、ライブパッド、Scene VMを含む。</Term>
+      <Term name="Thrash Tracker">K-OSの主力アプリ — 音楽トラッカー。Song / Chain / Phraseエディタ、楽器編集、サンプルローディング、ライブパッド、Scene VMを含む。</Term>
       <Term name=".dmpit">K-OSプロジェクトファイル拡張子。<Code>project.json</Code> とバイナリサンプルを含むZIP。<Crossref to="dmpit-format" /> 参照。</Term>
       <Term name="FM Synthesis">周波数変調合成。K-OSの主要シンセエンジン、Sega Genesis / Mega DriveのYamaha YM2612をモデル。</Term>
       <Term name="Hex / Hexadecimal">16進数システム。K-OSではIDとエフェクト値に至る所で使用。<Crossref to="hexadecimal" /> 参照。</Term>

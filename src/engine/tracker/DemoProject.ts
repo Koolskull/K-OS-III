@@ -12,7 +12,7 @@
 
 import type { ProjectData, ProjectSample, Instrument, PhraseRow, Phrase, Chain, Song } from "@/types/tracker";
 import { createBlankChain, createBlankTable, createDefaultInstrument } from "./ProjectFactory";
-import { defaultVisualForInstrument } from "@/components/apps/datamoshpit/visuals/scene-vm";
+import { defaultVisualForInstrument } from "@/components/apps/thrash-tracker/visuals/scene-vm";
 import { assetUrl } from "@/lib/assets";
 
 const SAMPLE_PATH = "/Instruments/samples";

@@ -4,13 +4,22 @@ export default function SongChainPhrase() {
   return (
     <>
       <Lead>
-        Las canciones de Datamoshpit se construyen a partir de tres capas
+        Las canciones de Thrash Tracker se construyen a partir de tres capas
         anidadas — las <Strong>phrases</Strong> se anidan en{" "}
         <Strong>chains</Strong>, los chains se anidan en la <Strong>song</Strong>.
         Cada capa se identifica con un ID hex de dos dígitos. Una vez que
         entiendes cómo se referencian, todo el tracker deja de parecer sopa de
         letras y se convierte en un lenguaje musical pequeño y denso.
       </Lead>
+
+      <Aside title="La ventana actual es más nueva que esta página" variant="warn">
+        El icono Thrash Tracker abre ahora el port al navegador de Thrash Tracker.
+        Páginas, teclas, el Amen break y qué comandos suenan están en{" "}
+        <Crossref to="datamoshpit-browser" />. Las capas de abajo siguen siendo
+        cómo se arma una canción. Más abajo, el recorrido de reproducción
+        describe un bucle anterior: en la ventana actual, un paso de chain vacío
+        termina el chain y la fila de song avanza.
+      </Aside>
 
       <H2>Las tres capas en palabras simples</H2>
       <UList>

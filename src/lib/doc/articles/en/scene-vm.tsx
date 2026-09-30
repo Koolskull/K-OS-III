@@ -22,7 +22,7 @@ export default function SceneVM() {
       </P>
       <P>
         Live in the codebase at{" "}
-        <Code>src/components/apps/datamoshpit/visuals/scene-vm/</Code>. About
+        <Code>src/components/apps/thrash-tracker/visuals/scene-vm/</Code>. About
         1,200 lines total. Pure functions in the lib folder, React components
         in the same folder.
       </P>
@@ -36,7 +36,7 @@ export default function SceneVM() {
         Three.js for 3D models is planned).
       </P>
       <P>
-        A <Strong>visual module</Strong> is a scene bound to a Datamoshpit
+        A <Strong>visual module</Strong> is a scene bound to a Thrash Tracker
         instrument. When the tracker fires a note, the engine emits a note
         event; the bound scene's playhead advances, jumps, or scrubs based on
         the trigger mode.
@@ -178,7 +178,7 @@ export default function SceneVM() {
       <P>
         v0 renders one Scene VM window at a time. The full design (see{" "}
         <Code>docs/DATAMOSHPIT_VIDEO_SPEC.md</Code> in the repo) is an 8-layer
-        compositor where each Datamoshpit channel can carry its own scene, and
+        compositor where each Thrash Tracker channel can carry its own scene, and
         the layers are blended into one output canvas. Today, multiple windows
         coexist; tomorrow, a single composited canvas.
       </P>

@@ -11,6 +11,13 @@ export default function EffectCommands() {
         {" "}<Crossref to="hexadecimal">hex</Crossref> digits.
       </Lead>
 
+      <Aside title="This list is the older tracker" variant="warn">
+        The current Thrash Tracker window sounds two phrase commands, <Code>KL</Code>{" "}
+        and <Code>VO</Code>. The rest of this page is the command set from the
+        previous browser tracker. See <Crossref to="datamoshpit-browser" /> for
+        what the window actually plays.
+      </Aside>
+
       <H2>The shape</H2>
       <CodeBlock>
 {`row  note  inst  cmd1 val1   cmd2 val2

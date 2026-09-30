@@ -4,7 +4,7 @@ export default function PerInstrumentVisuals() {
   return (
     <>
       <Lead>
-        Cada instrumento en Datamoshpit puede llevar una pequeña escena visual
+        Cada instrumento en Thrash Tracker puede llevar una pequeña escena visual
         — un color plano, una imagen, un shader, un modelo 3D — que se dispara
         cuando se disparan sus notas. Los ajustes visuales viven en la página
         de Instrumento F4; el renderizado lo maneja el{" "}

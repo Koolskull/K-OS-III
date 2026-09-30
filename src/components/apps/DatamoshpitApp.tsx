@@ -129,9 +129,11 @@ const SCALE_CLASS_MAP: Record<ScalePreset, string> = {
 
 interface DatamoshpitAppProps {
   isFocused: boolean;
+  /** Mobile experiment: disable background visuals and soften on-screen controls */
+  disableVisuals?: boolean;
 }
 
-export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
+export function DatamoshpitApp({ isFocused, disableVisuals = false }: DatamoshpitAppProps) {
   const { isPortrait } = useOrientation();
   const [project, setProject] = useState<ProjectData>(() => createBlankProject("UNTITLED"));
   const [activeScreen, setActiveScreen] = useState<TrackerScreen>("instrument");
@@ -1485,28 +1487,30 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
           >
             {playing ? "PLAY" : "STOP"}
           </span>
-          <button
-            onClick={() => {
-              setSceneVmDemoIdx((i) => {
-                if (i === null) return 0;
-                if (i + 1 >= SCENE_VM_TOTAL_STOPS) return null;
-                return i + 1;
-              });
-            }}
-            title="Cycle Scene VM (off → kick → snare → pitch → follow → off)"
-            style={{
-              fontFamily: "var(--dm-font-primary)",
-              fontSize: "8px",
-              color: sceneVmDemoIdx !== null ? "#000000" : "#888888",
-              backgroundColor: sceneVmDemoIdx !== null ? "#ffff00" : "transparent",
-              border: "1px solid #888888",
-              padding: "0 4px",
-              cursor: "pointer",
-              imageRendering: "pixelated",
-            }}
-          >
-            VM{sceneVmDemoIdx === null ? "" : sceneVmDemoIdx < SCENE_VM_DEMOS.length ? `:${sceneVmDemoIdx + 1}` : ":FLW"}
-          </button>
+          {!disableVisuals && (
+            <button
+              onClick={() => {
+                setSceneVmDemoIdx((i) => {
+                  if (i === null) return 0;
+                  if (i + 1 >= SCENE_VM_TOTAL_STOPS) return null;
+                  return i + 1;
+                });
+              }}
+              title="Cycle Scene VM (off → kick → snare → pitch → follow → off)"
+              style={{
+                fontFamily: "var(--dm-font-primary)",
+                fontSize: "8px",
+                color: sceneVmDemoIdx !== null ? "#000000" : "#888888",
+                backgroundColor: sceneVmDemoIdx !== null ? "#ffff00" : "transparent",
+                border: "1px solid #888888",
+                padding: "0 4px",
+                cursor: "pointer",
+                imageRendering: "pixelated",
+              }}
+            >
+              VM{sceneVmDemoIdx === null ? "" : sceneVmDemoIdx < SCENE_VM_DEMOS.length ? `:${sceneVmDemoIdx + 1}` : ":FLW"}
+            </button>
+          )}
           <span
             style={{
               fontFamily: "var(--dm-font-primary)",
@@ -1578,7 +1582,9 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
       {/* Main row: optional left rail, content, optional right rail */}
       <div className="flex-1 flex min-h-0" style={{ flexDirection: "row" }}>
         {!isPortrait && activeScreen !== "live" && (
-          <TouchRailLeft inputRouter={inputRef.current} />
+          <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
+            <TouchRailLeft inputRouter={inputRef.current} />
+          </div>
         )}
         <div className="flex-1 relative overflow-hidden overflow-y-auto min-w-0">
         {activeScreen === "preferences" && (
@@ -1859,7 +1865,9 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
         )}
         </div>
         {!isPortrait && activeScreen !== "live" && (
-          <TouchRailRight inputRouter={inputRef.current} />
+          <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
+            <TouchRailRight inputRouter={inputRef.current} />
+          </div>
         )}
       </div>
 
@@ -1900,13 +1908,15 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
 
       {/* Touch controller — bottom bar in portrait only (landscape uses side rails) */}
       {isPortrait && activeScreen !== "live" && (
-        <TouchController
-          inputRouter={inputRef.current}
-          isTextInput={activeScreen === "project" && projCursorRow === PROJ_ROWS.NAME}
-        />
+        <div style={disableVisuals ? { opacity: 0.6 } : undefined}>
+          <TouchController
+            inputRouter={inputRef.current}
+            isTextInput={activeScreen === "project" && projCursorRow === PROJ_ROWS.NAME}
+          />
+        </div>
       )}
 
-      {sceneVmMode !== null ? (
+      {!disableVisuals && sceneVmMode !== null ? (
         <SceneVMWindow
           engine={engineRef.current}
           mode={sceneVmMode}

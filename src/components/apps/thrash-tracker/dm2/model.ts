@@ -43,9 +43,10 @@ export interface Effect {
   value: number;
 }
 
-export const TRACKER_NAME = "THRASH TRACKER PRO";
-export const TRACKER_VERSION = "v0.44 BETA";
-export const TRACKER_TITLE = `${TRACKER_NAME} ${TRACKER_VERSION}`;
+export const TRACKER_NAME = "THRASH TRACKER";
+export const TRACKER_VERSION = "0.3.0";
+export const TRACKER_STAGE = "pre-alpha";
+export const TRACKER_TITLE = `${TRACKER_NAME}  ${TRACKER_VERSION}`;
 
 export interface Cell {
   note: number;

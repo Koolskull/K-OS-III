@@ -129,6 +129,14 @@ Each app opens in its own draggable, resizable window on the desktop. You can ru
 
 ---
 
+## Thrash Tracker 0.3.0
+
+Preliminary build. This version is the tracker and the visualiser (the V page).
+
+The tape deck is not in this version. The effects page is not in this version. Fork the branch if you want to try either of those on a new branch.
+
+Pages are Song, Chain, Phrase, Rack, Table, Instrument, Viz, and Project. Shift+F1 through Shift+F8 move between them. Space plays and stops.
+
 ## Datamoshpit
 
 Datamoshpit is the OS's flagship app — an 8-channel music tracker (Pulse / Wave / Noise / FM-YM2612 / Sample) with phrases, chains, songs, tables, grooves, Silmentologika base-16 glyphs, and LGPT-style controls. Five engines, eight channels, and an input model so minimal you can drive the whole thing from a Game Boy D-pad.

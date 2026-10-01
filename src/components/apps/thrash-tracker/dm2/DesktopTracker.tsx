@@ -19,6 +19,8 @@ import {
   seedNote,
   serialize,
   TRACKER_NAME,
+  TRACKER_STAGE,
+  TRACKER_VERSION,
   tableRowAt,
   AMEN_URL,
   amenNeedsAudio,
@@ -31,6 +33,7 @@ import {
   type TableRow,
 } from "./model";
 import { WebPlayer, decodeWav, type PlayHead } from "./player";
+import { downloadStepmania } from "./stepmania";
 import { loadSymbols, paintSymbols } from "./symbols";
 
 const W = 960;
@@ -325,13 +328,14 @@ function paint(
   ctx.fillRect(4, 18, 860, 448);
 
   drawGlyph(ctx, TRACKER_NAME, 8, 3, "#ffffff", false);
-  drawGlyph(ctx, SCREEN_TITLE[ui.screen], 168, 3, "#ffffff", false);
-  drawGlyph(ctx, `BPM ${Math.round(project.bpm)}`, 280, 3, "#ffffff", false);
-  drawGlyph(ctx, transportWord(ui, head), 360, 3, "#ffffff", false);
-  drawGlyph(ctx, `OCT ${ui.octave}`, 440, 3, "#ffffff", false);
-  if (ui.screen === "phrase") drawGlyph(ctx, `PH ${hex2(ui.phraseId)}`, 520, 3, "#ffffff", false);
-  if (ui.screen === "chain") drawGlyph(ctx, `CH ${hex2(ui.chainId)}`, 520, 3, "#ffffff", false);
-  if (ui.screen === "instrument") drawGlyph(ctx, `IN ${hex2(ui.instrumentId)}`, 520, 3, "#ffffff", false);
+  drawGlyph(ctx, TRACKER_VERSION, 160, 3, "#ffffff", false);
+  drawGlyph(ctx, SCREEN_TITLE[ui.screen], 240, 3, "#ffffff", false);
+  drawGlyph(ctx, `BPM ${Math.round(project.bpm)}`, 340, 3, "#ffffff", false);
+  drawGlyph(ctx, transportWord(ui, head), 440, 3, "#ffffff", false);
+  drawGlyph(ctx, `OCT ${ui.octave}`, 540, 3, "#ffffff", false);
+  if (ui.screen === "phrase") drawGlyph(ctx, `PH ${hex2(ui.phraseId)}`, 640, 3, "#ffffff", false);
+  if (ui.screen === "chain") drawGlyph(ctx, `CH ${hex2(ui.chainId)}`, 640, 3, "#ffffff", false);
+  if (ui.screen === "instrument") drawGlyph(ctx, `IN ${hex2(ui.instrumentId)}`, 640, 3, "#ffffff", false);
   drawGlyph(ctx, ui.status.slice(0, 78), 8, 524, "#ffffff", false);
 
   const heads = titles(ui.screen);
@@ -403,6 +407,9 @@ function paint(
       drawGlyph(ctx, line, 16, y, "#ffffff", row === ui.cursorRow);
       hits.push({ x: 16, y, w: 360, h: 16, kind: "cell", row, col: 0 });
     });
+    drawGlyph(ctx, `${TRACKER_VERSION}  ${TRACKER_STAGE.toUpperCase()}`, 16, 140, "#bbbbbb", false);
+    drawGlyph(ctx, "THIS VERSION IS THE TRACKER AND THE VISUALISER", 16, 160, "#ffffff", false);
+    drawGlyph(ctx, "THE TAPE DECK AND THE EFFECTS PAGE ARE NOT IN IT", 16, 176, "#ffffff", false);
   } else if (ui.screen === "layer") {
     const phrase = project.phrases[ui.phraseId];
     for (let layer = 0; layer < LAYERS; layer++) {
@@ -816,6 +823,12 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
         link.click();
         URL.revokeObjectURL(url);
         ui.status = "SAVED";
+        return;
+      }
+      if (ctrl && shift && (key === "e" || key === "E")) {
+        event.preventDefault();
+        ui.status = downloadStepmania(project);
+        sync();
         return;
       }
       if (ctrl && !shift && (key === "o" || key === "O")) {

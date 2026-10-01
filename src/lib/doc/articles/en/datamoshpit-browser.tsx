@@ -34,7 +34,7 @@ T  I  V  R     table, instrument, visualiser, project`}</CodeBlock>
         rows={[
           ["S", "F1", "Song. 256 rows, channels C0–C7. Each cell is a chain id, or --."],
           ["C", "F2", "Chain. 16 steps. PH is the phrase. TR is the transpose."],
-          ["P", "F3", "Phrase. Columns NT IN VL SL LP FX VA ST."],
+          ["P", "F3", "Phrase. Columns NT IN VL SL LP FX VA ST. ST is the dance arrow."],
           ["L", "F4", "Rack. Four layer gains for the phrase you were just on."],
           ["T", "F5", "Table. The desktop columns, including the ones the browser does not sound yet."],
           ["I", "F6", "Instrument. Name, type, oscillator or FM algorithm, volume, ADSR."],
@@ -63,6 +63,8 @@ T  I  V  R     table, instrument, visualiser, project`}</CodeBlock>
           ["Ctrl+arrows", "On the instrument, rack, or project page, change the value under the cursor. Up and down step by larger amounts."],
           ["Ctrl+Shift+Left/Right", "On a phrase or chain, change which pattern you are looking at."],
           ["Ctrl+Shift+N", "Make the next free instrument a square pluck and open it."],
+          ["L D U R", "On the phrase ST column, write a left, down, up, or right arrow. One arrow per row."],
+          ["Ctrl+Shift+E", "Download a Stepmania .sm for Track Stomper, plus a wav of the first sample when the song has one. Charts go out. They are not read back."],
           ["Ctrl+S", "Download NAME.dm2.json, samples included."],
           ["Ctrl+O", "Open a browser project file."],
           ["X / Shift+X", "On the song page, mute that channel, or solo it."],

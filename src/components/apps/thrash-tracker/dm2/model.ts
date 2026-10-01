@@ -54,7 +54,7 @@ export interface Cell {
   volume: number;
   slice: number;
   loop: number;
-  /** -1 empty, 0 left, 1 down, 2 up, 3 right. Drawn, not played as a game yet. */
+  /** -1 empty, 0 left, 1 down, 2 up, 3 right. Exported to Stepmania. Not played here. */
   step: number;
   fx: Effect;
 }

@@ -32,6 +32,7 @@ import {
   type TableRow,
 } from "./model";
 import { WebPlayer, decodeWav, type PlayHead } from "./player";
+import { downloadStepmania } from "./stepmania";
 import { loadSymbols, paintSymbols } from "./symbols";
 
 const W = 960;
@@ -818,6 +819,12 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
         link.click();
         URL.revokeObjectURL(url);
         ui.status = "SAVED";
+        return;
+      }
+      if (ctrl && shift && (key === "e" || key === "E")) {
+        event.preventDefault();
+        ui.status = downloadStepmania(project);
+        sync();
         return;
       }
       if (ctrl && !shift && (key === "o" || key === "O")) {

@@ -139,6 +139,8 @@ The manual article **Datamoshpit in the Browser** is the current description: pa
 
 Quick orientation for the window that opens now: arrows move, Shift+F1–F8 or Shift+arrows change page, hex digits edit values, Space plays and stops, Escape stops, Ctrl+S downloads `NAME.dm2.json`.
 
+Dance arrows live in the phrase column ST. L, D, U, and R write left, down, up, and right. Ctrl+Shift+E downloads a Stepmania `.sm` timed to channel 0, and a wav of the first sample when there is one. That chart is for Track Stomper, the player, and for desktop Stepmania. Thrash Tracker writes charts out and does not read them back. Track Stomper itself, the pad game and the marketplace, is not in this window yet.
+
 For deeper technical references, see the docs index further down this README.
 
 ---

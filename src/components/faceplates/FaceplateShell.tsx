@@ -19,6 +19,8 @@ export function FaceplateShell({ pack, children, className, style }: FaceplateSh
   const url = pack ? resolveFaceplateUrl(pack, "default") : null;
   const fit = pack?.manifest.layout.faceplate.fit ?? "cover";
 
+  // Keep layout styles on the outer node so flex/grid parents keep working.
+  // Children stay direct flex/grid items; the plate is an absolute underlay.
   return (
     <div
       className={className}
@@ -41,7 +43,7 @@ export function FaceplateShell({ pack, children, className, style }: FaceplateSh
           <VmiImage urls={[url]} alt="" fit={fit} />
         </div>
       )}
-      <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
+      {children}
     </div>
   );
 }

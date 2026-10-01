@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
+import {
+  FaceplateShell,
+  SkinPackPicker,
+  useSkinPack,
+  VmiImage,
+} from "@/components/faceplates";
+import { padUrlFallbackChain, resolveButtonUrl, type ResolvedSkinPack } from "@/lib/faceplates";
 
 /**
  * Phone tracker. Grid on top, Datamoshpit-style keys underneath, no backdrop.
@@ -18,7 +25,9 @@ const TUTORIAL_KEY = "thrash-phone-tutorial-dismissed";
 const IDLE: CSSProperties = {
   width: "100%",
   height: "100%",
-  border: "1px solid #666666",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "#666666",
   background: "#0a0a0a",
   color: "#888888",
   fontFamily: "kongtext, monospace",
@@ -83,12 +92,30 @@ function Cross({ children }: { children: ReactNode }) {
   );
 }
 
+function buttonArtUrls(pack: ResolvedSkinPack | null, slot: string, hot: boolean): string[] {
+  if (!pack) return [];
+  const state = hot ? "pressed" : "default";
+  const primary = resolveButtonUrl(pack, slot, state);
+  const urls: string[] = [];
+  if (primary) urls.push(primary);
+  // Fall back to shared pad art so a kit pack dresses the phone controls too
+  for (const u of padUrlFallbackChain(pack, 0, state)) {
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return urls;
+}
+
 function PadButton({
   label,
+  slot,
+  pack,
   onDown,
   onUp,
 }: {
   label: string;
+  /** skin.json buttons/<slot> folder name */
+  slot: string;
+  pack: ResolvedSkinPack | null;
   onDown: () => void;
   onUp: () => void;
 }) {
@@ -102,11 +129,20 @@ function PadButton({
     onUp();
   }, [onUp]);
 
+  const art = buttonArtUrls(pack, slot, hot);
+  const hasArt = art.length > 0;
+
   return (
     <button
       type="button"
       aria-label={label}
-      style={hot ? HOT : IDLE}
+      style={{
+        ...(hot ? HOT : IDLE),
+        position: "relative",
+        overflow: "hidden",
+        borderColor: hasArt ? "transparent" : hot ? "#ffffff" : "#666666",
+        background: hasArt ? "transparent" : hot ? "#ffffff" : "#0a0a0a",
+      }}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -119,7 +155,12 @@ function PadButton({
       }}
       onPointerCancel={up}
     >
-      {label}
+      {hasArt && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <VmiImage urls={art} alt="" fit="cover" />
+        </div>
+      )}
+      <span style={{ position: "relative", zIndex: 1 }}>{label}</span>
     </button>
   );
 }
@@ -127,6 +168,7 @@ function PadButton({
 function ThrashKeys() {
   const repeat = useRef<number | null>(null);
   const delay = useRef<number | null>(null);
+  const { pack, catalog, cycle } = useSkinPack();
 
   const clearRepeat = useCallback(() => {
     if (delay.current !== null) window.clearTimeout(delay.current);
@@ -159,7 +201,8 @@ function ThrashKeys() {
   const noop = useCallback(() => {}, []);
 
   return (
-    <div
+    <FaceplateShell
+      pack={pack}
       style={{
         flexShrink: 0,
         display: "flex",
@@ -170,31 +213,38 @@ function ThrashKeys() {
         touchAction: "none",
       }}
     >
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <SkinPackPicker
+          catalog={catalog}
+          activeId={pack?.manifest.id}
+          onCycle={cycle}
+        />
+      </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <Cross>
           <div />
-          <PadButton label="UP" onDown={() => startDir("up")} onUp={clearRepeat} />
+          <PadButton label="UP" slot="up" pack={pack} onDown={() => startDir("up")} onUp={clearRepeat} />
           <div />
-          <PadButton label="LT" onDown={() => startDir("left")} onUp={clearRepeat} />
+          <PadButton label="LT" slot="left" pack={pack} onDown={() => startDir("left")} onUp={clearRepeat} />
           <div />
-          <PadButton label="RT" onDown={() => startDir("right")} onUp={clearRepeat} />
+          <PadButton label="RT" slot="right" pack={pack} onDown={() => startDir("right")} onUp={clearRepeat} />
           <div />
-          <PadButton label="DN" onDown={() => startDir("down")} onUp={clearRepeat} />
+          <PadButton label="DN" slot="down" pack={pack} onDown={() => startDir("down")} onUp={clearRepeat} />
           <div />
         </Cross>
       </div>
       <div style={{ display: "flex", gap: 8, height: 56 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <PadButton label="SHIFT" onDown={() => changePage(1)} onUp={noop} />
+          <PadButton label="SHIFT" slot="shift" pack={pack} onDown={() => changePage(1)} onUp={noop} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <PadButton label="CTRL" onDown={() => changePage(-1)} onUp={noop} />
+          <PadButton label="CTRL" slot="ctrl" pack={pack} onDown={() => changePage(-1)} onUp={noop} />
         </div>
       </div>
       <div style={{ height: 64 }}>
-        <PadButton label="SPACE" onDown={() => press(" ", "Space")} onUp={noop} />
+        <PadButton label="SPACE" slot="space" pack={pack} onDown={() => press(" ", "Space")} onUp={noop} />
       </div>
-    </div>
+    </FaceplateShell>
   );
 }
 

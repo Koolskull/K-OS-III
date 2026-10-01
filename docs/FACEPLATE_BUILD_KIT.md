@@ -15,10 +15,11 @@ Companion docs:
 
 | Slot | Purpose |
 |------|---------|
-| `faceplate/` | Full plate behind the 4×4 pad grid |
-| `pads/shared/` | One set of pad graphics reused for all 16 pads |
+| `faceplate/` | Full plate behind the 4×4 pad grid **and** the Thrash phone control deck |
+| `pads/shared/` | One set of pad graphics reused for all 16 LIVE pads (also dresses phone keys if per-key art is missing) |
 | `pads/00` … `pads/0F` | Optional per-pad art (`sharedArt: false`) |
 | `buttons/<name>/` | FX / bypass / kit controls (any name you declare in `skin.json`) |
+| `buttons/up` `left` `right` `down` `shift` `ctrl` `space` | Optional Thrash phone D-pad / action keys |
 
 Targets in the manifest (`live-pads`, `kit`, `fx`, `sample-kit`, `drum-kit`) are tags for future filtering — draw what you need; the LIVE screen reads `live-pads` packs today.
 
@@ -43,8 +44,9 @@ cp -R public/skins/_blank public/skins/my-wild-kit
 }
 ```
 
-4. Open Datamoshpit / Thrash Tracker → **LIVE**.
-5. Click **SKIN:** in the header to cycle packs until yours shows up.
+4. Open **Thrash Tracker** from the K-OS desktop (or `/thrash`).
+5. Click **SKIN:** above the phone controls to cycle packs until yours shows up.
+6. Same cycler also appears on Datamoshpit **LIVE** when that app is open.
 
 No build step. No sync script. Next.js serves `public/` as-is.
 

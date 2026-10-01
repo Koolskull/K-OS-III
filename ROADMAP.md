@@ -18,6 +18,7 @@ These are concrete and contributor-friendly. Pick one and go.
 
 - **Datamoshpit Video Layer v0** — first cut of the visual-module system from [`docs/DATAMOSHPIT_VIDEO_SPEC.md`](./docs/DATAMOSHPIT_VIDEO_SPEC.md): pick the three v0 VM types (Image Sequence, Iframe, Shader), wire the Instrument-screen binding UI, ship the compositor at single-layer first, then layer stacking.
 - **Screenshot / GIF pass** — capture the four hero shots in `public/screenshots/` and any extra shots called out there. This unlocks every grant application and every social post.
+- **Faceplate Build Kit** — drop-in VMI skin packs for live pads / kits / FX (`docs/FACEPLATE_BUILD_KIT.md`, `public/skins/`). Artists fork `_blank`, ship PNGs, cycle packs on LIVE.
 - **Demo deploy** — pick a host (Vercel is the obvious one for Next.js), wire it up, replace `[DEMO_URL]` in the README. Demo links convert curiosity into contributions.
 - **First five "good first issues"** — see `docs/SEED_ISSUES.md`. Examples: keyboard shortcut overlay (`?`), per-channel meters in the taskbar, sprite-editor onion-skin toggle, boot-sequence skip key, in-OS About panel.
 - **Repo scaffolding** *(this PR)* — README hero, CONTRIBUTING, ROADMAP, VISION, EPISTEMIC_STANCE, KNOWLEDGE_CORPUS, K_WALLET_SPEC, ECONOMIC_STANCE, COMMERCE_SPEC, FUNDING_PLAN, CHAT_SPEC, .github scaffolding. *Done in this pass.*

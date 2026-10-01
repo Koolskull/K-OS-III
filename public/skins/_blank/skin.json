@@ -1,0 +1,25 @@
+{
+  "id": "_blank",
+  "name": "BLANK CANVAS",
+  "author": "YOU",
+  "version": 1,
+  "description": "Start here. Replace every PNG with your own art. Keep the filenames.",
+  "targets": ["live-pads", "kit", "fx", "sample-kit", "drum-kit"],
+  "layout": {
+    "pads": { "cols": 4, "rows": 4, "sharedArt": true },
+    "faceplate": { "fit": "cover" },
+    "showPadLabels": true
+  },
+  "slots": {
+    "faceplate": "faceplate",
+    "pad": "pads/shared",
+    "fx": "buttons/fx"
+  },
+  "states": {
+    "0000": "default",
+    "0010": "active",
+    "0020": "pressed",
+    "0030": "muted",
+    "0040": "solo"
+  }
+}

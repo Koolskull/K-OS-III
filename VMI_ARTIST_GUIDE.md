@@ -294,6 +294,7 @@ The FX component supports various blend modes:
 
 ## Full Documentation
 
+- **Faceplate Build Kit**: [docs/FACEPLATE_BUILD_KIT.md](docs/FACEPLATE_BUILD_KIT.md) — custom skins, pads, and FX faceplates for Thrash Tracker / Datamoshpit
 - **VMI System**: [docs/vmi/README.md](docs/vmi/README.md)
 - **Island Scene**: [components/island/README.md](components/island/README.md)
 - **Shaders**: [docs/SHADER_IMPLEMENTATION.md](docs/SHADER_IMPLEMENTATION.md)

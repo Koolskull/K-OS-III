@@ -34,6 +34,12 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { toSlimeKeys } from "@/types/tracker";
 import type { SlimeHexKey } from "@/types/tracker";
 import { SlimeGlyph } from "@/components/apps/thrash-tracker/ui/SlimeDigit";
+import {
+  FaceplateShell,
+  SkinnedPad,
+  SkinPackPicker,
+  useSkinPack,
+} from "@/components/faceplates";
 
 export interface PlaybackChannelInfo {
   chainId: number | null;
@@ -145,6 +151,7 @@ function Pad({
   active,
   muted,
   soloed,
+  pack,
   onTrigger,
 }: {
   index: number;
@@ -152,39 +159,25 @@ function Pad({
   active: boolean;
   muted?: boolean;
   soloed?: boolean;
+  pack: ReturnType<typeof useSkinPack>["pack"];
   onTrigger: () => void;
 }) {
   const globalIndex = bank * PADS_PER_BANK + index;
   const digits = toSlimeKeys(globalIndex, 2);
 
-  let borderColor = active ? "#ffffff" : "#444444";
-  let backgroundColor = active ? "#2a2a2a" : "#0a0a0a";
-
-  if (muted) {
-    borderColor = active ? "#ff4444" : "#331111";
-    backgroundColor = active ? "#1a0808" : "#080404";
-  } else if (soloed) {
-    borderColor = active ? "#ffff00" : "#aaaa00";
-    backgroundColor = active ? "#2a2a00" : "#0a0a00";
-  }
-
   return (
-    <button
-      className="border-2 flex flex-col items-center justify-center cursor-pointer select-none"
-      style={{
-        borderColor,
-        backgroundColor,
-        width: "100%",
-        height: "100%",
-        opacity: muted ? 0.5 : 1,
-      }}
-      onMouseDown={onTrigger}
-      onTouchStart={(e) => { e.preventDefault(); onTrigger(); }}
-    >
-      {digits.map((k, i) => (
-        <SlimeGlyph key={i} hexKey={k} size={12} />
-      ))}
-    </button>
+    <SkinnedPad
+      index={index}
+      active={active}
+      muted={muted}
+      soloed={soloed}
+      pressed={active}
+      pack={pack}
+      onTrigger={onTrigger}
+      renderLabels={() =>
+        digits.map((k, i) => <SlimeGlyph key={i} hexKey={k} size={12} />)
+      }
+    />
   );
 }
 
@@ -320,6 +313,7 @@ export function LivePads({
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const [layout, setLayout] = useState<LayoutMode>("tall");
   const [octaveMode, setOctaveMode] = useState<OctaveMode>("stacked");
+  const { pack, catalog, cycle } = useSkinPack();
 
   useEffect(() => {
     const el = containerRef.current;
@@ -432,6 +426,11 @@ export function LivePads({
             ))}
           </div>
         </div>
+        <SkinPackPicker
+          catalog={catalog}
+          activeId={pack?.manifest.id}
+          onCycle={cycle}
+        />
         <div className="flex items-center gap-1">
           <span style={{ fontSize: "8px", color: "#999999", letterSpacing: "1px" }}>KIT</span>
           <div className="flex items-center gap-0 border px-1" style={{ borderColor: "#555555" }}>
@@ -488,7 +487,8 @@ export function LivePads({
         style={{ flexDirection: isWide ? "row" : "column" }}
       >
         {/* 4x4 Pad grid */}
-        <div
+        <FaceplateShell
+          pack={pack}
           className="p-1"
           style={{
             flex: isWide ? "0 0 50%" : "1 1 0%",
@@ -514,12 +514,13 @@ export function LivePads({
                   active={activePad === i}
                   muted={mutedPads?.has(globalIdx)}
                   soloed={soloedPads?.has(globalIdx)}
+                  pack={pack}
                   onTrigger={() => handlePadTrigger(i)}
                 />
               );
             })}
           </div>
-        </div>
+        </FaceplateShell>
 
         {/* Tracker keyboard section */}
         <div
@@ -577,7 +578,7 @@ export function LivePads({
           lineHeight: "12px",
         }}
       >
-        SHIFT+W: UP/DN=BANK  L/R=KIT
+        SHIFT+W: UP/DN=BANK  L/R=KIT  ·  SKIN=FACEPLATE PACK
       </div>
     </div>
   );

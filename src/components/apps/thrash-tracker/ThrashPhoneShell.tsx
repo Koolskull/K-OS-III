@@ -20,7 +20,7 @@ import { padUrlFallbackChain, resolveButtonUrl, type ResolvedSkinPack } from "@/
  * SHIFT / CTRL step F1–F8. SPACE plays/pauses.
  */
 
-const BTN = 48;
+const BTN = 40;
 const GAP = 4;
 const CROSS = BTN * 3 + GAP * 2;
 const TUTORIAL_KEY = "thrash-phone-tutorial-dismissed";
@@ -34,7 +34,7 @@ const IDLE: CSSProperties = {
   background: "#0a0a0a",
   color: "#888888",
   fontFamily: "kongtext, monospace",
-  fontSize: "14px",
+  fontSize: "12px",
   lineHeight: 1,
   letterSpacing: "0px",
   whiteSpace: "nowrap",
@@ -217,7 +217,7 @@ function ChassisKeys({
         zIndex: 1,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "center", width: "100%", gap: 16, alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", gap: 12, alignItems: "center" }}>
         <Cross>
           <div />
           <PadButton label="UP" slot="up" pack={pack} onDown={() => startDir("up")} onUp={clearRepeat} />
@@ -233,8 +233,8 @@ function ChassisKeys({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 6,
-            width: 96,
+            gap: 4,
+            width: 80,
             flexShrink: 0,
           }}
         >
@@ -246,7 +246,7 @@ function ChassisKeys({
           </div>
         </div>
       </div>
-      <div style={{ height: 44, width: "100%", maxWidth: CROSS + 16 + 96 }}>
+      <div style={{ height: 36, width: "100%", maxWidth: CROSS + 12 + 80 }}>
         <PadButton label="SPACE" slot="space" pack={pack} onDown={() => press(" ", "Space")} onUp={noop} />
       </div>
     </div>
@@ -366,10 +366,11 @@ export function ThrashPhoneShell({
             display: "flex",
             justifyContent: "flex-end",
             alignItems: "center",
-            padding: "6px 8px 4px",
+            padding: "4px 8px 2px",
             position: "relative",
             zIndex: 1,
             gap: 8,
+            minHeight: 24,
           }}
         >
           <SkinPackPicker

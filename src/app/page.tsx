@@ -82,7 +82,7 @@ interface OpenWindow {
 }
 
 const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
-  "thrash-tracker": { title: TRACKER_TITLE, width: 1000, height: 620 },
+  "thrash-tracker": { title: TRACKER_TITLE, width: 1000, height: 720 },
   bible: { title: "HOLY BIBLE", width: 640, height: 500 },
   games: { title: "GAMES", width: 700, height: 550 },
   kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },

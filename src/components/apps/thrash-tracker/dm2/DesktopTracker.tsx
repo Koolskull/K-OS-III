@@ -46,6 +46,8 @@ interface Ui {
   cursorRow: number;
   cursorCol: number;
   nibble: number;
+  /** Which pair of hex digits the arrows edit. */
+  byte: number;
   octave: number;
   chainId: number;
   phraseId: number;
@@ -91,6 +93,7 @@ function freshUi(): Ui {
     cursorRow: 0,
     cursorCol: 0,
     nibble: 0,
+    byte: 0,
     octave: 4,
     chainId: 0,
     phraseId: 0,
@@ -179,21 +182,14 @@ function stepByte(value: number, empty: boolean, digits: number, pair: number, d
   return current >>> 0;
 }
 
-function stepHex(value: number, delta: number, coarse: boolean, maxValue = 255): number {
-  const hiMax = Math.max(0, Math.min(15, maxValue >> 4));
-  if (value < 0) {
-    const hi = coarse ? (delta > 0 ? Math.min(1, hiMax) : hiMax) : 0;
-    const lo = coarse ? 0 : (delta > 0 ? 1 : Math.min(15, maxValue));
-    return Math.min(maxValue, (hi << 4) | lo);
-  }
-  let hi = (value >> 4) & 0xf;
-  let lo = value & 0xf;
-  if (coarse) hi = clamp(hi + delta, 0, hiMax);
-  else {
-    const loMax = (hi << 4) + 15 <= maxValue ? 15 : (maxValue & 0xf);
-    lo = clamp(lo + delta, 0, loMax);
-  }
-  return Math.min(maxValue, (hi << 4) | lo);
+function stepHex(value: number, delta: number, coarse: boolean): number {
+  return stepByte(value, value < 0, 2, 0, delta, coarse) & 0xff;
+}
+
+function hexPairs(screen: ScreenName, col: number): number {
+  if (screen === "phrase" && col === 3) return 2;
+  if (screen === "phrase" && col === 4) return 4;
+  return 1;
 }
 
 function stepKnob(value: number, delta: number, coarse: boolean, lo: number, hi: number, big: number): number {
@@ -473,7 +469,15 @@ function paint(
         const text = cellString(project, ui, row, col);
         const selected = row === ui.cursorRow && col === ui.cursorCol;
         const blank = text.length > 0 && /^[-+0]+$/.test(text) && text.includes("-");
-        drawGlyph(ctx, text, cx, y, blank ? "#777777" : "#ffffff", selected);
+        const pairs = hexPairs(ui.screen, col);
+        const ink = blank ? "#777777" : "#ffffff";
+        if (selected && pairs > 1) {
+          drawGlyph(ctx, text, cx, y, ink, false);
+          const pair = clamp(ui.byte, 0, pairs - 1);
+          drawGlyph(ctx, text.slice(pair * 2, pair * 2 + 2), cx + pair * 16, y, ink, true);
+        } else {
+          drawGlyph(ctx, text, cx, y, ink, selected);
+        }
         const width = Math.max(8, text.length * 8) + 8;
         hits.push({ x: cx - 2, y: y - 1, w: width, h: 14, kind: "cell", row, col });
         cx += charsOf(ui.screen, col) * 8 + 16;
@@ -572,6 +576,7 @@ function goTo(project: Project, ui: Ui, next: ScreenName, reset: boolean) {
   }
   ui.screen = next;
   ui.nibble = 0;
+  ui.byte = 0;
   ui.scroll = 0;
   if (reset) {
     ui.cursorRow = 0;
@@ -765,10 +770,10 @@ function nudgeCell(project: Project, ui: Ui, delta: number, coarse: boolean) {
       cell.volume = stepHex(cell.volume, delta, coarse);
       ui.status = `VL ${hex2(cell.volume)}`;
     } else if (ui.cursorCol === 3) {
-      cell.slice = stepByte(cell.slice, cell.slice < 0, 4, 0, delta, coarse) & 0xffff;
+      cell.slice = stepByte(cell.slice, cell.slice < 0, 4, ui.byte, delta, coarse) & 0xffff;
       ui.status = `SL ${hexWide(cell.slice, 4)}`;
     } else if (ui.cursorCol === 4) {
-      cell.loop = stepByte(cell.loop, cell.loop < 0, 8, 0, delta, coarse);
+      cell.loop = stepByte(cell.loop, cell.loop < 0, 8, ui.byte, delta, coarse);
       ui.status = `LP ${hexWide(cell.loop, 8)}`;
     }
     return;
@@ -1156,6 +1161,16 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           return;
         }
         ui.nibble = 0;
+        if (dCol !== 0) {
+          const pairs = hexPairs(ui.screen, ui.cursorCol);
+          if (pairs > 1) {
+            const next = ui.byte + dCol;
+            if (next >= 0 && next < pairs) {
+              ui.byte = next;
+              return;
+            }
+          }
+        }
         ui.cursorRow = clamp(ui.cursorRow + dRow, 0, Math.max(0, rowCount(project, ui) - 1));
         ui.cursorCol = clamp(ui.cursorCol + dCol, 0, Math.max(0, colCount(ui.screen) - 1));
         return;
@@ -1333,6 +1348,8 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           ui.cursorRow = hit.row;
           ui.cursorCol = hit.col;
           ui.nibble = 0;
+          const pairs = hexPairs(ui.screen, hit.col);
+          ui.byte = pairs > 1 ? clamp(Math.floor((x - (hit.x + 2)) / 16), 0, pairs - 1) : 0;
         }}
         style={{
           width: "100%",

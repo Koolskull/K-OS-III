@@ -44,7 +44,7 @@ export interface Effect {
 }
 
 export const TRACKER_NAME = "THRASH TRACKER PRO";
-export const TRACKER_VERSION = "v0.50";
+export const TRACKER_VERSION = "v0.51";
 export const TRACKER_TITLE = `${TRACKER_NAME} ${TRACKER_VERSION}`;
 
 export interface Cell {

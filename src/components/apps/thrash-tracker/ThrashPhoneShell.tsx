@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
 
 /**
- * Phone tracker. Grid on top. Under it, the old Datamoshpit controls:
- * the tracker key view, then the round Game Boy pad. Left cross moves.
- * Right cross is SH, SP, W, and Q. No backdrop.
+ * Thrash Tracker app body. Grid on top. Under it, the old Datamoshpit
+ * controls: the tracker key view, then the round Game Boy pad.
+ * Left cross moves. Right cross is SH, SP, W, and Q. No backdrop.
+ * The desktop icon opens this inside a window.
  */
 
 const BTN = 44;
@@ -469,7 +470,7 @@ export function ThrashPhoneShell({
   embedded = false,
 }: {
   isFocused: boolean;
-  /** Fill the desktop window instead of the viewport. The icon always uses this. */
+  /** Fill the desktop app window. */
   embedded?: boolean;
 }) {
   return (

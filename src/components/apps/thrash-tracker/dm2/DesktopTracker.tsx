@@ -1077,8 +1077,40 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
       }
     };
 
+    const onNote = (event: Event) => {
+      if (!focusedRef.current) return;
+      const detail = (event as CustomEvent<{ key?: string }>).detail;
+      const key = (detail?.key ?? "").toLowerCase();
+      const ui = uiRef.current;
+      const project = projectRef.current;
+      const note = pianoNote(key, ui.octave);
+      if (note < 0) return;
+      if (ui.screen !== "phrase") goTo(project, ui, "phrase", false);
+      ui.cursorCol = 0;
+      const cell = cellAt(project.phrases[ui.phraseId], ui.cursorRow);
+      cell.note = note;
+      if (cell.instrument < 0) cell.instrument = 0;
+      if (cell.volume < 0) cell.volume = 0x80;
+      project.phrases[ui.phraseId].used = true;
+      ui.status = noteName(note);
+      const instrument = cell.instrument;
+      try {
+        localStorage.setItem(STORAGE, serialize(project, false));
+      } catch {
+        ui.status = "PATTERN TOO LARGE FOR THIS BROWSER";
+      }
+      void playerRef.current?.resume().then(() => {
+        playerRef.current?.pushProject(project);
+        playerRef.current?.tap(note, instrument);
+      });
+    };
+
     window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    window.addEventListener("thrash-note", onNote);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("thrash-note", onNote);
+    };
   }, []);
 
   const pointOf = (event: React.MouseEvent) => {

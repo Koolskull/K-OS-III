@@ -105,6 +105,10 @@ export class WebPlayer {
     for (const sample of project.samples) this.pushSample(sample);
   }
 
+  tap(note: number, instrument: number) {
+    this.send({ type: "tap", note, instrument });
+  }
+
   pushSample(sample: SampleData) {
     const pcm = sample.pcm.slice();
     this.send({ type: "sample", id: sample.id, rate: sample.rate, pcm }, [pcm.buffer]);

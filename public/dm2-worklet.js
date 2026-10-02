@@ -308,6 +308,7 @@ class Dm2Processor extends AudioWorkletProcessor {
     this.scope = new Float32Array(256);
     this.scopeWrite = 0;
     this.pluginWarned = false;
+    this.preview = freshVoice();
     this.port.onmessage = (event) => this.onMessage(event.data);
   }
 
@@ -319,6 +320,7 @@ class Dm2Processor extends AudioWorkletProcessor {
     else if (msg.type === "song") this.startSong(msg.row | 0);
     else if (msg.type === "land") this.landRange(msg.row | 0, msg.from | 0, msg.to | 0);
     else if (msg.type === "audition") this.audition(msg);
+    else if (msg.type === "tap") this.tap(msg.note | 0, msg.instrument | 0);
     else if (msg.type === "sequencer") this.seq = msg.mode === "live" ? "live" : "song";
     else if (msg.type === "mute") {
       const ch = clamp(msg.channel | 0, 0, CHANNELS - 1);
@@ -376,6 +378,30 @@ class Dm2Processor extends AudioWorkletProcessor {
     }
     this.kind = this.seq === "live" ? "live" : "song";
     this.playing = true;
+  }
+
+  tap(note, instrumentId) {
+    if (!this.project) return;
+    const inst = this.project.instruments[clamp(instrumentId | 0, 0, this.project.instruments.length - 1)];
+    const face = faceOf(inst, 0);
+    if (!face) return;
+    this.trigger(this.preview, face, note);
+    this.preview.rowGain = 1;
+    this.preview.tapLeft = Math.floor(sampleRate * 0.35);
+  }
+
+  mixPreview(left, right, offset, count, rate) {
+    const voice = this.preview;
+    if (!voice || (!voice.gate && voice.level <= 0.0008)) return;
+    for (let i = 0; i < count; i++) {
+      if (voice.tapLeft > 0) {
+        voice.tapLeft -= 1;
+        if (voice.tapLeft <= 0) voice.gate = false;
+      }
+      const sample = Math.tanh(this.renderVoice(voice, rate));
+      left[offset + i] += sample;
+      if (right !== left) right[offset + i] += sample;
+    }
   }
 
   audition(msg) {
@@ -614,6 +640,7 @@ class Dm2Processor extends AudioWorkletProcessor {
     if (!this.playing || !this.project) {
       left.fill(0);
       if (right !== left) right.fill(0);
+      if (this.project) this.mixPreview(left, right, 0, frames, sampleRate);
       return true;
     }
     const rate = sampleRate;
@@ -642,6 +669,7 @@ class Dm2Processor extends AudioWorkletProcessor {
         const outR = Math.tanh(mixR);
         left[offset + i] = outL;
         if (right !== left) right[offset + i] = outR;
+        this.mixPreview(left, right, offset + i, 1, rate);
         this.scope[this.scopeWrite] = (outL + outR) * 0.5;
         this.scopeWrite = (this.scopeWrite + 1) % this.scope.length;
       }

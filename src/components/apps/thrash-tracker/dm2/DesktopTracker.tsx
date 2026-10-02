@@ -357,11 +357,10 @@ function paint(
   head: PlayHead,
   hits: Hit[],
   backdrop = true,
-  phone = false,
 ) {
   hits.length = 0;
   ctx.imageSmoothingEnabled = false;
-  ctx.font = phone ? "8px kongtext, monospace" : "12px courier-pixel, monospace";
+  ctx.font = "11px courier-pixel, monospace";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, W, H);
@@ -855,7 +854,7 @@ interface TrackerProps {
   isFocused: boolean;
   /** Scrolling field, scope, and symbol flights behind the grid. Phone route turns this off. */
   backdrop?: boolean;
-  /** Phone route: Kongtext in the grid. Desktop keeps Courier Pixel. */
+  /** Phone route: the same Courier Pixel grid, with the on-screen pad under it. */
   phone?: boolean;
 }
 
@@ -880,9 +879,8 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
   }, [backdrop]);
 
   useEffect(() => {
-    if (!phone) return;
-    void document.fonts.load("8px kongtext");
-  }, [phone]);
+    void document.fonts.load("11px courier-pixel");
+  }, []);
 
   useEffect(() => {
     const player = new WebPlayer();
@@ -940,7 +938,7 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
       const ctx = canvas?.getContext("2d");
       if (ctx) {
         uiRef.current.clock += 1;
-        paint(ctx, projectRef.current, uiRef.current, headRef.current, hitsRef.current, backdropRef.current, phoneRef.current);
+        paint(ctx, projectRef.current, uiRef.current, headRef.current, hitsRef.current, backdropRef.current);
       }
       frame = requestAnimationFrame(loop);
     };

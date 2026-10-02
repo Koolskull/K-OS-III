@@ -20,21 +20,39 @@ export function SkinPackPicker({
   activeId,
   onCycle,
 }: SkinPackPickerProps) {
+  const [clicks, setClicks] = React.useState(0);
+  const lastFire = React.useRef(0);
   if (catalog.length === 0) return null;
   const active = catalog.find((p) => p.id === activeId) ?? catalog[0];
   const label = (active?.name ?? "SKIN").slice(0, 16);
+
+  const fire = () => {
+    const now = Date.now();
+    // Debounce: pointerup + click often both fire for one press
+    if (now - lastFire.current < 250) return;
+    lastFire.current = now;
+    setClicks((n) => n + 1);
+    onCycle();
+  };
 
   return (
     <button
       type="button"
       data-testid="skin-pack-picker"
+      data-clicks={clicks}
+      data-active-id={activeId ?? ""}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onCycle();
+        fire();
+      }}
+      onPointerUp={(e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        fire();
       }}
       onPointerDown={(e) => {
-        // Beat phone PadButton pointer capture for a clean click
         e.stopPropagation();
       }}
       title={`Faceplate pack: ${active?.name ?? "?"} — click to cycle (${catalog.length} packs)`}
@@ -48,12 +66,12 @@ export function SkinPackPicker({
         background: "#1a1a1a",
         borderWidth: 2,
         borderStyle: "solid",
-        borderColor: "#888888",
+        borderColor: "#ffffff",
         padding: "4px 8px",
         cursor: "pointer",
         imageRendering: "pixelated",
-        minWidth: "120px",
-        minHeight: "28px",
+        minWidth: "140px",
+        minHeight: "32px",
         textAlign: "center",
         overflow: "hidden",
         textOverflow: "ellipsis",
@@ -61,6 +79,7 @@ export function SkinPackPicker({
       }}
     >
       SKIN:{label}
+      {clicks > 0 ? ` #${clicks}` : ""}
     </button>
   );
 }

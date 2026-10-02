@@ -139,6 +139,50 @@ function putHex(current: number, empty: boolean, digit: number, nibble: number):
   return { value: (current & 0xf0) | digit, nibble: 0 };
 }
 
+/** Up and down step the high nibble. Left and right step the low nibble. */
+function stepHex(value: number, delta: number, coarse: boolean, maxValue = 255): number {
+  const hiMax = Math.max(0, Math.min(15, maxValue >> 4));
+  if (value < 0) {
+    const hi = coarse ? (delta > 0 ? Math.min(1, hiMax) : hiMax) : 0;
+    const lo = coarse ? 0 : (delta > 0 ? 1 : Math.min(15, maxValue));
+    return Math.min(maxValue, (hi << 4) | lo);
+  }
+  let hi = (value >> 4) & 0xf;
+  let lo = value & 0xf;
+  if (coarse) hi = clamp(hi + delta, 0, hiMax);
+  else {
+    const loMax = (hi << 4) + 15 <= maxValue ? 15 : (maxValue & 0xf);
+    lo = clamp(lo + delta, 0, loMax);
+  }
+  return Math.min(maxValue, (hi << 4) | lo);
+}
+
+function stepKnob(value: number, delta: number, coarse: boolean, lo: number, hi: number, big: number): number {
+  const step = coarse ? big : 1;
+  if (value < lo) return delta > 0 ? lo : hi;
+  return clamp(value + delta * step, lo, hi);
+}
+
+const NUDGE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+function stepCmd(fx: { on: boolean; cmd: string }, delta: number, coarse: boolean) {
+  let text = fx.on ? fx.cmd.toUpperCase() : "";
+  if (text.length < 2) text = "00";
+  text = text.slice(0, 2);
+  const side = coarse ? 0 : 1;
+  const index = clamp(Math.max(0, NUDGE_ALPHABET.indexOf(text[side] ?? "0")) + delta, 0, NUDGE_ALPHABET.length - 1);
+  const chars = text.split("");
+  chars[side] = NUDGE_ALPHABET[index];
+  fx.cmd = chars.join("");
+  fx.on = true;
+}
+
+function cycleStep(step: number, delta: number): number {
+  const order = [-1, 0, 1, 2, 3];
+  const index = Math.max(0, order.indexOf(step));
+  return order[clamp(index + (delta > 0 ? 1 : -1), 0, order.length - 1)];
+}
+
 function clamp(value: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, value));
 }
@@ -267,11 +311,20 @@ function transportWord(ui: Ui, head: PlayHead): string {
   return "PLAY";
 }
 
-function drawGlyph(ctx: CanvasRenderingContext2D, value: string, x: number, y: number, ink: string, invert: boolean) {
-  const width = Math.max(8, value.length * 8);
+function drawGlyph(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  ink: string,
+  invert: boolean,
+  cell = 8,
+  boxH = 14,
+) {
+  const width = Math.max(cell, value.length * cell);
   if (invert) {
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(x - 1, y - 1, width + 2, 14);
+    ctx.fillRect(x - 1, y - 1, width + 2, boxH);
     ctx.fillStyle = "#000000";
   } else {
     ctx.fillStyle = ink;
@@ -623,6 +676,109 @@ function applyHex(project: Project, ui: Ui, digit: number) {
   }
 }
 
+function nudgeCell(project: Project, ui: Ui, delta: number, coarse: boolean) {
+  if (delta === 0) return;
+  if (ui.screen === "song") {
+    if (ui.cursorCol >= CHANNELS) {
+      const target = songStepTarget(project, ui.cursorRow);
+      if (!target) {
+        ui.status = "NO PHRASE";
+        return;
+      }
+      const cell = cellAt(project.phrases[target.phraseId], target.row);
+      cell.step = cycleStep(cell.step ?? -1, delta);
+      project.phrases[target.phraseId].used = true;
+      ui.status = `STEP ${stepGlyph(cell.step)}`;
+      return;
+    }
+    const id = stepHex(project.song[ui.cursorRow][ui.cursorCol], delta, coarse);
+    project.song[ui.cursorRow][ui.cursorCol] = id;
+    project.chains[id].used = true;
+    ui.status = `CHAIN ${hex2(id)}`;
+    return;
+  }
+  if (ui.screen === "chain") {
+    const step = project.chains[ui.chainId].steps[ui.cursorRow];
+    project.chains[ui.chainId].used = true;
+    if (ui.cursorCol === 0) {
+      step.phrase = stepHex(step.phrase, delta, coarse);
+      project.phrases[step.phrase].used = true;
+      ui.status = `PHRASE ${hex2(step.phrase)}`;
+    } else {
+      step.transpose = stepKnob(step.transpose, delta, coarse, -48, 48, 12);
+      ui.status = `TR ${step.transpose}`;
+    }
+    return;
+  }
+  if (ui.screen === "phrase") {
+    const cell = cellAt(project.phrases[ui.phraseId], ui.cursorRow);
+    project.phrases[ui.phraseId].used = true;
+    if (ui.cursorCol === 0) {
+      if (cell.note < 0) cell.note = clamp((ui.octave + 1) * 12, 0, 127);
+      const next = cell.note + (coarse ? delta * 12 : delta);
+      if (next >= 0 && next <= 127) cell.note = next;
+      if (cell.instrument < 0) cell.instrument = 0;
+      if (cell.volume < 0) cell.volume = 0x80;
+      ui.status = noteName(cell.note);
+    } else if (ui.cursorCol === 1) {
+      cell.instrument = stepHex(cell.instrument, delta, coarse);
+      ui.instrumentId = cell.instrument;
+      ui.status = `IN ${hex2(cell.instrument)}`;
+    } else if (ui.cursorCol === 2) {
+      cell.volume = stepHex(cell.volume, delta, coarse);
+      ui.status = `VL ${hex2(cell.volume)}`;
+    } else if (ui.cursorCol === 3) {
+      cell.slice = stepHex(cell.slice, delta, coarse);
+      ui.status = `SL ${hex2(cell.slice)}`;
+    } else if (ui.cursorCol === 4) {
+      const next = stepHex(cell.loop < 0 ? -1 : cell.loop & 0xff, delta, coarse);
+      cell.loop = next;
+      ui.status = `LP ${next.toString(16).toUpperCase().padStart(4, "0")}`;
+    } else if (ui.cursorCol === 5) {
+      stepCmd(cell.fx, delta, coarse);
+      ui.status = `FX ${cell.fx.cmd}`;
+    } else if (ui.cursorCol === 6) {
+      cell.fx.value = stepHex(cell.fx.on ? cell.fx.value : -1, delta, coarse);
+      cell.fx.on = true;
+      if (!cell.fx.cmd) cell.fx.cmd = "00";
+      ui.status = `VA ${hex2(cell.fx.value)}`;
+    } else if (ui.cursorCol === 7) {
+      cell.step = cycleStep(cell.step ?? -1, delta);
+      ui.status = `STEP ${stepGlyph(cell.step)}`;
+    }
+    return;
+  }
+  if (ui.screen === "table") {
+    const row = tableRowAt(project.tables[ui.tableId], ui.cursorRow);
+    project.tables[ui.tableId].used = true;
+    if (ui.cursorCol === 0) {
+      if (!row.transposeOn) row.transpose = 0;
+      row.transposeOn = true;
+      row.transpose = stepKnob(row.transpose, delta, coarse, -48, 48, 12);
+      ui.status = `TP ${row.transpose}`;
+    } else if (ui.cursorCol === 1) row.slice = stepHex(row.slice, delta, coarse);
+    else if (ui.cursorCol === 2) row.repeatCount = stepHex(row.repeatCount, delta, coarse);
+    else if (ui.cursorCol === 3) row.repeatRate = stepHex(row.repeatRate, delta, coarse);
+    else if (ui.cursorCol === 4) row.filterMode = stepKnob(row.filterMode, delta, coarse, 0, 2, 1);
+    else if (ui.cursorCol === 5) row.cutoff = stepHex(row.cutoff, delta, coarse);
+    else if (ui.cursorCol === 6) row.resonance = stepHex(row.resonance, delta, coarse);
+    else if (ui.cursorCol === 7) row.crushRate = stepHex(row.crushRate, delta, coarse);
+    else if (ui.cursorCol === 8) row.crushBits = stepKnob(row.crushBits, delta, coarse, 0, 16, 4);
+    else if (ui.cursorCol === 9) row.vstSlot = stepHex(row.vstSlot, delta, coarse);
+    else if (ui.cursorCol === 10) row.vstParam = stepHex(row.vstParam, delta, coarse);
+    else if (ui.cursorCol === 11) row.vstValue = stepHex(row.vstValue, delta, coarse);
+    else if (ui.cursorCol === 12) stepCmd(row.fx1, delta, coarse);
+    else if (ui.cursorCol === 13) {
+      row.fx1.value = stepHex(row.fx1.on ? row.fx1.value : -1, delta, coarse);
+      row.fx1.on = true;
+    } else if (ui.cursorCol === 14) stepCmd(row.fx2, delta, coarse);
+    else {
+      row.fx2.value = stepHex(row.fx2.on ? row.fx2.value : -1, delta, coarse);
+      row.fx2.on = true;
+    }
+  }
+}
+
 function clearCell(project: Project, ui: Ui) {
   if (ui.screen === "song") {
     if (ui.cursorCol >= CHANNELS) {
@@ -811,9 +967,10 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
       const project = projectRef.current;
       const key = event.key;
       const code = event.code;
-      const ctrl = event.ctrlKey || event.metaKey;
-      const shift = event.shiftKey;
-      const alt = event.altKey;
+      const stamped = (window as Window & { __thrashMods?: { shift: boolean; ctrl: boolean; alt: boolean } | null }).__thrashMods;
+      const ctrl = event.ctrlKey || event.metaKey || !!stamped?.ctrl;
+      const shift = event.shiftKey || !!stamped?.shift;
+      const alt = event.altKey || !!stamped?.alt;
 
       if (key === " " || key.startsWith("Arrow") || key.startsWith("F") || key === "Escape" || key === "Enter" || key === "Backspace" || key === "Delete") {
         event.preventDefault();
@@ -968,14 +1125,16 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           ui.status = `CHAIN ${hex2(ui.chainId)}`;
           return;
         }
-        if (ctrl && (ui.screen === "instrument" || ui.screen === "project" || ui.screen === "layer")) {
-          if (ui.screen === "instrument") nudgeInstrument(project, ui, dCol !== 0 ? dCol : -dRow, dRow !== 0);
-          else if (ui.screen === "project" && ui.cursorRow === 1) project.bpm = clamp(project.bpm + (dRow !== 0 ? -dRow * 4 : dCol), 40, 240);
-          else if (ui.screen === "project" && ui.cursorRow === 2) project.tpb = clamp(project.tpb + (dCol || -dRow), 1, 16);
+        if (ctrl && !shift) {
+          const delta = dRow !== 0 ? -dRow : dCol;
+          const coarse = dRow !== 0;
+          if (ui.screen === "instrument") nudgeInstrument(project, ui, delta, coarse);
+          else if (ui.screen === "project" && ui.cursorRow === 1) project.bpm = clamp(project.bpm + (coarse ? delta * 4 : delta), 40, 240);
+          else if (ui.screen === "project" && ui.cursorRow === 2) project.tpb = clamp(project.tpb + delta, 1, 16);
           else if (ui.screen === "layer") {
             const phrase = project.phrases[ui.phraseId];
-            phrase.gain[ui.cursorRow] = clamp((phrase.gain[ui.cursorRow] ?? 0) + (dRow !== 0 ? -dRow * 8 : dCol), 0, 127);
-          }
+            phrase.gain[ui.cursorRow] = clamp((phrase.gain[ui.cursorRow] ?? 0) + (coarse ? delta * 8 : delta), 0, 127);
+          } else nudgeCell(project, ui, delta, coarse);
           sync();
           return;
         }

@@ -6,8 +6,8 @@ import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
 /**
  * Thrash Tracker app body. Grid on top. Under it, the old Datamoshpit
  * controls: the tracker key view, then the round Game Boy pad.
- * Left cross moves. Right cross is ALT, SHIFT, ESC, and CTRL.
- * Space sits at the bottom between the two crosses. No backdrop.
+ * Left cross moves. Right cross is ALT, SHIFT, DEL, and CTRL.
+ * A red ESC sits in the top right. Space sits between the two crosses.
  * The desktop icon opens this inside a window.
  */
 
@@ -58,6 +58,8 @@ const ARROW: Record<Dir, string> = {
 };
 
 function press(key: string, code: string, shift = false, ctrl = false, alt = false) {
+  const host = window as Window & { __thrashMods?: { shift: boolean; ctrl: boolean; alt: boolean } | null };
+  host.__thrashMods = { shift, ctrl, alt };
   window.dispatchEvent(
     new KeyboardEvent("keydown", {
       key,
@@ -69,6 +71,7 @@ function press(key: string, code: string, shift = false, ctrl = false, alt = fal
       altKey: alt,
     }),
   );
+  host.__thrashMods = null;
 }
 
 function Cross({ children }: { children: ReactNode }) {
@@ -89,30 +92,17 @@ function Cross({ children }: { children: ReactNode }) {
   );
 }
 
-const ESC_IDLE: CSSProperties = {
-  ...IDLE,
-  background: "#3a0000",
-  color: "#ffb0b0",
-  borderColor: "#8a2020",
-};
-
-const ESC_HOT: CSSProperties = {
-  ...ESC_IDLE,
-  background: "#ff2020",
-  color: "#000000",
-  borderColor: "#ff2020",
-};
-
 function PadButton({
   label,
   onDown,
   onUp,
-  esc = false,
+  hold = false,
 }: {
   label: string;
   onDown: () => void;
   onUp: () => void;
-  esc?: boolean;
+  /** Stay down if the browser cancels the finger when a second key is pressed. */
+  hold?: boolean;
 }) {
   const [hot, setHot] = useState(false);
   const down = useCallback(() => {
@@ -129,7 +119,7 @@ function PadButton({
       type="button"
       aria-label={label}
       className="dm-touch-btn-circle"
-      style={esc ? (hot ? ESC_HOT : ESC_IDLE) : (hot ? HOT : IDLE)}
+      style={hot ? HOT : IDLE}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -140,7 +130,7 @@ function PadButton({
         event.preventDefault();
         up();
       }}
-      onPointerCancel={up}
+      onPointerCancel={hold ? undefined : up}
     >
       {label}
     </button>
@@ -384,25 +374,27 @@ function DatamoshpitControls() {
           <div />
           <PadButton
             label="ALT"
+            hold
             onDown={() => { mods.current.alt = true; }}
             onUp={() => { mods.current.alt = false; }}
           />
           <div />
           <PadButton
             label="SHIFT"
+            hold
             onDown={() => { mods.current.shift = true; }}
             onUp={() => { mods.current.shift = false; }}
           />
           <div />
           <PadButton
-            label="ESC"
-            esc
-            onDown={() => press("Escape", "Escape")}
+            label="DEL"
+            onDown={() => press("Backspace", "Backspace")}
             onUp={() => {}}
           />
           <div />
           <PadButton
             label="CTRL"
+            hold
             onDown={() => { mods.current.ctrl = true; }}
             onUp={() => { mods.current.ctrl = false; }}
           />
@@ -424,6 +416,24 @@ const spaceButton: CSSProperties = {
   color: "#888888",
   fontFamily: "kongtext, monospace",
   fontSize: "8px",
+  letterSpacing: "1px",
+  cursor: "pointer",
+};
+
+const escapeButton: CSSProperties = {
+  position: "absolute",
+  top: 6,
+  right: 6,
+  zIndex: 5,
+  height: 36,
+  minWidth: 72,
+  padding: "0 10px",
+  border: "1px solid #ff2020",
+  borderRadius: 0,
+  background: "#8a0000",
+  color: "#ffd0d0",
+  fontFamily: "kongtext, monospace",
+  fontSize: "11px",
   letterSpacing: "1px",
   cursor: "pointer",
 };
@@ -487,8 +497,8 @@ function Tutorial() {
     >
       <p style={line}>LEFT PAD moves the cursor.</p>
       <p style={line}>Hold SHIFT and a direction to change screen.</p>
-      <p style={line}>Hold CTRL and a direction to edit a value.</p>
-      <p style={line}>SPACE plays and pauses. ESC stops. The keys write a note.</p>
+      <p style={line}>Hold CTRL and a direction to change the value. Up and down jump. Left and right step.</p>
+      <p style={line}>SPACE plays and pauses. DEL clears a cell. Red ESC stops.</p>
       <button
         type="button"
         onClick={dismiss}
@@ -532,6 +542,18 @@ export function ThrashPhoneShell({
     >
       <div style={{ flex: "1 1 0", minHeight: 0, position: "relative", overflow: "hidden" }}>
         <ThrashTrackerApp isFocused={isFocused} backdrop={false} phone />
+        <button
+          type="button"
+          aria-label="ESC"
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            press("Escape", "Escape");
+          }}
+          style={escapeButton}
+        >
+          ESC
+        </button>
       </div>
       <DatamoshpitControls />
       <Tutorial />

@@ -20,7 +20,6 @@ export function SkinPackPicker({
   activeId,
   onCycle,
 }: SkinPackPickerProps) {
-  const [clicks, setClicks] = React.useState(0);
   const lastFire = React.useRef(0);
   if (catalog.length === 0) return null;
   const active = catalog.find((p) => p.id === activeId) ?? catalog[0];
@@ -31,7 +30,6 @@ export function SkinPackPicker({
     // Debounce: pointerup + click often both fire for one press
     if (now - lastFire.current < 250) return;
     lastFire.current = now;
-    setClicks((n) => n + 1);
     onCycle();
   };
 
@@ -39,7 +37,6 @@ export function SkinPackPicker({
     <button
       type="button"
       data-testid="skin-pack-picker"
-      data-clicks={clicks}
       data-active-id={activeId ?? ""}
       onClick={(e) => {
         e.preventDefault();
@@ -79,7 +76,6 @@ export function SkinPackPicker({
       }}
     >
       SKIN:{label}
-      {clicks > 0 ? ` #${clicks}` : ""}
     </button>
   );
 }

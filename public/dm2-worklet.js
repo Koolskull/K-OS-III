@@ -15,6 +15,98 @@ function clamp(value, lo, hi) {
   return value < lo ? lo : value > hi ? hi : value;
 }
 
+function fractionOf(units, length) {
+  return ((units & 0xffff) / 65536) * length;
+}
+
+function wrapSample(pos, length) {
+  if (length <= 0) return 0;
+  let wrapped = pos % length;
+  if (wrapped < 0) wrapped += length;
+  return wrapped;
+}
+
+function wrapGrain(run, length) {
+  if (run.grain <= 0 || length <= 0) return;
+  const dir = run.reverse ? -1 : 1;
+  const end = run.anchor + dir * run.grain;
+  const over = (run.pos - end) * dir;
+  if (over < 0) return;
+  const steps = Math.floor(over / run.grain) + 1;
+  const into = over - (steps - 1) * run.grain;
+  run.anchor = wrapSample(run.anchor + steps * run.slide, length);
+  run.pos = wrapSample(run.anchor + dir * into, length);
+}
+
+function freshLane() {
+  return {
+    pos: 0,
+    anchor: 0,
+    tickStart: 0,
+    lastAdvance: 0,
+    ticks: 0,
+    travel: 0,
+    age: 0,
+    grain: 0,
+    slide: 0,
+    live: false,
+    reverse: false,
+  };
+}
+
+// slice is 0000-FFFF, or -1. loop is eight hex digits, or -1:
+// the high four move the grain and the low four are its length.
+function stepSampleRow(run, note, restart, reverse, length, slice, loop, nominal) {
+  if (length <= 0) return;
+  if (note) {
+    run.ticks = 0;
+    run.age = 0;
+    run.travel = 0;
+    run.lastAdvance = 0;
+    run.grain = 0;
+    run.slide = 0;
+    run.live = true;
+    run.reverse = reverse;
+    if (restart) run.pos = reverse ? length - 1 : 0;
+    run.anchor = run.pos;
+  } else if (!run.live) {
+    return;
+  } else {
+    run.reverse = reverse;
+    if (run.ticks > 0) {
+      run.age += 1;
+      if (run.age >= run.ticks) {
+        const step = run.lastAdvance > 0 ? run.lastAdvance : nominal;
+        run.anchor = wrapSample(run.anchor + run.travel * step, length);
+        run.pos = run.anchor;
+        run.age = 0;
+      }
+    }
+  }
+  if (slice >= 0) run.pos = fractionOf(slice, length);
+  if (loop >= 0) {
+    const loopBits = loop >>> 0;
+    const travelUnits = (loopBits >>> 16) & 0xffff;
+    const signedTravel = travelUnits >= 0x8000 ? travelUnits - 0x10000 : travelUnits;
+    const lengthUnits = loopBits & 0xffff;
+    if (lengthUnits <= 0) {
+      run.grain = 0;
+      run.slide = 0;
+      run.ticks = 0;
+      run.age = 0;
+    } else {
+      let grain = fractionOf(lengthUnits, length);
+      if (grain < 1) grain = 1;
+      run.grain = grain;
+      run.slide = (signedTravel / 65536) * length;
+      run.anchor = run.pos;
+      run.ticks = 0;
+      run.age = 0;
+    }
+  }
+  run.tickStart = run.pos;
+}
+
 function envSeconds(value) {
   if (value <= 0) return 0;
   const t = clamp(value, 0, 127) / 127;
@@ -227,6 +319,7 @@ function freshVoice() {
     sampleId: -1,
     phase: 0,
     pos: 0,
+    lane: freshLane(),
     noise: 0x12345678,
     level: 0,
     stage: 4,
@@ -430,7 +523,7 @@ class Dm2Processor extends AudioWorkletProcessor {
 
   cellOf(phrase, row) {
     const cell = phrase.rows[row];
-    return cell || { note: -1, instrument: -1, volume: -1, fx: { on: false, cmd: "--", value: 0 } };
+    return cell || { note: -1, instrument: -1, volume: -1, slice: -1, loop: -1, fx: { on: false, cmd: "--", value: 0 } };
   }
 
   trigger(voice, face, note) {
@@ -441,7 +534,17 @@ class Dm2Processor extends AudioWorkletProcessor {
     voice.osc = clamp(face.osc | 0, 0, 4);
     voice.phase = 0;
     voice.pos = 0;
+    voice.lane = freshLane();
     voice.sampleId = face.type === "sampler" ? face.sampleId : -1;
+    if (voice.sampleId >= 0) {
+      const stored = this.samples.get(voice.sampleId);
+      const count = stored ? stored.pcm.length : 0;
+      voice.lane.live = count > 0;
+      voice.lane.pos = 0;
+      voice.lane.anchor = 0;
+      voice.lane.tickStart = 0;
+      voice.pos = 0;
+    }
     voice.env = face.env || { a: 0, d: 64, s: 127, r: 0 };
     voice.volume = face.volume;
     voice.pan = face.pan;
@@ -553,6 +656,20 @@ class Dm2Processor extends AudioWorkletProcessor {
         } else if (sequence.note >= 0 && inst && inst.type === "plugin") {
           this.trigger(voice, { type: "plugin", osc: 0, sampleId: -1, env: voice.env, volume: 0, pan: 64, ym: null }, sequence.note);
         }
+        if (face && face.type === "sampler") {
+          const id = voice.sampleId >= 0 ? voice.sampleId : face.sampleId;
+          const stored = id >= 0 ? this.samples.get(id) : null;
+          if (stored && stored.pcm.length > 0) {
+            if (!voice.lane) voice.lane = freshLane();
+            const midi = (voice.note | 0) + (voice.pitch | 0);
+            const ratio = (stored.rate / sampleRate) * Math.pow(2, (midi - 60) / 12);
+            const tickSamples = sampleRate * 60 / (Math.max(1, project.bpm) * Math.max(1, project.tpb | 0));
+            const slice = sequence.slice == null ? -1 : sequence.slice | 0;
+            const loop = sequence.loop == null ? -1 : sequence.loop | 0;
+            stepSampleRow(voice.lane, sequence.note >= 0, false, false, stored.pcm.length, slice, loop, tickSamples * Math.abs(ratio));
+            voice.pos = voice.lane.pos;
+          }
+        }
         if (sequence.fx && sequence.fx.on) {
           if (sequence.fx.cmd === "KL") voice.gate = false;
           else if (sequence.fx.cmd === "VO") voice.rowGain = clamp(sequence.fx.value, 0, 255) / 127;
@@ -610,16 +727,23 @@ class Dm2Processor extends AudioWorkletProcessor {
         voice.gate = false;
         return 0;
       }
-      const index = Math.floor(voice.pos);
-      if (index < 0 || index >= stored.pcm.length) {
-        voice.gate = false;
+      const lane = voice.lane || (voice.lane = freshLane());
+      const length = stored.pcm.length;
+      if (lane.grain > 0) wrapGrain(lane, length);
+      const readPos = lane.grain > 0 ? wrapSample(lane.pos, length) : lane.pos;
+      const index = Math.floor(readPos);
+      const ratio = (stored.rate / rate) * Math.pow(2, (midi - 60) / 12);
+      if (index < 0 || index >= length) {
+        if (lane.grain <= 0 && lane.ticks <= 0) voice.gate = false;
         return 0;
       }
-      const next = Math.min(stored.pcm.length - 1, index + 1);
-      const frac = voice.pos - index;
+      const next = Math.min(length - 1, index + 1);
+      const frac = readPos - index;
       sample = stored.pcm[index] * (1 - frac) + stored.pcm[next] * frac;
-      const ratio = (stored.rate / rate) * Math.pow(2, (midi - 60) / 12);
-      voice.pos += ratio;
+      lane.pos += lane.reverse ? -ratio : ratio;
+      lane.lastAdvance = Math.abs(lane.pos - lane.tickStart);
+      voice.pos = lane.pos;
+      if (lane.grain > 0) wrapGrain(lane, length);
     } else {
       const inc = hz / rate;
       const p = voice.phase;

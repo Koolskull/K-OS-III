@@ -1,6 +1,6 @@
 "use client";
 
-import { playbackSnapshot, type PlaybackProject, type Project, type SampleData } from "./model";
+import { TRACKER_VERSION, playbackSnapshot, type PlaybackProject, type Project, type SampleData } from "./model";
 
 export interface PlayHead {
   playing: boolean;
@@ -56,7 +56,7 @@ export class WebPlayer {
   private async start() {
     const ctx = new AudioContext();
     this.ctx = ctx;
-    await ctx.audioWorklet.addModule("/dm2-worklet.js");
+    await ctx.audioWorklet.addModule(`/dm2-worklet.js?${TRACKER_VERSION}`);
     const node = new AudioWorkletNode(ctx, "dm2-player", { outputChannelCount: [2] });
     node.connect(ctx.destination);
     node.port.onmessage = (event) => {

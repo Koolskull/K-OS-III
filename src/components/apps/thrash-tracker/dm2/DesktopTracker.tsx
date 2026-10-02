@@ -139,7 +139,46 @@ function putHex(current: number, empty: boolean, digit: number, nibble: number):
   return { value: (current & 0xf0) | digit, nibble: 0 };
 }
 
+function putWide(current: number, empty: boolean, digit: number, nibble: number, digits: number): { value: number; nibble: number } {
+  const index = empty || nibble <= 0 ? 0 : nibble;
+  const shift = (digits - 1 - index) * 4;
+  const place = 2 ** shift;
+  let value = empty || nibble <= 0 || current < 0 ? 0 : current >>> 0;
+  const higher = Math.floor(value / (place * 16)) * (place * 16);
+  const lower = value % place;
+  value = higher + digit * place + lower;
+  return { value, nibble: index + 1 >= digits ? 0 : index + 1 };
+}
+
+function hexWide(value: number, digits: number): string {
+  if (value < 0) return "-".repeat(digits);
+  return (value >>> 0).toString(16).toUpperCase().padStart(digits, "0").slice(-digits);
+}
+
 /** Up and down step the high nibble. Left and right step the low nibble. */
+function stepByte(value: number, empty: boolean, digits: number, pair: number, delta: number, coarse: boolean): number {
+  const bytes = digits / 2;
+  const shift = (bytes - 1 - clamp(pair, 0, bytes - 1)) * 8;
+  let hi = 0;
+  let lo = 0;
+  if (!empty) {
+    const byte = Math.floor((value >>> 0) / 2 ** shift) & 0xff;
+    hi = (byte >> 4) & 0xf;
+    lo = byte & 0xf;
+  }
+  if (empty) {
+    hi = coarse ? (delta > 0 ? 1 : 15) : 0;
+    lo = coarse ? 0 : (delta > 0 ? 1 : 15);
+  } else if (coarse) hi = (hi + delta) & 0xf;
+  else lo = (lo + delta) & 0xf;
+  let current = empty ? 0 : value >>> 0;
+  const place = 2 ** shift;
+  const higher = Math.floor(current / (place * 256)) * (place * 256);
+  const lower = current % place;
+  current = higher + ((hi << 4) | lo) * place + lower;
+  return current >>> 0;
+}
+
 function stepHex(value: number, delta: number, coarse: boolean, maxValue = 255): number {
   const hiMax = Math.max(0, Math.min(15, maxValue >> 4));
   if (value < 0) {
@@ -201,7 +240,7 @@ function rowCount(project: Project, ui: Ui): number {
 function colCount(screen: ScreenName): number {
   if (screen === "song") return CHANNELS + 1;
   if (screen === "chain") return 2;
-  if (screen === "phrase") return 8;
+  if (screen === "phrase") return 5;
   if (screen === "table") return 16;
   return 1;
 }
@@ -228,11 +267,8 @@ function phraseText(cell: Cell, col: number): string {
   if (col === 0) return cell.note < 0 ? "---" : noteName(cell.note);
   if (col === 1) return hexOrDash(cell.instrument);
   if (col === 2) return hexOrDash(cell.volume);
-  if (col === 3) return hexOrDash(cell.slice);
-  if (col === 4) return cell.loop < 0 ? "----" : (cell.loop & 0xffff).toString(16).toUpperCase().padStart(4, "0");
-  if (col === 5) return cell.fx.on ? cell.fx.cmd.slice(0, 2).padEnd(2, "-") : "--";
-  if (col === 6) return cell.fx.on ? hex2(cell.fx.value) : "--";
-  if (col === 7) return stepGlyph(cell.step ?? -1);
+  if (col === 3) return hexWide(cell.slice, 4);
+  if (col === 4) return hexWide(cell.loop, 8);
   return "";
 }
 
@@ -278,14 +314,15 @@ function cellString(project: Project, ui: Ui, row: number, col: number): string 
 function titles(screen: ScreenName): string[] {
   if (screen === "song") return ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "ST"];
   if (screen === "chain") return ["PH", "TR"];
-  if (screen === "phrase") return ["NT", "IN", "VL", "SL", "LP", "FX", "VA", "ST"];
+  if (screen === "phrase") return ["NT", "IN", "VL", "SL", "LP"];
   if (screen === "table") return ["TP", "SL", "RC", "RR", "FM", "CU", "RE", "CR", "CB", "VS", "VP", "VV", "F1", "V1", "F2", "V2"];
   return [];
 }
 
 function charsOf(screen: ScreenName, col: number): number {
   if (screen === "phrase" && col === 0) return 3;
-  if (screen === "phrase" && col === 4) return 4;
+  if (screen === "phrase" && col === 3) return 4;
+  if (screen === "phrase" && col === 4) return 8;
   if (screen === "chain" && col === 1) return 3;
   if (screen === "table" && col === 0) return 3;
   if (screen === "song") return 2;
@@ -634,14 +671,15 @@ function applyHex(project: Project, ui: Ui, digit: number) {
       ui.nibble = next.nibble;
       cell.volume = clamp(next.value, 0, 255);
     } else if (ui.cursorCol === 3) {
-      const next = put(cell.slice < 0 ? 0 : cell.slice, cell.slice < 0, digit, ui.nibble);
+      const next = putWide(cell.slice, cell.slice < 0, digit, ui.nibble, 4);
       ui.nibble = next.nibble;
-      cell.slice = clamp(next.value, 0, 255);
-    } else if (ui.cursorCol === 6) {
-      const next = put(cell.fx.value, !cell.fx.on, digit, ui.nibble);
+      cell.slice = next.value & 0xffff;
+      ui.status = `SL ${hexWide(cell.slice, 4)}`;
+    } else if (ui.cursorCol === 4) {
+      const next = putWide(cell.loop, cell.loop < 0, digit, ui.nibble, 8);
       ui.nibble = next.nibble;
-      cell.fx.on = true;
-      cell.fx.value = clamp(next.value, 0, 255);
+      cell.loop = next.value >>> 0;
+      ui.status = `LP ${hexWide(cell.loop, 8)}`;
     }
     return;
   }
@@ -727,23 +765,11 @@ function nudgeCell(project: Project, ui: Ui, delta: number, coarse: boolean) {
       cell.volume = stepHex(cell.volume, delta, coarse);
       ui.status = `VL ${hex2(cell.volume)}`;
     } else if (ui.cursorCol === 3) {
-      cell.slice = stepHex(cell.slice, delta, coarse);
-      ui.status = `SL ${hex2(cell.slice)}`;
+      cell.slice = stepByte(cell.slice, cell.slice < 0, 4, 0, delta, coarse) & 0xffff;
+      ui.status = `SL ${hexWide(cell.slice, 4)}`;
     } else if (ui.cursorCol === 4) {
-      const next = stepHex(cell.loop < 0 ? -1 : cell.loop & 0xff, delta, coarse);
-      cell.loop = next;
-      ui.status = `LP ${next.toString(16).toUpperCase().padStart(4, "0")}`;
-    } else if (ui.cursorCol === 5) {
-      stepCmd(cell.fx, delta, coarse);
-      ui.status = `FX ${cell.fx.cmd}`;
-    } else if (ui.cursorCol === 6) {
-      cell.fx.value = stepHex(cell.fx.on ? cell.fx.value : -1, delta, coarse);
-      cell.fx.on = true;
-      if (!cell.fx.cmd) cell.fx.cmd = "00";
-      ui.status = `VA ${hex2(cell.fx.value)}`;
-    } else if (ui.cursorCol === 7) {
-      cell.step = cycleStep(cell.step ?? -1, delta);
-      ui.status = `STEP ${stepGlyph(cell.step)}`;
+      cell.loop = stepByte(cell.loop, cell.loop < 0, 8, 0, delta, coarse);
+      ui.status = `LP ${hexWide(cell.loop, 8)}`;
     }
     return;
   }
@@ -791,8 +817,7 @@ function clearCell(project: Project, ui: Ui) {
     else if (ui.cursorCol === 1) cell.instrument = -1;
     else if (ui.cursorCol === 2) cell.volume = -1;
     else if (ui.cursorCol === 3) cell.slice = -1;
-    else if (ui.cursorCol === 5) cell.fx.on = false;
-    else if (ui.cursorCol === 7) cell.step = -1;
+    else if (ui.cursorCol === 4) cell.loop = -1;
   }
   ui.nibble = 0;
   ui.status = "CLEARED";
@@ -1067,21 +1092,15 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
       }
 
       const stepLetter = { l: 0, d: 1, u: 2, r: 3 }[key.toLowerCase()];
-      const onStepCol = (ui.screen === "phrase" && ui.cursorCol === 7) || (ui.screen === "song" && ui.cursorCol >= CHANNELS);
+      const onStepCol = ui.screen === "song" && ui.cursorCol >= CHANNELS;
       if (onStepCol && stepLetter !== undefined && !ctrl && !alt) {
-        if (ui.screen === "phrase") {
-          const cell = cellAt(project.phrases[ui.phraseId], ui.cursorRow);
-          cell.step = stepLetter;
-          project.phrases[ui.phraseId].used = true;
-        } else {
-          const target = songStepTarget(project, ui.cursorRow);
-          if (!target) {
-            ui.status = "NO PHRASE";
-            return;
-          }
-          cellAt(project.phrases[target.phraseId], target.row).step = stepLetter;
-          project.phrases[target.phraseId].used = true;
+        const target = songStepTarget(project, ui.cursorRow);
+        if (!target) {
+          ui.status = "NO PHRASE";
+          return;
         }
+        cellAt(project.phrases[target.phraseId], target.row).step = stepLetter;
+        project.phrases[target.phraseId].used = true;
         ui.status = `STEP ${stepGlyph(stepLetter)}`;
         sync();
         return;
@@ -1217,20 +1236,6 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           ui.nibble = 1;
         } else {
           fx.cmd = (fx.cmd[0] || "-") + letter;
-          ui.nibble = 0;
-        }
-        sync();
-        return;
-      }
-      if (ui.screen === "phrase" && ui.cursorCol === 5 && key.length === 1 && /[a-zA-Z]/.test(key)) {
-        const cell = cellAt(project.phrases[ui.phraseId], ui.cursorRow);
-        const letter = key.toUpperCase();
-        if (ui.nibble === 0) {
-          cell.fx.cmd = letter + "-";
-          cell.fx.on = true;
-          ui.nibble = 1;
-        } else {
-          cell.fx.cmd = (cell.fx.cmd[0] || "-") + letter;
           ui.nibble = 0;
         }
         sync();

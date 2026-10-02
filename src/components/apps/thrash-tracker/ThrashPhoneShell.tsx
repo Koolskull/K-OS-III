@@ -11,14 +11,17 @@ import {
 import { padUrlFallbackChain, resolveButtonUrl, type ResolvedSkinPack } from "@/lib/faceplates";
 
 /**
- * Phone tracker. Grid on top, Datamoshpit-style keys underneath, no backdrop.
- * The 2kool.tv desktop icon always opens this, on every viewport. The /thrash
- * route uses the same shell. SHIFT and CTRL step the F1-F8 screen list.
- * SPACE plays and pauses. Kongtext is drawn at 8px and shown at 2x (16px).
+ * Thrash Tracker as a handheld chassis.
+ *
+ * The tracker instance sits in a screen well. Faceplate art + keys decorate
+ * AROUND that screen — they are the device body, not a second panel jammed
+ * inside the AppWindow beside the grid.
+ *
+ * SHIFT / CTRL step F1–F8. SPACE plays/pauses.
  */
 
-const BTN = 56;
-const GAP = 6;
+const BTN = 48;
+const GAP = 4;
 const CROSS = BTN * 3 + GAP * 2;
 const TUTORIAL_KEY = "thrash-phone-tutorial-dismissed";
 
@@ -31,7 +34,7 @@ const IDLE: CSSProperties = {
   background: "#0a0a0a",
   color: "#888888",
   fontFamily: "kongtext, monospace",
-  fontSize: "16px",
+  fontSize: "14px",
   lineHeight: 1,
   letterSpacing: "0px",
   whiteSpace: "nowrap",
@@ -98,7 +101,6 @@ function buttonArtUrls(pack: ResolvedSkinPack | null, slot: string, hot: boolean
   const primary = resolveButtonUrl(pack, slot, state);
   const urls: string[] = [];
   if (primary) urls.push(primary);
-  // Fall back to shared pad art so a kit pack dresses the phone controls too
   for (const u of padUrlFallbackChain(pack, 0, state)) {
     if (!urls.includes(u)) urls.push(u);
   }
@@ -113,7 +115,6 @@ function PadButton({
   onUp,
 }: {
   label: string;
-  /** skin.json buttons/<slot> folder name */
   slot: string;
   pack: ResolvedSkinPack | null;
   onDown: () => void;
@@ -165,10 +166,14 @@ function PadButton({
   );
 }
 
-function ThrashKeys() {
+/** Chassis controls — sit on the faceplate body below the screen well. */
+function ChassisKeys({
+  pack,
+}: {
+  pack: ResolvedSkinPack | null;
+}) {
   const repeat = useRef<number | null>(null);
   const delay = useRef<number | null>(null);
-  const { pack, activeId, catalog, cycle } = useSkinPack();
 
   const clearRepeat = useCallback(() => {
     if (delay.current !== null) window.clearTimeout(delay.current);
@@ -192,8 +197,6 @@ function ThrashKeys() {
   }, [steer, clearRepeat]);
 
   const changePage = useCallback((delta: number) => {
-    // PageDown/PageUp with shift or ctrl. Phone handler calls goTo
-    // on the Shift+F1-F8 screen list, from the current screen.
     const code = delta > 0 ? "PageDown" : "PageUp";
     press(code, code, delta > 0, delta < 0);
   }, []);
@@ -201,26 +204,20 @@ function ThrashKeys() {
   const noop = useCallback(() => {}, []);
 
   return (
-    <FaceplateShell
-      pack={pack}
+    <div
       style={{
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        alignItems: "center",
+        gap: 6,
         padding: "8px 12px calc(8px + env(safe-area-inset-bottom))",
-        background: "#000000",
         touchAction: "none",
+        position: "relative",
+        zIndex: 1,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <SkinPackPicker
-          catalog={catalog}
-          activeId={activeId ?? pack?.manifest.id}
-          onCycle={cycle}
-        />
-      </div>
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", gap: 16, alignItems: "center" }}>
         <Cross>
           <div />
           <PadButton label="UP" slot="up" pack={pack} onDown={() => startDir("up")} onUp={clearRepeat} />
@@ -232,19 +229,27 @@ function ThrashKeys() {
           <PadButton label="DN" slot="down" pack={pack} onDown={() => startDir("down")} onUp={clearRepeat} />
           <div />
         </Cross>
-      </div>
-      <div style={{ display: "flex", gap: 8, height: 56 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <PadButton label="SHIFT" slot="shift" pack={pack} onDown={() => changePage(1)} onUp={noop} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            width: 96,
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ height: BTN }}>
+            <PadButton label="SHIFT" slot="shift" pack={pack} onDown={() => changePage(1)} onUp={noop} />
+          </div>
+          <div style={{ height: BTN }}>
+            <PadButton label="CTRL" slot="ctrl" pack={pack} onDown={() => changePage(-1)} onUp={noop} />
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <PadButton label="CTRL" slot="ctrl" pack={pack} onDown={() => changePage(-1)} onUp={noop} />
-        </div>
       </div>
-      <div style={{ height: 64 }}>
+      <div style={{ height: 44, width: "100%", maxWidth: CROSS + 16 + 96 }}>
         <PadButton label="SPACE" slot="space" pack={pack} onDown={() => press(" ", "Space")} onUp={noop} />
       </div>
-    </FaceplateShell>
+    </div>
   );
 }
 
@@ -303,7 +308,9 @@ function Tutorial() {
         style={{
           marginTop: 8,
           height: 64,
-          border: "1px solid #ffffff",
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: "#ffffff",
           background: "#ffffff",
           color: "#000000",
           fontFamily: "kongtext, monospace",
@@ -326,22 +333,75 @@ export function ThrashPhoneShell({
   /** Fill the desktop window instead of the viewport. The icon always uses this. */
   embedded?: boolean;
 }) {
+  const { pack, activeId, catalog, cycle } = useSkinPack();
+
   return (
     <main
       style={{
         position: embedded ? "absolute" : "fixed",
         inset: 0,
         background: "#000000",
-        display: "flex",
-        flexDirection: "column",
         overflow: "hidden",
         touchAction: "manipulation",
       }}
     >
-      <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", overflow: "hidden" }}>
-        <ThrashTrackerApp isFocused={isFocused} backdrop={false} phone />
-      </div>
-      <ThrashKeys />
+      {/*
+        One chassis: faceplate art is the device body.
+        Tracker lives in the screen well; keys decorate the body around it.
+      */}
+      <FaceplateShell
+        pack={pack}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "#0a0a0a",
+        }}
+      >
+        {/* Top bezel chrome — skin picker lives on the chassis, not in the screen */}
+        <div
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            padding: "6px 8px 4px",
+            position: "relative",
+            zIndex: 1,
+            gap: 8,
+          }}
+        >
+          <SkinPackPicker
+            catalog={catalog}
+            activeId={activeId ?? pack?.manifest.id}
+            onCycle={cycle}
+          />
+        </div>
+
+        {/* Screen well — the Thrash Tracker instance */}
+        <div
+          style={{
+            flex: "1 1 auto",
+            minHeight: 0,
+            margin: "0 10px",
+            position: "relative",
+            zIndex: 1,
+            borderWidth: 2,
+            borderStyle: "solid",
+            borderColor: "#222222",
+            background: "#000000",
+            boxShadow: "inset 0 0 0 1px #111111",
+            overflow: "hidden",
+          }}
+        >
+          <ThrashTrackerApp isFocused={isFocused} backdrop={false} phone />
+        </div>
+
+        {/* Chassis controls — decorate the faceplate body under the screen */}
+        <ChassisKeys pack={pack} />
+      </FaceplateShell>
+
       <Tutorial />
     </main>
   );

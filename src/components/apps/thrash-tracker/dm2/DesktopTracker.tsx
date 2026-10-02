@@ -1094,7 +1094,7 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
   };
 
   return (
-    <div style={{ width: "100%", height: "100%", background: "#000000", position: "relative", overflow: phone ? "auto" : "hidden" }}>
+    <div style={{ width: "100%", height: "100%", background: "#000000", position: "relative", overflow: "hidden" }}>
       <canvas
         ref={canvasRef}
         width={W}
@@ -1119,14 +1119,16 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           ui.nibble = 0;
         }}
         style={{
-          width: phone ? W * 2 : "100%",
-          height: phone ? H * 2 : "100%",
+          // Fill the chassis screen-well. Phone used to force 2× pixel size and
+          // overflow:auto, which shoved the tracker out of the faceplate frame.
+          width: "100%",
+          height: "100%",
           display: "block",
           imageRendering: "pixelated",
-          objectFit: phone ? "none" : "contain",
+          objectFit: "contain",
           background: "#000000",
           outline: "none",
-          touchAction: phone ? "pan-x pan-y" : "auto",
+          touchAction: phone ? "manipulation" : "auto",
         }}
       />
       <input

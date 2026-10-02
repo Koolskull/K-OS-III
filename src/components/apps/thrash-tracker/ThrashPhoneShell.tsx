@@ -485,7 +485,7 @@ export function ThrashPhoneShell({
         touchAction: "manipulation",
       }}
     >
-      <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: "1 1 0", minHeight: 0, position: "relative", overflow: "hidden" }}>
         <ThrashTrackerApp isFocused={isFocused} backdrop={false} phone />
       </div>
       <DatamoshpitControls />

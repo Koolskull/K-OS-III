@@ -288,8 +288,6 @@ function paint(
 ) {
   hits.length = 0;
   ctx.imageSmoothingEnabled = false;
-  // Phone draws 8px Kongtext so each glyph sits in the 8px cell. The route
-  // shows that bitmap at 2x, which reads at 16px. Desktop stays 12px Courier Pixel.
   ctx.font = phone ? "8px kongtext, monospace" : "12px courier-pixel, monospace";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#000000";
@@ -1126,7 +1124,7 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
   };
 
   return (
-    <div style={{ width: "100%", height: "100%", background: "#000000", position: "relative", overflow: phone ? "auto" : "hidden" }}>
+    <div style={{ width: "100%", height: "100%", background: "#000000", position: "relative", overflow: "hidden" }}>
       <canvas
         ref={canvasRef}
         width={W}
@@ -1151,14 +1149,14 @@ export function DesktopTracker({ isFocused, backdrop = true, phone = false }: Tr
           ui.nibble = 0;
         }}
         style={{
-          width: phone ? W * 2 : "100%",
-          height: phone ? H * 2 : "100%",
+          width: "100%",
+          height: "100%",
           display: "block",
           imageRendering: "pixelated",
-          objectFit: phone ? "none" : "contain",
+          objectFit: "contain",
           background: "#000000",
           outline: "none",
-          touchAction: phone ? "pan-x pan-y" : "auto",
+          touchAction: "manipulation",
         }}
       />
       <input

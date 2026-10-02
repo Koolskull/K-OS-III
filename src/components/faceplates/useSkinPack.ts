@@ -47,11 +47,16 @@ export function useSkinPack(preferredId?: string | null) {
 
   const cycle = useCallback(() => {
     if (catalog.length === 0) return;
-    const current = pack?.manifest.id;
-    const idx = Math.max(0, catalog.findIndex((p) => p.id === current));
-    const next = catalog[(idx + 1) % catalog.length];
-    void select(next.id);
-  }, [catalog, pack, select]);
+    setPack((current) => {
+      const id = current?.manifest.id;
+      const idx = catalog.findIndex((p) => p.id === id);
+      const from = idx >= 0 ? idx : 0;
+      const next = catalog[(from + 1) % catalog.length];
+      // Fire async load; optimistic label update via select()
+      void select(next.id);
+      return current;
+    });
+  }, [catalog, select]);
 
   useEffect(() => {
     let cancelled = false;

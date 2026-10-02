@@ -1,6 +1,6 @@
 /*
- *  Tiny skin-pack cycle control for the LIVE header.
- *  Click to rotate packs — artists get immediate feedback.
+ *  Skin-pack cycle control — big enough to hit on phone + desktop.
+ *  Click to rotate packs so artists get immediate feedback.
  */
 
 "use client";
@@ -22,26 +22,39 @@ export function SkinPackPicker({
 }: SkinPackPickerProps) {
   if (catalog.length === 0) return null;
   const active = catalog.find((p) => p.id === activeId) ?? catalog[0];
-  const label = (active?.name ?? "SKIN").slice(0, 14);
+  const label = (active?.name ?? "SKIN").slice(0, 16);
 
   return (
     <button
       type="button"
-      onClick={onCycle}
-      title="Cycle faceplate skin pack (build kit)"
+      data-testid="skin-pack-picker"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onCycle();
+      }}
+      onPointerDown={(e) => {
+        // Beat phone PadButton pointer capture for a clean click
+        e.stopPropagation();
+      }}
+      title={`Faceplate pack: ${active?.name ?? "?"} — click to cycle (${catalog.length} packs)`}
       style={{
-        fontFamily: "var(--dm-font-primary)",
-        fontSize: "8px",
+        position: "relative",
+        zIndex: 5,
+        fontFamily: "var(--dm-font-primary), kongtext, monospace",
+        fontSize: "10px",
         letterSpacing: "1px",
-        color: "#cccccc",
-        background: "#111111",
-        borderWidth: 1,
+        color: "#eeeeee",
+        background: "#1a1a1a",
+        borderWidth: 2,
         borderStyle: "solid",
-        borderColor: "#666666",
-        padding: "2px 6px",
+        borderColor: "#888888",
+        padding: "4px 8px",
         cursor: "pointer",
         imageRendering: "pixelated",
-        maxWidth: "96px",
+        minWidth: "120px",
+        minHeight: "28px",
+        textAlign: "center",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",

@@ -81,6 +81,7 @@ function emptyHead(): PlayHead {
     muted: [false, false, false, false, false, false, false, false],
     level: [0, 0, 0, 0, 0, 0, 0, 0],
     scope: new Float32Array(256),
+    wave: new Float32Array(8 * 64),
   };
 }
 
@@ -278,6 +279,24 @@ function drawGlyph(ctx: CanvasRenderingContext2D, value: string, x: number, y: n
   ctx.fillText(value, x, y);
 }
 
+function spectrumBins(wave: Float32Array, channel: number) {
+  const n = 64;
+  const bins = [0, 0, 0, 0, 0, 0, 0, 0];
+  if (wave.length < (channel + 1) * n) return bins;
+  for (let k = 0; k < bins.length; k++) {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * (k + 1)) / n;
+    for (let i = 0; i < n; i++) {
+      const sample = wave[channel * n + i] || 0;
+      re += sample * Math.cos(w * i);
+      im -= sample * Math.sin(w * i);
+    }
+    bins[k] = Math.min(1, Math.hypot(re, im) / (n * 0.2));
+  }
+  return bins;
+}
+
 function paint(
   ctx: CanvasRenderingContext2D,
   project: Project,
@@ -438,10 +457,13 @@ function paint(
     ctx.fillRect(x, y, 1, 44);
     ctx.fillRect(x + 111, y, 1, 44);
     const name = head.muted[ch] ? `X${ch}` : `C${ch}`;
-    drawGlyph(ctx, name, x + 4, y + 4, head.muted[ch] ? "#555555" : "#ffffff", false);
-    const level = clamp(head.level[ch] ?? 0, 0, 1);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(x + 4, y + 22, Math.round(level * 100), 8);
+    drawGlyph(ctx, name, x + 4, y + 2, head.muted[ch] ? "#555555" : "#ffffff", false);
+    const bins = spectrumBins(head.wave, ch);
+    ctx.fillStyle = head.muted[ch] ? "#333333" : "#ffffff";
+    for (let k = 0; k < bins.length; k++) {
+      const bh = Math.max(1, Math.round(bins[k] * 22));
+      ctx.fillRect(x + 4 + k * 13, y + 40 - bh, 11, bh);
+    }
     hits.push({ x, y, w: 112, h: 44, kind: "mixer", row: 0, col: ch });
   }
 }

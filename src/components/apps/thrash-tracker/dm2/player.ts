@@ -13,6 +13,7 @@ export interface PlayHead {
   muted: boolean[];
   level: number[];
   scope: Float32Array;
+  wave: Float32Array;
 }
 
 type HeadListener = (head: PlayHead) => void;
@@ -35,6 +36,7 @@ export class WebPlayer {
     muted: [false, false, false, false, false, false, false, false],
     level: [0, 0, 0, 0, 0, 0, 0, 0],
     scope: new Float32Array(256),
+    wave: new Float32Array(8 * 64),
   };
 
   onHead(listener: HeadListener) {
@@ -72,6 +74,7 @@ export class WebPlayer {
           muted: msg.muted,
           level: msg.level,
           scope: msg.scope instanceof Float32Array ? msg.scope : new Float32Array(msg.scope),
+          wave: msg.wave instanceof Float32Array ? msg.wave : new Float32Array(msg.wave ?? 8 * 64),
         };
         this.headListener?.(this.head);
       } else if (msg.type === "status") {

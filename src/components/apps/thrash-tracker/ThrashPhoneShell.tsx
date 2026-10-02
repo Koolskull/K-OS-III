@@ -6,7 +6,8 @@ import { ThrashTrackerApp } from "@/components/apps/ThrashTrackerApp";
 /**
  * Thrash Tracker app body. Grid on top. Under it, the old Datamoshpit
  * controls: the tracker key view, then the round Game Boy pad.
- * Left cross moves. Right cross is SH, SP, W, and Q. No backdrop.
+ * Left cross moves. Right cross is ALT, SHIFT, ESC, and CTRL.
+ * Space sits at the bottom between the two crosses. No backdrop.
  * The desktop icon opens this inside a window.
  */
 
@@ -56,7 +57,7 @@ const ARROW: Record<Dir, string> = {
   right: "ArrowRight",
 };
 
-function press(key: string, code: string, shift = false, ctrl = false) {
+function press(key: string, code: string, shift = false, ctrl = false, alt = false) {
   window.dispatchEvent(
     new KeyboardEvent("keydown", {
       key,
@@ -65,6 +66,7 @@ function press(key: string, code: string, shift = false, ctrl = false) {
       cancelable: true,
       shiftKey: shift,
       ctrlKey: ctrl,
+      altKey: alt,
     }),
   );
 }
@@ -87,14 +89,30 @@ function Cross({ children }: { children: ReactNode }) {
   );
 }
 
+const ESC_IDLE: CSSProperties = {
+  ...IDLE,
+  background: "#3a0000",
+  color: "#ffb0b0",
+  borderColor: "#8a2020",
+};
+
+const ESC_HOT: CSSProperties = {
+  ...ESC_IDLE,
+  background: "#ff2020",
+  color: "#000000",
+  borderColor: "#ff2020",
+};
+
 function PadButton({
   label,
   onDown,
   onUp,
+  esc = false,
 }: {
   label: string;
   onDown: () => void;
   onUp: () => void;
+  esc?: boolean;
 }) {
   const [hot, setHot] = useState(false);
   const down = useCallback(() => {
@@ -111,7 +129,7 @@ function PadButton({
       type="button"
       aria-label={label}
       className="dm-touch-btn-circle"
-      style={hot ? HOT : IDLE}
+      style={esc ? (hot ? ESC_HOT : ESC_IDLE) : (hot ? HOT : IDLE)}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -255,7 +273,7 @@ function NoteKey({
 function DatamoshpitControls() {
   const repeat = useRef<number | null>(null);
   const delay = useRef<number | null>(null);
-  const mods = useRef({ sh: false, q: false, w: false, steered: false });
+  const mods = useRef({ shift: false, alt: false, ctrl: false });
   const [held, setHeld] = useState("");
   const [octave, setOctave] = useState(4);
 
@@ -285,9 +303,8 @@ function DatamoshpitControls() {
   }, []);
 
   const steer = useCallback((dir: Dir) => {
-    const { sh, q, w } = mods.current;
-    if (sh || q) mods.current.steered = true;
-    press(ARROW[dir], ARROW[dir], sh || (sh && w), q || (sh && w));
+    const { shift, alt, ctrl } = mods.current;
+    press(ARROW[dir], ARROW[dir], shift, ctrl, alt);
   }, []);
 
   const startDir = useCallback((dir: Dir) => {
@@ -351,30 +368,43 @@ function DatamoshpitControls() {
           <PadButton label="DN" onDown={() => startDir("down")} onUp={clearRepeat} />
           <div />
         </Cross>
+        <button
+          type="button"
+          aria-label="SPACE"
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            press(" ", "Space");
+          }}
+          style={spaceButton}
+        >
+          SPACE
+        </button>
         <Cross>
           <div />
           <PadButton
-            label="SH"
-            onDown={() => { mods.current.sh = true; }}
-            onUp={() => { mods.current.sh = false; mods.current.steered = false; }}
-          />
-          <div />
-          <PadButton label="SP" onDown={() => press(" ", "Space")} onUp={() => {}} />
-          <div />
-          <PadButton
-            label="W"
-            onDown={() => { mods.current.w = true; }}
-            onUp={() => { mods.current.w = false; }}
+            label="ALT"
+            onDown={() => { mods.current.alt = true; }}
+            onUp={() => { mods.current.alt = false; }}
           />
           <div />
           <PadButton
-            label="Q"
-            onDown={() => { mods.current.q = true; mods.current.steered = false; }}
-            onUp={() => {
-              const place = mods.current.q && !mods.current.steered;
-              mods.current.q = false;
-              if (place) press("Enter", "Enter");
-            }}
+            label="SHIFT"
+            onDown={() => { mods.current.shift = true; }}
+            onUp={() => { mods.current.shift = false; }}
+          />
+          <div />
+          <PadButton
+            label="ESC"
+            esc
+            onDown={() => press("Escape", "Escape")}
+            onUp={() => {}}
+          />
+          <div />
+          <PadButton
+            label="CTRL"
+            onDown={() => { mods.current.ctrl = true; }}
+            onUp={() => { mods.current.ctrl = false; }}
           />
           <div />
         </Cross>
@@ -382,6 +412,21 @@ function DatamoshpitControls() {
     </div>
   );
 }
+
+const spaceButton: CSSProperties = {
+  flex: 1,
+  alignSelf: "flex-end",
+  height: BTN,
+  margin: "0 8px",
+  border: "1px solid #666666",
+  borderRadius: 0,
+  background: "#0a0a0a",
+  color: "#888888",
+  fontFamily: "kongtext, monospace",
+  fontSize: "8px",
+  letterSpacing: "1px",
+  cursor: "pointer",
+};
 
 const octaveButton: CSSProperties = {
   flex: 1,
@@ -441,9 +486,9 @@ function Tutorial() {
       }}
     >
       <p style={line}>LEFT PAD moves the cursor.</p>
-      <p style={line}>Hold SH and a direction to change screen.</p>
-      <p style={line}>Hold Q and a direction to edit. Tap Q to place.</p>
-      <p style={line}>SP plays and pauses. The keys write a note.</p>
+      <p style={line}>Hold SHIFT and a direction to change screen.</p>
+      <p style={line}>Hold CTRL and a direction to edit a value.</p>
+      <p style={line}>SPACE plays and pauses. ESC stops. The keys write a note.</p>
       <button
         type="button"
         onClick={dismiss}

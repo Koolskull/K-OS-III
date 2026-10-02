@@ -307,6 +307,10 @@ class Dm2Processor extends AudioWorkletProcessor {
     this.headAccum = 0;
     this.scope = new Float32Array(256);
     this.scopeWrite = 0;
+    this.waveN = 64;
+    this.wave = new Float32Array(8 * 64);
+    this.waveWrite = 0;
+    this.probe = new Float32Array(8);
     this.pluginWarned = false;
     this.preview = freshVoice();
     this.port.onmessage = (event) => this.onMessage(event.data);
@@ -341,6 +345,8 @@ class Dm2Processor extends AudioWorkletProcessor {
 
   stop() {
     this.playing = false;
+    this.wave.fill(0);
+    this.probe.fill(0);
     for (const channel of this.channels)
       for (const voice of channel.layers) voice.gate = false;
   }
@@ -656,10 +662,14 @@ class Dm2Processor extends AudioWorkletProcessor {
         let mixL = 0;
         let mixR = 0;
         for (let ch = 0; ch < CHANNELS; ch++) {
-          if (this.muted[ch]) continue;
+          if (this.muted[ch]) {
+            this.probe[ch] = 0;
+            continue;
+          }
           let bus = 0;
           for (const voice of this.channels[ch].layers) bus += this.renderVoice(voice, rate);
           this.channels[ch].level = this.channels[ch].level * 0.9 + Math.min(1, Math.abs(bus));
+          this.probe[ch] = bus;
           const pan = this.channels[ch].layers[0].pan;
           const angle = ((clamp(pan, 0, 127) / 127) * Math.PI) / 2;
           mixL += bus * Math.cos(angle);
@@ -672,6 +682,8 @@ class Dm2Processor extends AudioWorkletProcessor {
         this.mixPreview(left, right, offset + i, 1, rate);
         this.scope[this.scopeWrite] = (outL + outR) * 0.5;
         this.scopeWrite = (this.scopeWrite + 1) % this.scope.length;
+        for (let ch = 0; ch < CHANNELS; ch++) this.wave[ch * this.waveN + this.waveWrite] = this.probe[ch];
+        this.waveWrite = (this.waveWrite + 1) % this.waveN;
       }
       this.samplesUntilTick -= chunk;
       offset += chunk;
@@ -697,6 +709,7 @@ class Dm2Processor extends AudioWorkletProcessor {
       muted: this.muted.slice(),
       level: this.channels.map((channel) => channel.level),
       scope: this.scope.slice(),
+      wave: this.wave.slice(),
     });
   }
 }

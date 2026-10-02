@@ -298,6 +298,8 @@ For deeper technical specifications, see the docs folder:
 | [`docs/SOUND_ENGINES.md`](./docs/SOUND_ENGINES.md) | All sound engines and their parameters |
 | [`docs/GROOVE_AND_TIMING.md`](./docs/GROOVE_AND_TIMING.md) | Groove system and timing math |
 | [`docs/SLIMENTOLOGIKA_GUIDE.md`](./docs/SLIMENTOLOGIKA_GUIDE.md) | Full guide to the base-16 glyph system |
+| [`docs/FACEPLATE_BUILD_KIT.md`](./docs/FACEPLATE_BUILD_KIT.md) | Artist build kit for custom pad / kit / FX skins |
+| [`VMI_ARTIST_GUIDE.md`](./VMI_ARTIST_GUIDE.md) | VMI PNG naming (`SSSSXX.PNG`) for buttons and layers |
 
 **Project docs:** [`VISION.md`](./VISION.md) · [`ROADMAP.md`](./ROADMAP.md) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`CONTRIBUTORS.md`](./CONTRIBUTORS.md) · [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) · [`EDUCATION.md`](./EDUCATION.md)
 

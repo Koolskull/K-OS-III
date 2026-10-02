@@ -35,6 +35,11 @@ Add a toggle to overlay the previous and next animation frames at reduced opacit
 **Size:** tiny
 Allow holding `Escape` to skip the Rosary/Psalms boot scroll once a user knows it. The boot sequence is part of the project's identity, but skippable on demand respects users who reboot frequently during development.
 
+### 5b. Faceplate Build Kit: community starter skins
+**Labels:** `good-first-issue`, `datamoshpit`, `help-wanted`
+**Size:** small
+Ship 2–3 extra drop-in packs under `public/skins/` (e.g. pulp comic, monochrome CRT, Orthodox mosaic) using the contract in [`docs/FACEPLATE_BUILD_KIT.md`](./FACEPLATE_BUILD_KIT.md). Register them in `public/skins/index.json`. No engine changes — art only.
+
 ### 6. Demo deploy and `[DEMO_URL]` replacement
 **Labels:** `chore`, `infra`
 **Size:** small

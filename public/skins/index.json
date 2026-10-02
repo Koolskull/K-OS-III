@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "defaultPackId": "factory-steel",
+  "packs": [
+    {
+      "id": "factory-steel",
+      "name": "FACTORY STEEL",
+      "author": "2kool",
+      "path": "/skins/factory-steel"
+    },
+    {
+      "id": "_blank",
+      "name": "BLANK CANVAS",
+      "author": "build-kit",
+      "path": "/skins/_blank",
+      "template": true
+    }
+  ]
+}

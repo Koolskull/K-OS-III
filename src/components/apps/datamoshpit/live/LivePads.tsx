@@ -313,7 +313,7 @@ export function LivePads({
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const [layout, setLayout] = useState<LayoutMode>("tall");
   const [octaveMode, setOctaveMode] = useState<OctaveMode>("stacked");
-  const { pack, catalog, cycle } = useSkinPack();
+  const { pack, activeId, catalog, cycle } = useSkinPack();
 
   useEffect(() => {
     const el = containerRef.current;
@@ -428,7 +428,7 @@ export function LivePads({
         </div>
         <SkinPackPicker
           catalog={catalog}
-          activeId={pack?.manifest.id}
+          activeId={activeId ?? pack?.manifest.id}
           onCycle={cycle}
         />
         <div className="flex items-center gap-1">

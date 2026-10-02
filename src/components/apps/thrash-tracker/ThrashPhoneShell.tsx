@@ -168,7 +168,7 @@ function PadButton({
 function ThrashKeys() {
   const repeat = useRef<number | null>(null);
   const delay = useRef<number | null>(null);
-  const { pack, catalog, cycle } = useSkinPack();
+  const { pack, activeId, catalog, cycle } = useSkinPack();
 
   const clearRepeat = useCallback(() => {
     if (delay.current !== null) window.clearTimeout(delay.current);
@@ -216,7 +216,7 @@ function ThrashKeys() {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <SkinPackPicker
           catalog={catalog}
-          activeId={pack?.manifest.id}
+          activeId={activeId ?? pack?.manifest.id}
           onCycle={cycle}
         />
       </div>

@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   loadDefaultSkinPack,
   loadSkinPack,
@@ -18,11 +18,24 @@ const STORAGE_KEY = "kos-faceplate-skin-pack";
 
 export function useSkinPack(preferredId?: string | null) {
   const [pack, setPack] = useState<ResolvedSkinPack | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<SkinPackIndexEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const catalogRef = useRef<SkinPackIndexEntry[]>([]);
+  const activeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    catalogRef.current = catalog;
+  }, [catalog]);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const select = useCallback(async (id: string) => {
+    setActiveId(id);
+    activeIdRef.current = id;
     setLoading(true);
     setError(null);
     try {
@@ -46,17 +59,14 @@ export function useSkinPack(preferredId?: string | null) {
   }, []);
 
   const cycle = useCallback(() => {
-    if (catalog.length === 0) return;
-    setPack((current) => {
-      const id = current?.manifest.id;
-      const idx = catalog.findIndex((p) => p.id === id);
-      const from = idx >= 0 ? idx : 0;
-      const next = catalog[(from + 1) % catalog.length];
-      // Fire async load; optimistic label update via select()
-      void select(next.id);
-      return current;
-    });
-  }, [catalog, select]);
+    const list = catalogRef.current;
+    if (list.length === 0) return;
+    const current = activeIdRef.current ?? list[0].id;
+    const idx = list.findIndex((p) => p.id === current);
+    const from = idx >= 0 ? idx : 0;
+    const next = list[(from + 1) % list.length];
+    void select(next.id);
+  }, [select]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +75,7 @@ export function useSkinPack(preferredId?: string | null) {
         const index = await loadSkinPackIndex();
         if (cancelled) return;
         setCatalog(index.packs);
+        catalogRef.current = index.packs;
 
         let id = preferredId ?? null;
         if (!id) {
@@ -81,6 +92,9 @@ export function useSkinPack(preferredId?: string | null) {
         const loaded = (await loadSkinPack(id!)) ?? (await loadDefaultSkinPack());
         if (cancelled) return;
         setPack(loaded);
+        const resolvedId = loaded?.manifest.id ?? id!;
+        setActiveId(resolvedId);
+        activeIdRef.current = resolvedId;
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Skin catalog failed");
@@ -94,5 +108,5 @@ export function useSkinPack(preferredId?: string | null) {
     };
   }, [preferredId]);
 
-  return { pack, catalog, loading, error, select, cycle };
+  return { pack, activeId, catalog, loading, error, select, cycle };
 }

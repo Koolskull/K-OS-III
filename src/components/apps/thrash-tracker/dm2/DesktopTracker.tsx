@@ -19,6 +19,7 @@ import {
   seedNote,
   serialize,
   TRACKER_NAME,
+  TRACKER_VERSION,
   tableRowAt,
   AMEN_URL,
   amenNeedsAudio,
@@ -323,6 +324,7 @@ function paint(
   ctx.fillRect(4, 18, 860, 448);
 
   drawGlyph(ctx, TRACKER_NAME, 8, 3, "#ffffff", false);
+  drawGlyph(ctx, TRACKER_VERSION, W - 8 - TRACKER_VERSION.length * 8, 3, "#ffffff", false);
   drawGlyph(ctx, SCREEN_TITLE[ui.screen], 168, 3, "#ffffff", false);
   drawGlyph(ctx, `BPM ${Math.round(project.bpm)}`, 280, 3, "#ffffff", false);
   drawGlyph(ctx, transportWord(ui, head), 360, 3, "#ffffff", false);

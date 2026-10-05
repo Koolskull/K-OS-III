@@ -13,19 +13,19 @@ The desktop app **EDUCATION** (icon `§`) loads those markdown files, lets you r
 - App UI: `src/components/apps/education/EducationApp.tsx`.
 - Static GitHub Pages deploy already includes `public/education/**` via `npm run build` + Pages workflow.
 
-Live: open the OS → double-click **EDUCATION** → pick Sovereignty, Culture Machines, or **Antediluvian Observatory** → read → **START QUIZ** → pass to mark complete.
+Live: open the OS → double-click **EDUCATION** → pick Sovereignty, Culture Machines, Antediluvian Observatory, or **Creativity as the Way Out** → read → **START QUIZ** → pass to mark complete.
 
 For the system spec, see `docs/KNOWLEDGE_CORPUS.md`.
 
 ---
 
-## Philosophical tract material (docs-level, not yet a track)
+## Wired tracks
 
 | Document | What it covers | Status |
 |---|---|---|
-| **`docs/CREATIVITY_AS_THE_WAY_OUT.md`** | Creativity as the accessible exit from trauma-shaped states (depression, laziness, imposter syndrome, hopelessness); value as a function of reality rather than narrative, drawing on the Jekyll Island / Federal Reserve history; creativity as the primary objective function for long-term, exponential value. Christian and secular readings converge. Verbatim dictated quotes preserved alongside academic prose. | Working draft · captured 2026-10-05 · **not yet wired into the EDUCATION app** |
+| **`docs/CREATIVITY_AS_THE_WAY_OUT.md`** | Creativity as the accessible exit from trauma-shaped states (depression, laziness, imposter syndrome, hopelessness); value as a function of reality rather than narrative, drawing on the Jekyll Island / Federal Reserve history; creativity as the primary objective function for long-term, exponential value. Christian and secular readings converge. Verbatim dictated quotes preserved alongside academic prose. | **Wired as `creativity/` track** · 2026-10-05 · six lessons + six offline tools in the EDUCATION app |
 
-This material is intended to eventually become its own education track (proposed slug: `creativity/`) with lessons and quizzes, but for now it lives at the docs level so it can be shaped before being committed to the curriculum structure.
+Design draft and track structure: `docs/CREATIVITY_TRACK_STRUCTURE.md`. Notion capture surface: `K-OS Educational Tract — Creativity as the Way Out` (private page; sync rule: new dictated quotes land in Notion first, then push to the repo).
 
 ---
 
@@ -35,7 +35,7 @@ This material is intended to eventually become its own education track (proposed
 
 → `public/education/ethereum-dev/`
 
-*(Not yet wired into the EDUCATION app catalog — Sovereignty and Culture Machines ship first.)*
+*(Not yet wired into the EDUCATION app catalog — Sovereignty, Culture Machines, Antediluvian, and Creativity ship first.)*
 
 ---
 
@@ -53,6 +53,7 @@ This material is intended to eventually become its own education track (proposed
 | **`sovereignty/`** | Tools for examining sources of belief and institutional power. Simple spiritual foundations (Jesus), Robert Monroe / OBE, declassified MKUltra and Stargate, Tesla and Russell (record vs later claims), Jekyll Island / Federal Reserve / American System tradition, Eric Weinstein / institutional physics consensus (All-In case study). Follows `EPISTEMIC_STANCE.md`. | Nine lessons written · **in EDUCATION app**. |
 | **`culture-machines/`** | Injection vs bottom-up proliferation; Cacophony → Burning Man → SantaCon; Grateful Dead Acid Tests and academic LSD; jungle / CCRU / accelerationism; Aquino, MindWar, Temple of Set, and the Presidio investigation (documented record vs internet narrative); festival scale and myths that fail evidence checks. Follows `EPISTEMIC_STANCE.md`. | Six lessons written · **in EDUCATION app**. |
 | **`antediluvian/`** | Alternative deep history / pre-flood era: methods, Younger Dryas, Göbekli + 'founded' megaliths, cross-continental flood/diffusion parallels, occult old-map worldview (Piri Reis/Hapgood), Watchers vs Tartaria clocks. Observe, cite, leave contradictions visible. Follows `EPISTEMIC_STANCE.md`. | Sixteen densified lessons · **in EDUCATION app**. |
+| **`creativity/`** | Creativity as the accessible exit from trauma-shaped states; the Jekyll Island value diagnostic (real vs facade); creativity as the primary objective function; two doors (Christian + secular). Six lessons + six offline learning tools (state inventory, first-build template, value diagnostic, compounding sketch, weekly build log, transcript prompt). Prerequisite: sovereignty. | Six lessons written · **in EDUCATION app** · wired 2026-10-05 |
 
 ---
 
@@ -68,6 +69,7 @@ The two recruiting audiences for this curriculum are **Ethereum developers who d
 - **Sovereignty** sits alongside the technical tracks as an epistemic and historical companion: primary sources on consciousness research, declassified intelligence programs, competing accounts of monetary power, and institutional science as a consensus machine, written under the same rules as the rest of the corpus.
 - **Culture machines** sits next to sovereignty as a cultural-history companion: how scenes, institutions, and markets co-produce forms that computers scale, with the same primary-source habit and explicit filters against unsupported totalizing claims.
 - **Antediluvian Observatory** sits with sovereignty as an epistemic companion for deep-history and pre-flood alternative theories (catastrophe debates, founded megaliths, cross-continental parallels, occult map worldview, Enochic and mud-flood frames). Method first; conversion never the goal.
+- **Creativity as the Way Out** sits as the practice track: the only track that teaches *how to do* something rather than teaching *about* something. It answers the economic stance's rent-extraction diagnosis with a constructive practice, and it extends the two-door identity from VISION.md into curriculum form.
 
 ---
 

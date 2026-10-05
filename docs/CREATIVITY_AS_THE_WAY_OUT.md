@@ -1,13 +1,13 @@
 # Creativity as the Way Out
 
-> **Status:** Working draft. Dictated 2026-10-05.
-> **Purpose:** Philosophical material for the K-OS educational tract — arguments aimed at readers who have been damaged and traumatized by neurologically permanent experiences, offering creativity as the sincere, accessible way out.
-> **How to read this file:**
-> - **Quoted blocks** (with the 🗣️ marker) = the user's actual dictated words, verbatim, lightly cleaned for readability. These are his arguments in his voice.
+> **Status:** Working draft. Captured 2026-10-05 from dictated material.
+> **Purpose:** Philosophical material for the K-OS educational corpus — arguments aimed at readers who have been neurologically and permanently shaped by trauma, offering creativity as an accessible way out.
+> **How to read this page:**
+> - **Quoted blocks** (with the 🗣️ marker) = the author's actual dictated words, verbatim, lightly cleaned for readability. These are the arguments in his voice.
 > - **Prose sections** (no marker) = AI-authored academic text that explains, structures, and extends those arguments objectively.
-> - **Open questions** = things flagged as unresolved or needing the user's input before the tract goes further.
+> - **Open questions** = unresolved items flagged for the author's input before the tract goes further.
 >
-> This file is the GitHub home of the tract. A private Notion working draft also exists for capture and organization: https://app.notion.com/p/3f03e9cfe2f281bca4eded88195ade76
+> This document is the GitHub home of the tract. A private Notion page (`K-OS Educational Tract — Creativity as the Way Out`) serves as the parallel capture and organization surface; the two should stay in sync as material is added.
 
 ---
 
@@ -24,7 +24,7 @@ Both perspectives converge on the same claim: what you build is the way out.
 
 ---
 
-## 2. The user's dictated material (verbatim)
+## 2. The author's dictated material (verbatim)
 
 > 🗣️ *"I really would like to basically dictate to you some things that I want to add into the KOOLSKULL operating system educational tract, but these are kind of like philosophical things that are intended to give readers the ability to overcome depression and laziness and imposter syndrome or hopelessness, depression, things like that."*
 
@@ -46,7 +46,7 @@ The reasoning is that creative production is one of the few activities that simu
 
 ### 3.2 Value as a function of reality, not of narrative
 
-The tract draws on the financial history associated with the **Jekyll Island** meeting of 1910 — the gathering that produced the Aldrich Plan and, ultimately, the Federal Reserve — to make a structural point about value. (Note: the user referenced this as "Dr. Jekyll or Mr. Island, the creature from Jekyll Island"; the historical referent is the Jekyll Island Conference, and G. Edward Griffin's *The Creature from Jekyll Island* is the named dissenting synthesis already cited in the Sovereignty track's lesson 06. The "creature" phrasing is the user's own and is preserved as a stylistic marker, not as a factual claim.)
+The tract draws on the financial history associated with the **Jekyll Island** meeting of 1910 — the gathering that produced the Aldrich Plan and, ultimately, the Federal Reserve — to make a structural point about value. (Note: the author referenced this as "Dr. Jekyll or Mr. Island, the creature from Jekyll Island"; the historical referent is the Jekyll Island Conference, and G. Edward Griffin's *The Creature from Jekyll Island* is the named dissenting synthesis already cited in the Sovereignty track's lesson 06. The "creature" phrasing is the author's own and is preserved as a stylistic marker, not as a factual claim.)
 
 The argument: finance is not exclusively the product of hidden bloodlines or occult machinations (Rothschild, Illuminati, Nephilim narratives are explicitly set aside as insufficient explanations). Rather, finance is a mirror of a deeper pattern — the pattern of continuous creation. On the Christian reading, God is described as constantly creating, building newer, bigger, better things at an exponential rate. On the secular reading, the same pattern appears as compounding: real growth is exponential, and exponential growth is the signature of something that is actually producing.
 
@@ -58,14 +58,13 @@ The tract's final and strongest claim: for long-term investing and exponential g
 
 ---
 
-## 4. Open questions for the user
+## 4. Open questions for the author
 
-- [ ] Should the Jekyll Island reference be expanded into its own section with the actual 1910 history (the Aldrich Plan, the Federal Reserve Act of 1913), or kept as a brief allusion? (Note: lesson 06 of the Sovereignty track already covers this history in depth — the question is whether this tract should cross-link to it rather than duplicate it.)
-- [x] ~~The user said "CoolSculpt operating system"~~ — resolved: **KOOLSKULL** is the project name; "CoolSculpt" was a mishearing.
+- [ ] Should the Jekyll Island reference be expanded into its own section with the actual 1910 history (the Aldrich Plan, the Federal Reserve Act of 1913), or kept as a brief allusion? (Note: Sovereignty lesson 06 already covers Jekyll Island in depth — this tract should cross-link rather than duplicate.)
 - [ ] Tone check: the tract is aimed at trauma survivors. Should the academic prose be softened in places, or is the objectivity itself the kindness?
 - [ ] Should a third perspective be added — a Jewish, Islamic, or other theistic reading of continuous creation — or do Christian + secular cover the intended range?
-- [ ] The user mentioned "the financial information talked about with Dr. Jekyll or Mr. Island" — is there a specific book, video, or prior conversation this refers to that should be cited? (Griffin's *The Creature from Jekyll Island* is the likely referent, given its existing presence in the Sovereignty track.)
-- [ ] Should this tract eventually become a new education track in the in-OS EDUCATION app (a fourth track alongside Sovereignty, Culture Machines, and Antediluvian Observatory), or remain a philosophical companion document?
+- [ ] Is there a specific book, video, or prior conversation behind the Jekyll Island reference that should be cited beyond Griffin?
+- [ ] Should this material eventually become its own education track (e.g. `public/education/creativity/`) with lessons and quizzes wired into the EDUCATION app, or remain a docs-level philosophical document?
 
 ---
 

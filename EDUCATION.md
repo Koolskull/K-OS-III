@@ -2,22 +2,30 @@
 
 K-OS ships with a multi-track curriculum designed to be usable **offline-first** — a person on a handheld device with no internet should still be able to learn from K-OS alone.
 
-Tracks live under [`public/education/`](./public/education/) as markdown lessons with a `track.yaml` manifest.
+Tracks live under `public/education/` as markdown lessons with a `track.yaml` manifest.
 
 ## In-OS EDUCATION app
 
 The desktop app **EDUCATION** (icon `§`) loads those markdown files, lets you read lessons, and marks progress when you pass a **multiple-choice checkout** at the end of each lesson.
 
 - Progress is stored in **browser `localStorage`** only (no accounts, no server).
-- Quizzes live in [`src/lib/education/quizzes.ts`](./src/lib/education/quizzes.ts); catalog in [`src/lib/education/catalog.ts`](./src/lib/education/catalog.ts).
-- App UI: [`src/components/apps/education/EducationApp.tsx`](./src/components/apps/education/EducationApp.tsx).
+- Quizzes live in `src/lib/education/quizzes.ts`; catalog in `src/lib/education/catalog.ts`.
+- App UI: `src/components/apps/education/EducationApp.tsx`.
 - Static GitHub Pages deploy already includes `public/education/**` via `npm run build` + Pages workflow.
 
 Live: open the OS → double-click **EDUCATION** → pick Sovereignty, Culture Machines, or **Antediluvian Observatory** → read → **START QUIZ** → pass to mark complete.
 
-The **LESSONS** tab is the Academy (`src/components/academy/Academy.tsx`, registry `src/lib/education/tracks.ts`). The lineage track **Figures — Culture Industry** (`figures-culture`) holds the intensive articles on Malcolm McLaren, John Lydon, Donald Trump, Simon Cowell and Gordon Ramsay, Stan Lee, Todd McFarlane, and M. Strange. Those articles cite BACKSTAGE and STARDRAIN with in-OS addresses (`kos://academy/...`, `kos://backstage/...`, `kos://stardrain/...`), which open the other desktop app on the named entry. The **OBSERVATORY** tab remains the markdown catalog under `public/education/`.
+For the system spec, see `docs/KNOWLEDGE_CORPUS.md`.
 
-For the system spec, see [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md).
+---
+
+## Philosophical tract material (docs-level, not yet a track)
+
+| Document | What it covers | Status |
+|---|---|---|
+| **`docs/CREATIVITY_AS_THE_WAY_OUT.md`** | Creativity as the accessible exit from trauma-shaped states (depression, laziness, imposter syndrome, hopelessness); value as a function of reality rather than narrative, drawing on the Jekyll Island / Federal Reserve history; creativity as the primary objective function for long-term, exponential value. Christian and secular readings converge. Verbatim dictated quotes preserved alongside academic prose. | Working draft · captured 2026-10-05 · **not yet wired into the EDUCATION app** |
+
+This material is intended to eventually become its own education track (proposed slug: `creativity/`) with lessons and quizzes, but for now it lives at the docs level so it can be shaped before being committed to the curriculum structure.
 
 ---
 
@@ -25,7 +33,7 @@ For the system spec, see [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md
 
 **The Ethereum developer track is the project's flagship curriculum.** It is the most loved track, gets the most attention, and is the primary on-ramp for the project's priority builder audience. Anyone who finishes it should be able to read mainnet contracts, write and test their own, deploy to a testnet, and understand what is happening at every layer of an EVM application.
 
-→ [`public/education/ethereum-dev/`](./public/education/ethereum-dev/)
+→ `public/education/ethereum-dev/`
 
 *(Not yet wired into the EDUCATION app catalog — Sovereignty and Culture Machines ship first.)*
 
@@ -42,9 +50,9 @@ For the system spec, see [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md
 | **`bitcoin/`** | UTXO model, script basics, Lightning at a high level, how Bitcoin wallets differ from EVM wallets. Smaller than the Ethereum track by design. | Outline only. |
 | **`monero/`** | Why Monero, ring signatures and stealth addresses conceptually, view keys, wallet hygiene, running a node. | Outline only. |
 | **`reading-codebases/`** | Meta-track on how to read unfamiliar codebases, orient in a large repo, use git history as a learning tool, read tests first, build a mental model from entry points. Quietly important — most developer learning fails not at syntax but at orientation. | Outline only. |
-| **`sovereignty/`** | Tools for examining sources of belief and institutional power. Simple spiritual foundations (Jesus), Robert Monroe / OBE, declassified MKUltra and Stargate, Tesla and Russell (record vs later claims), Jekyll Island / Federal Reserve / American System tradition, Eric Weinstein / institutional physics consensus (All-In case study). Follows `EPISTEMIC_STANCE.md`. | Seven lessons written · **in EDUCATION app**. |
+| **`sovereignty/`** | Tools for examining sources of belief and institutional power. Simple spiritual foundations (Jesus), Robert Monroe / OBE, declassified MKUltra and Stargate, Tesla and Russell (record vs later claims), Jekyll Island / Federal Reserve / American System tradition, Eric Weinstein / institutional physics consensus (All-In case study). Follows `EPISTEMIC_STANCE.md`. | Nine lessons written · **in EDUCATION app**. |
 | **`culture-machines/`** | Injection vs bottom-up proliferation; Cacophony → Burning Man → SantaCon; Grateful Dead Acid Tests and academic LSD; jungle / CCRU / accelerationism; Aquino, MindWar, Temple of Set, and the Presidio investigation (documented record vs internet narrative); festival scale and myths that fail evidence checks. Follows `EPISTEMIC_STANCE.md`. | Six lessons written · **in EDUCATION app**. |
-| **`antediluvian/`** | Alternative deep history / pre-flood era: methods, Younger Dryas, Göbekli + 'founded' megaliths, cross-continental flood/diffusion parallels, occult old-map worldview (Piri Reis/Hapgood), Watchers vs Tartaria clocks. Observe, cite, leave contradictions visible. Follows `EPISTEMIC_STANCE.md`. | Six densified lessons · **in EDUCATION app**. |
+| **`antediluvian/`** | Alternative deep history / pre-flood era: methods, Younger Dryas, Göbekli + 'founded' megaliths, cross-continental flood/diffusion parallels, occult old-map worldview (Piri Reis/Hapgood), Watchers vs Tartaria clocks. Observe, cite, leave contradictions visible. Follows `EPISTEMIC_STANCE.md`. | Sixteen densified lessons · **in EDUCATION app**. |
 
 ---
 
@@ -68,7 +76,7 @@ The two recruiting audiences for this curriculum are **Ethereum developers who d
 1. Pick a stubbed lesson in any `track.yaml`.
 2. Write it. Aim for clarity over completeness; a tight 1,200-word lesson beats a sprawling 5,000-word one.
 3. Include working code examples where the topic admits them. Examples should be runnable as written, with no missing imports.
-4. If the track is in the EDUCATION app catalog, add MCQs in [`src/lib/education/quizzes.ts`](./src/lib/education/quizzes.ts) and a catalog entry in [`src/lib/education/catalog.ts`](./src/lib/education/catalog.ts).
+4. If the track is in the EDUCATION app catalog, add MCQs in `src/lib/education/quizzes.ts` and a catalog entry in `src/lib/education/catalog.ts`.
 5. Submit a PR. Tag with the track slug.
 
-For broader doc-writing rules including the epistemic-stance requirements on contested topics, see [`docs/EPISTEMIC_STANCE.md`](./docs/EPISTEMIC_STANCE.md) and the "Writing for K-OS" section of [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+For broader doc-writing rules including the epistemic-stance requirements on contested topics, see `docs/EPISTEMIC_STANCE.md` and the "Writing for K-OS" section of `CONTRIBUTING.md`.

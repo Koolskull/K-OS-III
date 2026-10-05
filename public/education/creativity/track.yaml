@@ -1,0 +1,46 @@
+title: Creativity as the Way Out
+slug: creativity
+summary: >-
+  Creativity as the accessible exit from trauma-shaped states — depression,
+  laziness, imposter syndrome, hopelessness. Value as a function of reality
+  (the Jekyll Island diagnostic: if it is real, it has value; if it is a
+  facade, it will not maintain long-term value). Creativity as the primary
+  objective function for long-term, exponential growth, from any worldview.
+  Christian and secular readings converge. Ships teaching lessons AND
+  offline learning tools — exercises, templates, and logs the reader can run
+  without passing a checkout.
+prerequisites: [sovereignty]
+estimated_hours: 3
+flagship: false
+lessons:
+  - file: 01-the-way-out.md
+    title: The way out
+    status: written
+  - file: 02-build-something-today.md
+    title: Build something today
+    status: written
+  - file: 03-the-jekyll-island-diagnostic.md
+    title: The Jekyll Island diagnostic
+    status: written
+  - file: 04-value-that-compounds.md
+    title: Value that compounds
+    status: written
+  - file: 05-creativity-as-objective-function.md
+    title: Creativity as the objective function
+    status: written
+  - file: 06-the-two-doors.md
+    title: The two doors
+    status: written
+tools:
+  - file: tools/state-inventory.md
+    title: State inventory
+  - file: tools/first-build-template.md
+    title: First-build template
+  - file: tools/value-diagnostic.md
+    title: Value diagnostic
+  - file: tools/compounding-sketch.md
+    title: Compounding sketch
+  - file: tools/weekly-build-log.md
+    title: Weekly build log
+  - file: tools/transcript-prompt.md
+    title: Transcript prompt

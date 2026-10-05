@@ -23,6 +23,8 @@ import {
   CornerDismissLayer,
   useIsNarrow,
 } from "@/components/ui/CornerChrome";
+import { KosProse, useKosEntry } from "@/components/os/KosLink";
+import { openKos } from "@/lib/os/kos-nav";
 
 function useIsLarge(breakpoint = 1400) {
   const [large, setLarge] = useState(false);
@@ -60,6 +62,14 @@ function BackstageWikiInner() {
       if (el) el.scrollTop = 0;
     });
   }, []);
+
+  const openLinkedEntry = useCallback(
+    (id: string) => {
+      if (BACKSTAGE_ENTRIES.some((entry) => entry.id === id)) navigate(id);
+    },
+    [navigate],
+  );
+  useKosEntry("backstage-wiki", openLinkedEntry);
 
   const entry = currentId ? BACKSTAGE_ENTRIES.find((e) => e.id === currentId) : null;
   const linkedLore = (entry?.loreIds ?? [])
@@ -301,7 +311,28 @@ function Article({
       </div>
       {linkedLore.length > 0 && (
         <div style={{ fontSize: 11, color: "#aaaaaa", marginBottom: 20, letterSpacing: 1 }}>
-          STARDRAIN: {linkedLore.map((lore) => lore.title.toUpperCase()).join(" · ")}
+          STARDRAIN:{" "}
+          {linkedLore.map((lore, index) => (
+            <React.Fragment key={lore.id}>
+              {index > 0 ? " · " : null}
+              <button
+                type="button"
+                onClick={() => openKos({ app: "stardrain-wiki", entry: lore.id })}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  color: "#ffff00",
+                  font: "inherit",
+                  letterSpacing: "inherit",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                {lore.title.toUpperCase()}
+              </button>
+            </React.Fragment>
+          ))}
         </div>
       )}
       {entry.body.split("\n\n").map((para, i) => (
@@ -314,7 +345,7 @@ function Article({
             marginBottom: 16,
           }}
         >
-          {para}
+          <KosProse text={para} />
         </p>
       ))}
     </>

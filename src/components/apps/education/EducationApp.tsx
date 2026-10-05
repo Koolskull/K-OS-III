@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { peekPending, subscribeKos } from "@/lib/os/kos-nav";
 import { assetUrl } from "@/lib/assets";
 import { EDUCATION_TRACKS, findLesson, lessonMarkdownPath } from "@/lib/education/catalog";
 import { getQuiz } from "@/lib/education/quizzes";
@@ -112,6 +113,13 @@ function SurfaceTabs({
 
 export function EducationApp() {
   const [surface, setSurface] = useState<Surface>("lessons");
+
+  useEffect(() => {
+    if (peekPending("education")) setSurface("lessons");
+    return subscribeKos((target) => {
+      if (target.app === "education") setSurface("lessons");
+    });
+  }, []);
 
   if (surface === "lessons") {
     return (

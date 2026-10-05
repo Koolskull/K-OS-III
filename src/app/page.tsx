@@ -26,7 +26,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BootSequence } from "@/components/os/BootSequence";
 import { Desktop } from "@/components/os/Desktop";
 import { Taskbar } from "@/components/os/Taskbar";
@@ -48,6 +48,12 @@ import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { NotesApp } from "@/components/apps/notes/NotesApp";
+import {
+  appIdFor,
+  markKosShell,
+  restorePendingFromStorage,
+  subscribeKos,
+} from "@/lib/os/kos-nav";
 import { IdentityApp } from "@/components/apps/identity/IdentityApp";
 import { StudioApp } from "@/components/apps/studio/StudioApp";
 import { ProdevApp } from "@/components/apps/prodev/ProdevApp";
@@ -154,6 +160,17 @@ export default function KoolskullOS() {
     setFocusedWindowId(windowId);
     setNextZIndex((z) => z + 1);
   }, [windows, nextZIndex]);
+
+  const kosRestored = useRef(false);
+  useEffect(() => {
+    markKosShell();
+    if (!kosRestored.current) {
+      kosRestored.current = true;
+      const stored = restorePendingFromStorage();
+      if (stored) launchApp(appIdFor(stored));
+    }
+    return subscribeKos((target) => launchApp(appIdFor(target)));
+  }, [launchApp]);
 
   const focusWindow = useCallback((id: string) => {
     setFocusedWindowId(id);

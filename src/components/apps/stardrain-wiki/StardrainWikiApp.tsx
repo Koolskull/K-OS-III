@@ -24,6 +24,7 @@ import {
   CornerDismissLayer,
   useIsNarrow,
 } from "@/components/ui/CornerChrome";
+import { KosProse, KosRef, useKosEntry } from "@/components/os/KosLink";
 
 const CATEGORY_ORDER: LoreEntry["category"][] = [
   "cosmology",
@@ -70,6 +71,14 @@ function StardrainWikiInner() {
       if (el) el.scrollTop = 0;
     });
   }, []);
+
+  const openLinkedEntry = useCallback(
+    (id: string) => {
+      if (LORE_ENTRIES.some((entry) => entry.id === id)) navigate(id);
+    },
+    [navigate],
+  );
+  useKosEntry("stardrain-wiki", openLinkedEntry);
 
   const entry = currentId ? LORE_ENTRIES.find((e) => e.id === currentId) : null;
 
@@ -267,7 +276,7 @@ function StardrainWikiInner() {
                     marginBottom: 16,
                   }}
                 >
-                  {para}
+                  <KosProse text={para} />
                 </p>
               ))}
             </>
@@ -298,7 +307,9 @@ function StardrainWikiInner() {
               >
                 Private reference for the Stardrain universe. Cosmology, locations, characters,
                 power structures, and the creative culture of the island. The history and the
-                intended significance live in the BACKSTAGE app on the desktop. Click any entry
+                intended significance live in the{" "}
+                <KosRef to="kos://backstage/how-to-read">BACKSTAGE</KosRef> app on the
+                desktop. Click any entry
                 in the sidebar or below to read.
               </p>
 

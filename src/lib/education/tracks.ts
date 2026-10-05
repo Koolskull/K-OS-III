@@ -88,25 +88,25 @@ export const GROUP_DESCRIPTIONS: Record<Lang, Record<TrackGroup, string>> = {
     foundations: "Start here. Civic context and the cryptographic primitives every later track assumes you know.",
     chains: "The three chains K-OS treats as first-class: Bitcoin, Ethereum, Monero.",
     practice: "Applied tracks — operational privacy, Solidity, and reading the code other people wrote.",
-    lineages: "Figures and currents the curriculum treats seriously — cryptographers and mystics, sacred cosmologies, hidden history, and the long wars over human cognition.",
+    lineages: "Figures and currents the curriculum treats seriously — cryptographers and mystics, sacred cosmologies, hidden history, the long wars over human cognition, and the culture industry behind the music, the comics, and the television verdict.",
   },
   es: {
     foundations: "Empieza aquí. Contexto cívico y las primitivas criptográficas que asumen las pistas posteriores.",
     chains: "Las tres cadenas que K-OS trata como primer nivel: Bitcoin, Ethereum, Monero.",
     practice: "Pistas aplicadas — privacidad operacional, Solidity y leer el código que otros escribieron.",
-    lineages: "Figuras y corrientes que el currículo toma en serio — criptógrafos y místicos, cosmologías sagradas, historia oculta y las largas guerras por la cognición humana.",
+    lineages: "Figuras y corrientes que el currículo toma en serio — criptógrafos y místicos, cosmologías sagradas, historia oculta, las largas guerras por la cognición humana, y la industria cultural detrás de la música, el cómic y el veredicto televisivo.",
   },
   ja: {
     foundations: "ここから始めよう。市民的文脈と、後続の全トラックが前提とする暗号プリミティブ。",
     chains: "K-OSが一級扱いする三つのチェーン：Bitcoin、Ethereum、Monero。",
     practice: "応用トラック — 運用プライバシー、Solidity、他人が書いたコードを読む。",
-    lineages: "カリキュラムが真剣に扱う人物と潮流 — 暗号学者と神秘家、聖なる宇宙論、隠された歴史、そして人間の認知を巡る長き戦争。",
+    lineages: "カリキュラムが真剣に扱う人物と潮流 — 暗号学者と神秘家、聖なる宇宙論、隠された歴史、人間の認知を巡る長き戦争、そして音楽・漫画・テレビの判定の背後にある文化産業。",
   },
   zh: {
     foundations: "从这里开始。公民语境，以及后续所有轨道都假定你已掌握的密码学原语。",
     chains: "K-OS 作为一等公民对待的三条链：Bitcoin、Ethereum、Monero。",
     practice: "应用轨道 —— 操作隐私、Solidity，以及阅读他人所写的代码。",
-    lineages: "课程严肃对待的人物与潮流 —— 密码学家与神秘主义者、神圣宇宙论、被隐去的历史，以及围绕人类认知的漫长战争。",
+    lineages: "课程严肃对待的人物与潮流 —— 密码学家与神秘主义者、神圣宇宙论、被隐去的历史、围绕人类认知的漫长战争，以及音乐、漫画与电视裁决背后的文化产业。",
   },
 };
 
@@ -953,6 +953,116 @@ export const TRACKS: TrackMeta[] = [
           es: { title: "Kim Dotcom", oneLiner: "Megaupload, la redada de 2012 y un caso de extradición de doce años." },
           ja: { title: "キム・ドットコム", oneLiner: "Megaupload、2012年の強制捜査、そして十二年間に及ぶ引き渡し事件。" },
           zh: { title: "金·达康", oneLiner: "Megaupload、2012 年的突袭，以及长达十二年的引渡案。" },
+        },
+      },
+    ],
+  },
+
+  {
+    slug: "figures-culture",
+    group: "lineages",
+    glyph: "✶",
+    i18n: {
+      en: {
+        title: "Figures — Culture Industry",
+        oneLiner: "Managers, broadcast verdicts, company faces, and the independents who kept the work.",
+      },
+      es: {
+        title: "Figuras — Industria cultural",
+        oneLiner: "Managers, veredictos televisados, la cara de la compañía, y los independientes que se quedaron con la obra.",
+      },
+      ja: {
+        title: "人物 — 文化産業",
+        oneLiner: "マネージャー、放送上の判定、会社の顔、そして仕事を手放さなかった独立者たち。",
+      },
+      zh: {
+        title: "人物 —— 文化产业",
+        oneLiner: "经理、电视裁决、公司的面孔，以及把作品留在自己手里的独立者。",
+      },
+    },
+    lessons: [
+      {
+        slug: "malcolm-mclaren",
+        order: 1,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "Malcolm McLaren", oneLiner: "The manager who kept the credit, and the taste that was granted anyway." },
+          es: { title: "Malcolm McLaren", oneLiner: "El manager que se quedó con el crédito, y el gusto que aun así se le concedió." },
+          ja: { title: "マルコム・マクラーレン", oneLiner: "クレジットを持っていったマネージャーと、それでも認められた趣味。" },
+          zh: { title: "马尔科姆·麦克拉伦", oneLiner: "拿走署名的经理，以及仍然被承认的品味。" },
+        },
+      },
+      {
+        slug: "john-lydon",
+        order: 2,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "John Lydon", oneLiner: "The singer who sued the manager and said the credit was stolen." },
+          es: { title: "John Lydon", oneLiner: "El cantante que demandó al manager y dijo que el crédito era robado." },
+          ja: { title: "ジョン・ライドン", oneLiner: "マネージャーを訴え、クレジットは盗まれたと言った歌手。" },
+          zh: { title: "约翰·莱顿", oneLiner: "起诉经理、并说署名是被偷走的歌手。" },
+        },
+      },
+      {
+        slug: "donald-trump",
+        order: 3,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "Donald Trump", oneLiner: "The 1987 book, the broadcast verdict, the companies' Chapter 11, and a declared support this lesson does not adopt." },
+          es: { title: "Donald Trump", oneLiner: "El libro de 1987, el veredicto televisado, el Capítulo 11 de las empresas, y un apoyo declarado que esta lección no adopta." },
+          ja: { title: "ドナルド・トランプ", oneLiner: "1987年の本、放送上の判定、企業のチャプター11、そしてこの課が採用しないと明言された支持。" },
+          zh: { title: "唐纳德·特朗普", oneLiner: "1987 年的书、电视上的裁决、公司的第 11 章破产，以及本课并不采纳的公开支持。" },
+        },
+      },
+      {
+        slug: "simon-cowell-and-gordon-ramsay",
+        order: 4,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "Simon Cowell and Gordon Ramsay", oneLiner: "Two trades, one televised verdict: the judge, the chef, and the shows that are not the kitchens." },
+          es: { title: "Simon Cowell y Gordon Ramsay", oneLiner: "Dos oficios, un veredicto televisado: el juez, el chef, y los programas que no son las cocinas." },
+          ja: { title: "サイモン・コーウェルとゴードン・ラムゼイ", oneLiner: "二つの職、一つのテレビ判定。審査員と料理人、そして厨房ではない番組。" },
+          zh: { title: "西蒙·考威尔与戈登·拉姆齐", oneLiner: "两种行当，同一种电视裁决：评委、厨师，以及并非厨房的节目。" },
+        },
+      },
+      {
+        slug: "stan-lee",
+        order: 5,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "Stan Lee", oneLiner: "The face of the company, the Marvel Method, and the artists who left." },
+          es: { title: "Stan Lee", oneLiner: "La cara de la compañía, el Marvel Method, y los artistas que se fueron." },
+          ja: { title: "スタン・リー", oneLiner: "会社の顔、マーベル・メソッド、そして去った描き手たち。" },
+          zh: { title: "斯坦·李", oneLiner: "公司的面孔、漫威方法，以及离开的画家。" },
+        },
+      },
+      {
+        slug: "todd-mcfarlane",
+        order: 6,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "Todd McFarlane", oneLiner: "Image Comics, Spawn, and the copyright case that cut creator-ownership the other way." },
+          es: { title: "Todd McFarlane", oneLiner: "Image Comics, Spawn, y el caso que volvió la propiedad del creador en la otra dirección." },
+          ja: { title: "トッド・マクファーレン", oneLiner: "イメージ・コミックス、スポーン、そして作者所有を逆向きに切った著作権訴訟。" },
+          zh: { title: "托德·麦克法兰", oneLiner: "Image 漫画、Spawn，以及把创作者所有权反过来切开的版权案。" },
+        },
+      },
+      {
+        slug: "m-strange",
+        order: 7,
+        level: "intermediate",
+        status: "written",
+        i18n: {
+          en: { title: "M. Strange", oneLiner: "The independent who displaced the set: Sundance, Uberector, and a patronage told as testimony." },
+          es: { title: "M. Strange", oneLiner: "El independiente que desplazó al conjunto: Sundance, Uberector, y un patronazgo contado como testimonio." },
+          ja: { title: "M. Strange", oneLiner: "その一群に取って代わった独立者。サンダンス、Uberector、証言として語られる後援。" },
+          zh: { title: "M. Strange", oneLiner: "取代那一组人的独立者：圣丹斯、Uberector，以及作为证词讲述的资助。" },
         },
       },
     ],

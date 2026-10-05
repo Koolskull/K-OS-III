@@ -15,6 +15,8 @@ The desktop app **EDUCATION** (icon `§`) loads those markdown files, lets you r
 
 Live: open the OS → double-click **EDUCATION** → pick Sovereignty, Culture Machines, or **Antediluvian Observatory** → read → **START QUIZ** → pass to mark complete.
 
+The **LESSONS** tab is the Academy (`src/components/academy/Academy.tsx`, registry `src/lib/education/tracks.ts`). The lineage track **Figures — Culture Industry** (`figures-culture`) holds the intensive articles on Malcolm McLaren, John Lydon, Donald Trump, Simon Cowell and Gordon Ramsay, Stan Lee, Todd McFarlane, and M. Strange. Those articles cite BACKSTAGE and STARDRAIN with in-OS addresses (`kos://academy/...`, `kos://backstage/...`, `kos://stardrain/...`), which open the other desktop app on the named entry. The **OBSERVATORY** tab remains the markdown catalog under `public/education/`.
+
 For the system spec, see [`docs/KNOWLEDGE_CORPUS.md`](./docs/KNOWLEDGE_CORPUS.md).
 
 ---

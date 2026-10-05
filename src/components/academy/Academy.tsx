@@ -15,6 +15,7 @@
  */
 
 import React, { useCallback, useState } from "react";
+import { useKosLesson } from "@/components/os/KosLink";
 import {
   TRACKS,
   TRACKS_BY_SLUG,
@@ -99,6 +100,14 @@ import EnMitAiLab from "@/lib/education/lessons/en/lineage-hackers/mit-ai-lab";
 import EnCypherpunks from "@/lib/education/lessons/en/lineage-hackers/cypherpunks";
 import EnFreeSoftwareMovement from "@/lib/education/lessons/en/lineage-hackers/free-software-movement";
 import EnHomebrewEra from "@/lib/education/lessons/en/lineage-hackers/homebrew-era";
+// figures-culture
+import EnMalcolmMclaren from "@/lib/education/lessons/en/figures-culture/malcolm-mclaren";
+import EnJohnLydon from "@/lib/education/lessons/en/figures-culture/john-lydon";
+import EnDonaldTrump from "@/lib/education/lessons/en/figures-culture/donald-trump";
+import EnCowellRamsay from "@/lib/education/lessons/en/figures-culture/simon-cowell-and-gordon-ramsay";
+import EnStanLee from "@/lib/education/lessons/en/figures-culture/stan-lee";
+import EnToddMcFarlane from "@/lib/education/lessons/en/figures-culture/todd-mcfarlane";
+import EnMStrange from "@/lib/education/lessons/en/figures-culture/m-strange";
 
 export interface LessonRef {
   track: string;
@@ -189,6 +198,15 @@ const LESSON_COMPONENTS: LessonBundle = {
       "free-software-movement": EnFreeSoftwareMovement,
       "homebrew-era": EnHomebrewEra,
     },
+    "figures-culture": {
+      "malcolm-mclaren": EnMalcolmMclaren,
+      "john-lydon": EnJohnLydon,
+      "donald-trump": EnDonaldTrump,
+      "simon-cowell-and-gordon-ramsay": EnCowellRamsay,
+      "stan-lee": EnStanLee,
+      "todd-mcfarlane": EnToddMcFarlane,
+      "m-strange": EnMStrange,
+    },
   },
   es: {},
   ja: {},
@@ -235,6 +253,14 @@ export function Academy({
     },
     [mode, onRefChange, lang],
   );
+
+  const openLinkedLesson = useCallback(
+    (trackSlug: string, lessonSlug: string) => {
+      navigate({ track: trackSlug, lesson: lessonSlug });
+    },
+    [navigate],
+  );
+  useKosLesson(openLinkedLesson);
 
   const setLang = useCallback(
     (next: Lang) => {

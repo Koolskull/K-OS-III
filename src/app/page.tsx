@@ -39,6 +39,7 @@ import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
 import { ManualApp } from "@/components/apps/manual/ManualApp";
 import { StardrainWikiApp } from "@/components/apps/stardrain-wiki/StardrainWikiApp";
+import { BackstageWikiApp } from "@/components/apps/backstage-wiki/BackstageWikiApp";
 import TilemapApp from "@/components/apps/tilemap/TilemapApp";
 import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
@@ -61,6 +62,7 @@ type AppId =
   | "kooldraw"
   | "manual"
   | "stardrain-wiki"
+  | "backstage-wiki"
   | "tilemap"
   | "shotlist"
   | "skulltext"
@@ -88,6 +90,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number
   kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
   manual: { title: "K-OS MANUAL", width: 880, height: 600 },
   "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
+  "backstage-wiki": { title: "BACKSTAGE", width: 860, height: 620 },
   tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
   shotlist: { title: "SHOTLIST", width: 900, height: 640 },
   skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
@@ -237,6 +240,7 @@ export default function KoolskullOS() {
             )}
             {win.appId === "manual" && <ManualApp />}
             {win.appId === "stardrain-wiki" && <StardrainWikiApp />}
+            {win.appId === "backstage-wiki" && <BackstageWikiApp />}
             {win.appId === "tilemap" && (
               <TilemapApp isFocused={win.id === focusedWindowId} />
             )}

@@ -44,6 +44,7 @@ const ICONS: DesktopIcon[] = [
   { id: "manual", label: "MANUAL", glyph: "?" },
   { id: "education", label: "EDUCATION", glyph: "§" },
   { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
+  { id: "backstage-wiki", label: "BACKSTAGE", glyph: "◐" },
   { id: "studio", label: "STUDIO", glyph: "▣" },
   { id: "prodev", label: "PRODEV", glyph: "▥" },
 ];

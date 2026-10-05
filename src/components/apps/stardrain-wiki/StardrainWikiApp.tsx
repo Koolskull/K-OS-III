@@ -297,8 +297,9 @@ function StardrainWikiInner() {
                 }}
               >
                 Private reference for the Stardrain universe. Cosmology, locations, characters,
-                power structures, and the creative culture of the island. Click any entry in the
-                sidebar or below to read.
+                power structures, and the creative culture of the island. The history and the
+                intended significance live in the BACKSTAGE app on the desktop. Click any entry
+                in the sidebar or below to read.
               </p>
 
               {CATEGORY_ORDER.map((cat) => {

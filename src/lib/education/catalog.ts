@@ -1,4 +1,4 @@
-import type { EducationTrackMeta } from "./	ypes";
+import type { EducationTrackMeta } from "./types";
 
 /**
  * Built-in education catalog for the in-OS EDUCATION app.
@@ -59,6 +59,7 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "culture-machines/04", file: "04-jungle-ccru-accelerationism.md", title: "Jungle, CCRU, accelerationism", estimatedMinutes: 18 },
       { id: "culture-machines/05", file: "05-aquino-mindwar-presidio.md", title: "Aquino, MindWar, Presidio", estimatedMinutes: 22 },
       { id: "culture-machines/06", file: "06-myth-filters-and-festival-scale.md", title: "Festival scale and myth filters", estimatedMinutes: 16 },
+      { id: "culture-machines/07", file: "07-retro-content-and-the-timeless-instrument.md", title: "Retro content and the timeless instrument", estimatedMinutes: 22 },
     ],
   },
   {

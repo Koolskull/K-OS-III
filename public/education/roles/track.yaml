@@ -1,0 +1,40 @@
+title: Roles — Feminism, Tradition, and Adaptive Households
+slug: roles
+summary: >-
+  A careful track on feminism and "traditional female roles": the mainstream
+  accounts and credible dissenting accounts, what the historical record
+  actually shows about women's labor, and how real households have always
+  adapted roles to abilities and needs. The author's dictated voice is quoted
+  verbatim (🗣️) and treated as an interpretive frame, not settled fact. Two
+  doors (Christian and secular) are kept open, as in the creativity track.
+prerequisites: [sovereignty]
+estimated_hours: 3
+flagship: false
+lessons:
+  - file: 01-the-two-polite-positions.md
+    title: The two polite positions
+    status: written
+  - file: 02-the-curated-vignette.md
+    title: The curated vignette
+    status: written
+  - file: 03-roles-that-shift.md
+    title: Roles that shift
+    status: written
+  - file: 04-grueling-labor-the-real-tradition.md
+    title: Grueling labor, the real tradition
+    status: written
+  - file: 05-the-fear-manifestation-loop.md
+    title: The fear–manifestation loop
+    status: written
+  - file: 06-the-flow-and-the-two-gifts.md
+    title: The flow and the two gifts
+    status: written
+tools:
+  - file: tools/role-inventory.md
+    title: Role inventory
+  - file: tools/fear-manifestation-log.md
+    title: Fear–manifestation log
+  - file: tools/weekly-flow-log.md
+    title: Weekly flow log
+  - file: tools/transcript-prompt.md
+    title: Transcript prompt

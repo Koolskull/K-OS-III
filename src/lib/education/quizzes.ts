@@ -1260,6 +1260,240 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
     ],
   },
+  "roles/01": {
+    lessonId: "roles/01",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Which historian argues that the 'traditional family' image is often a mid-20th-century snapshot rather than a timeless norm?",
+        choices: [
+          { id: "a", text: "Stephanie Coontz (1992; 2005)" },
+          { id: "b", text: "Claudia Goldin (1990; 2021)" },
+          { id: "c", text: "Laurel Thatcher Ulrich (1982; 1990)" },
+          { id: "d", text: "Alice Clark (1919)" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Who authored 'The Paradox of Declining Female Happiness' (2009)?",
+        choices: [
+          { id: "a", text: "Betsey Stevenson & Justin Wolfers" },
+          { id: "b", text: "Mary Harrington" },
+          { id: "c", text: "Louise Perry" },
+          { id: "d", text: "Phyllis Schlafly" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "In this track, the author's 'Marxist proxy tentacles' phrasing is treated as:",
+        choices: [
+          { id: "a", text: "Settled historical fact" },
+          { id: "b", text: "An interpretive frame quoted in his voice, not a verdict" },
+          { id: "c", text: "A ban on reading Engels (1884)" },
+          { id: "d", text: "Proof of a single-villain story" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "roles/02": {
+    lessonId: "roles/02",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Proverbs 31 is used here as:",
+        choices: [
+          { id: "a", text: "A primary source describing composite economic/domestic labor" },
+          { id: "b", text: "A 1950s appliance catalog" },
+          { id: "c", text: "A modern policy memo" },
+          { id: "d", text: "A prohibition on trade" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Which book argues that domestic technology often reallocated rather than eliminated labor?",
+        choices: [
+          { id: "a", text: "Ruth Schwartz Cowan, More Work for Mother (1983)" },
+          { id: "b", text: "Stephanie Coontz, The Way We Never Were (1992)" },
+          { id: "c", text: "Claudia Goldin, Career and Family (2021)" },
+          { id: "d", text: "Laurel Thatcher Ulrich, Good Wives (1982)" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "The 'traditional family' image most often references which U.S. period in popular culture?",
+        choices: [
+          { id: "a", text: "The 1950s American household snapshot" },
+          { id: "b", text: "Colonial New England" },
+          { id: "c", text: "The late medieval guild system" },
+          { id: "d", text: "Contemporary dual-career households only" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "roles/03": {
+    lessonId: "roles/03",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "'Roles that shift' in this lesson is presented primarily as:",
+        choices: [
+          { id: "a", text: "A failure of tradition" },
+          { id: "b", text: "The documented historical norm across eras" },
+          { id: "c", text: "A new invention" },
+          { id: "d", text: "A ban on specialization" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which tool records 'what was in front of me,' 'what I did,' and 'what it became'?",
+        choices: [
+          { id: "a", text: "role-inventory.md" },
+          { id: "b", text: "weekly-flow-log.md" },
+          { id: "c", text: "fear-manifestation-log.md" },
+          { id: "d", text: "transcript-prompt.md" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "One mainstream source on adaptive household labor in early America is:",
+        choices: [
+          { id: "a", text: "Laurel Thatcher Ulrich, Good Wives (1982)" },
+          { id: "b", text: "Betty Friedan, The Feminine Mystique (1963)" },
+          { id: "c", text: "Mary Harrington, Feminism Against Progress (2023)" },
+          { id: "d", text: "Phyllis Schlafly, The Power of the Positive Woman (1977)" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "roles/04": {
+    lessonId: "roles/04",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Which sectors are named as historically grueling women's work in this lesson?",
+        choices: [
+          { id: "a", text: "Agriculture, textiles, domestic service/early industry" },
+          { id: "b", text: "Salon culture and parlor games" },
+          { id: "c", text: "Only modern office work" },
+          { id: "d", text: "Only internet content creation" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "More Work for Mother (1983) argues primarily that:",
+        choices: [
+          { id: "a", text: "Technology erased women’s labor" },
+          { id: "b", text: "Technology often shifted labor onto women" },
+          { id: "c", text: "Men did all domestic work" },
+          { id: "d", text: "Housework ceased in 1900" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Which author is associated with colonial New England women's economic labor?",
+        choices: [
+          { id: "a", text: "Laurel Thatcher Ulrich" },
+          { id: "b", text: "Stephanie Coontz" },
+          { id: "c", text: "Gina Rippon" },
+          { id: "d", text: "Carrie Gress" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "roles/05": {
+    lessonId: "roles/05",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "In this lesson the 'fear–manifestation loop' is presented as:",
+        choices: [
+          { id: "a", text: "A proven physical law" },
+          { id: "b", text: "A spiritual/metaphorical frame with secular echoes in attention and habit" },
+          { id: "c", text: "A ban on therapy" },
+          { id: "d", text: "A requirement to post online" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which tool captures the fear and the observed outcomes?",
+        choices: [
+          { id: "a", text: "fear-manifestation-log.md" },
+          { id: "b", text: "weekly-flow-log.md" },
+          { id: "c", text: "role-inventory.md" },
+          { id: "d", text: "transcript-prompt.md" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "The practical counter-move emphasized here is to:",
+        choices: [
+          { id: "a", text: "Wait until you feel motivated" },
+          { id: "b", text: "Act on what is directly in front of you and record it" },
+          { id: "c", text: "Post on social media first" },
+          { id: "d", text: "Debate the internet for a week" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "roles/06": {
+    lessonId: "roles/06",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Hyde’s 'Gender Similarities Hypothesis' (2005) is used here to mark that:",
+        choices: [
+          { id: "a", text: "Most measured differences are large and non-overlapping" },
+          { id: "b", text: "Many average differences are small with substantial overlap" },
+          { id: "c", text: "Men and women are identical in all traits" },
+          { id: "d", text: "Sex research is banned" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "In this track, the phrase 'completely unable' is treated as:",
+        choices: [
+          { id: "a", text: "A mainstream consensus" },
+          { id: "b", text: "The author’s phrasing, labeled as such" },
+          { id: "c", text: "A government policy" },
+          { id: "d", text: "A quiz answer key" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "The two doors in this lesson are:",
+        choices: [
+          { id: "a", text: "Christian theological reading and secular practice reading" },
+          { id: "b", text: "Policy and memes" },
+          { id: "c", text: "Only conservative and only feminist" },
+          { id: "d", text: "Silence and posting" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
 
 };
 

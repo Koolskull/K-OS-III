@@ -83,7 +83,8 @@ All VERIFIED (read):
 | Source | Status |
 |---|---|
 | Harai, Dénes 2025, "Counting the Stakes: A Reassessment of Vlad III Dracula's Practice of Collective Impalements in Fifteenth-Century Southeastern Europe," *Transactions of the Royal Historical Society* (online 23 Sep 2025), doi:10.1017/S008044012510042X (DOI resolves to Cambridge Core; Crossref metadata confirmed 6 Oct 2026). https://www.cambridge.org/core/journals/transactions-of-the-royal-historical-society/article/counting-the-stakes-a-reassessment-of-vlad-iii-draculas-practice-of-collective-impalements-in-fifteenthcentury-southeastern-europe/F1B68C737C004D494BBE3B8B9B5E0FF7 | VERIFIED (full text) |
-| Cazacu, Matei 1981, "Geschichte Dracole waide. Un incunable imprimé à Vienne en 1463," *Bibliothèque de l'École des chartes* 139-2: 209–243 (Persée) | VERIFIED |
+| Cazacu, Matei 1981, "Geschichte Dracole waide. Un incunable imprimé à Vienne en 1463," *Bibliothèque de l'École des chartes* 139-2: 209–243 (Persée). Its 1463 Vienna-print thesis is CONTESTED | VERIFIED |
+| *Geschichte Dracole Waide*, Repertorium Fontium record (composed c. 1462; earliest surviving print Nuremberg 1488). https://geschichtsquellen.de/werk/5617 | VERIFIED (VTR, record); not opened by me |
 | Florescu & McNally; Treptow 2000; Cazacu *Dracula* (Brill 2017); Chalkokondyles (Kaldellis 2014); Tursun Beg; Mihailović; Doukas; Kritovoulos; Pop; Simon 2020; Skazanie (Stanford sourcebook); Rezachevici; Order of the Dragon statutes (Fejér) | UNVERIFIED by me (listed in `/workspace/vlad-tepes-research/notes.md`) |
 | KJV: 1 Samuel 15:3; Romans 12:19; Romans 13:4; Matthew 5:44 (bible-api.com) | VERIFIED |
 
@@ -142,22 +143,31 @@ All VERIFIED (read):
 
 ## 9. Addendum 2: Charles III / Vlad
 
+Aligned with `/workspace/vlad-tepes-research/REPORT.md` §7b and `/workspace/vlad-tepes-research/SOURCES.md` ("For Death Cult Research" → "Charles III descent claim"; their IDs H1–H19 are shown where relevant). "VERIFIED (VTR)" means Vlad Țepeș Research opened it and I did not.
+
 | Source | Status |
 |---|---|
-| *The Independent* (PA), 30 Oct 2011, "Prince Charles: I have a stake in Transylvania's future." https://www.independent.co.uk/news/people/news/prince-charles-i-have-a-stake-in-transylvania-s-future-2376584.html | VERIFIED (quote via retrieved article content) |
-| AP via ABC30, 27 Oct 2011 | UNVERIFIED |
-| NPR, 8 Nov 2012 (longer quote via *Telegraph*) | UNVERIFIED |
-| Snopes, Rascouët-Paz, Anna, 21 May 2024, "King Charles is descended from Vlad the Impaler?" https://www.snopes.com/fact-check/king-charles-vlad-the-impaler/ | VERIFIED |
-| GOV.UK, 3 Jun 2015, launch of The Prince of Wales's Foundation Romania | VERIFIED |
-| Szilágyi, Emőke Rita & Nagy, Levente 2022, "Rețele familiale și memorie genealogică...," *Studii și Materiale de Istorie Medie* XL: 125–164. https://real.mtak.hu/158964/1/x05LeventeNagy_FamiliileOlahusHuniadisiDracula.pdf | VERIFIED |
-| Binder, Paul 1988, "Une famille noble roumaine de Transylvanie: les Drakula de Sintești," RRH | UNVERIFIED |
-| Hughes, David, *The British Chronicles*; *Chronicle of the Kings and Queens of Britain* (Heritage Books, 2013) | UNVERIFIED |
-| Claudine Rhédey (Wikidata Q265865) | UNVERIFIED |
-| Metro (2024), Adevărul tree; Cornwall Live; MyLondon | UNVERIFIED (journalism) |
-| Alba Iulia "Prince of Transylvania" offer, Apr 2017 (Alba24, AP) | UNVERIFIED |
+| *The Independent* (PA), 30 Oct 2011, "Prince Charles: 'I have a stake in Transylvania's future'" (*Wild Carpathia*, Charlie Ottley, Travel Channel). https://www.independent.co.uk/news/people/news/prince-charles-i-have-a-stake-in-transylvania-s-future-2376584.html (VTR H1) | VERIFIED (me and VTR). First-broadcast date UNVERIFIED; footage not viewed |
+| Robert Hardman, *Daily Mail* (article 15509737): calls it "a BBC documentary" (**conflicts with PA**); "great-grandson 16 times removed"; "Vlad IV and Prince Mihnea" (VTR H3) | VERIFIED (VTR); not opened by me |
+| Richard Clements, Ancient Origins, 12 Jun 2024: "16-times great-granduncle… not a direct ancestor" (**conflicts with the Daily Mail's direct-descent wording**). https://www.ancient-origins.net/history-famous-people/king-charles-iii-0020923 (VTR H7) | VERIFIED (VTR); not opened by me |
+| Paul Brummell, "UK – Romania ties: the story of Her Majesty's great-great grandmother," FCDO blog (UK in Romania), 6 Dec 2016. https://blogs.fcdo.gov.uk/paulbrummell/2016/12/06/uk-romania-ties-the-story-of-her-majestys-great-great-grandmother/ (VTR H8). Documents Claudine Rhédey (b. 1812, Sangeorgiu de Padure) → Francis of Teck → Mary of Teck, and Charles's 2008 visit. **Does not mention Vlad** | VERIFIED (me: URL resolves, HTTP 200, opened 6 Oct 2026; also VTR) |
+| Telex, Nagy Nikoletta, 20 Sep 2022, "Fact-check: tényleg román származású, sőt, egyenesen Drakula leszármazottja III. Károly...", interviewing Dr. Levente Nagy (ELTE). No source for the Maria de Valachie–Bornemisza marriage; the last certain Drakula is László, 1553; "fantazmagóriák." https://telex.hu/ellenorzo/2022/09/20/erzsebet-kiralyno-karoly-herceg-kiraly-drakula-leszarmazottja-vlad-tepes-fejedelem (VTR H4) | VERIFIED (me via WebFetch, after curl got a Cloudflare 403; also VTR) |
+| Snopes, Rascouët-Paz, Anna, 21 May 2024. https://www.snopes.com/fact-check/king-charles-vlad-the-impaler/ (VTR H5). Rated true using a royal-watcher blog plus Geni.com | VERIFIED |
+| Geni.com profile "Vlad Dracula, V, Tepelus of Dracula" (user-edited; the only source for "Vlad Țepeluș" as Vlad's son). https://www.geni.com/people/Vlad-Dracula-V-Tepelus-of-Dracula/6000000010575432214 (VTR H6) | UNVERIFIED (not opened by either agent). The son's historical identity is UNVERIFIED |
+| Metro (2024) / Adevărul tree via "Vlad Țepeluș and Mihnea cel Rău"; Cornwall Live / MyLondon ("16 times removed" attributed to Hughes) | UNVERIFIED (snippets) |
+| AP via ABC30, 27 Oct 2011; NPR, 8 Nov 2012 (longer quote via *Telegraph*) | UNVERIFIED |
+| Hughes, David, *British Chronicles* (*Chronicle of the Kings & Queens of Britain: from the earliest times to the present*), Heritage Books, Westminster MD, **2007** (30 Sept), 680 pp., ISBN 978-0-7884-3301-6. https://openlibrary.org/books/OL11104395M.json (VTR H17) | Catalogue record VERIFIED (VTR); book text not seen; **author credentials UNVERIFIED** |
+| Hughes, *Chronicle of the Kings and Queens of Britain*, Heritage Books, 2013 (later edition; archive.org) (VTR H18) | UNVERIFIED |
+| Coop, Graham, "How many genetic ancestors do I have?", gcbias.org, 11 Nov 2013 (P(zero DNA) formula). https://gcbias.org/2013/11/11/how-does-your-number-of-genetic-ancestors-grow-back-over-time/ (VTR H19) | VERIFIED (VTR); not opened by me |
+| British Embassy Bucharest, "Prince of Wales launches foundation in Romania," GOV.UK, 3 Jun 2015: **The Prince of Wales's Foundation Romania**, launched 2 Jun 2015. https://www.gov.uk/government/news/prince-of-wales-launches-foundation-in-romania (VTR H12) | VERIFIED |
+| Official guesthouse site, Valea Zălanului / Zalánpatak (Kálnoky ancestral link; Viscri training centre). https://zalan.transylvaniancastle.com/ (VTR H11) | VERIFIED (VTR); not opened by me |
+| Zalán purchase years 2006/2010 (Robb Report etc.) (VTR H14) | UNVERIFIED |
+| Alba24, 11 Apr 2017, Alba Iulia "Prinț al Transilvaniei" invitation (Mayor Mircea Hava). https://alba24.ro/printul-charles-invitat-de-primarul-municipiului-alba-iulia-mircea-hava-sa-primeasca-titlul-de-print-al-transilvaniei-559169.html (VTR H15) | Invitation VERIFIED (VTR); outcome UNVERIFIED |
+| *The Telegraph*, Matthew Day, 3 Jan 2011 ("legend also has it…") (VTR H10) | VERIFIED (VTR, earlier); not opened by me |
+| Szilágyi, Emőke Rita & Nagy, Levente 2022, *Studii și Materiale de Istorie Medie* XL: 125–164. https://real.mtak.hu/158964/1/x05LeventeNagy_FamiliileOlahusHuniadisiDracula.pdf | VERIFIED (me) |
+| Binder, Paul 1988, "Les Drakula de Sintești," RRH | UNVERIFIED |
+| Claudine Rhédey (Wikidata Q265865; Wikipedia) | UNVERIFIED (superseded by the FCDO post for the upper route) |
 | CBS / Britannica coverage of the Charles–Vlad claim | NOT FOUND |
-| Coop, Graham, blog on genetic vs genealogical ancestry | UNVERIFIED |
-| Telex, Nagy Nikoletta, 20 Sep 2022, "Fact-check: tényleg román származású, sőt, egyenesen Drakula leszármazottja III. Károly...", interviewing Dr. Levente Nagy (ELTE). https://telex.hu/ellenorzo/2022/09/20/erzsebet-kiralyno-karoly-herceg-kiraly-drakula-leszarmazottja-vlad-tepes-fejedelem | VERIFIED (WebFetch, 6 Oct 2026; curl got a Cloudflare 403; also VERIFIED by Vlad Țepeș Research) |
 
 ## 10. Addendum 3: Nephilim / archons
 
@@ -218,7 +228,10 @@ All VERIFIED (read):
 
 - "Olga Zabala" as an Aztec scholar: not found.
 - CBS and Britannica on Charles–Vlad: not found.
-- A named historian calling Vlad's killings "genocide": not found (Vlad Țepeș Research also found none). A named scholar disputing the Charles chain: found by the Vlad agent (Levente Nagy, via Telex 2022).
+- A named historian calling Vlad's killings "genocide": not found (Vlad Țepeș Research also found none).
+- A named scholar disputing the Charles chain: found (Levente Nagy, via Telex 2022; VERIFIED).
+- The first-broadcast date of *Wild Carpathia*: UNVERIFIED.
+- "Vlad Țepeluș" as Vlad's son: Geni only, UNVERIFIED.
 - A YouTube URL for the Collins episode: not found.
 - The exact verb in Collins's "imperative is to [?] over all of the world's population": the auto-transcript drops it.
 - Any documentary evidence of a cross-civilizational child-sacrificing secret group: none found.

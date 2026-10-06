@@ -14,3 +14,4 @@ Notes:
 - Each report was written before or alongside PR #15 (Roles track), so statements like "no public/education/roles/ folder exists yet" reflect master at the time of writing.
 - Downloaded source PDFs and text extracts are kept off-repo (copyright and size) on the owner's research machine.
 - Pending reports still to be ingested later into this folder: Monroe, Flow State ("something working through them"); Red Skelton (cultural citation research); Fools for Christ (education track research).
+- The death-cults track report and sources were revised on 2026-10-06.

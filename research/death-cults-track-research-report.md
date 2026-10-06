@@ -74,10 +74,11 @@ The stance closes with 1 Thessalonians 5:21: "Prove all things; hold fast that w
    - Real 19th-century financial dominance is **DOCUMENTED** (Ferguson; e.g., the £4m Suez advance in 1875).
    - The Waterloo insider-trading legend traces to an 1846 antisemitic pamphlet signed "Satan" and was dismantled by Brian Cathcart (VERIFIED). It is **UNSUPPORTED**.
    - Rothschild-centered conspiracy theory descends directly from 19th-century antisemitism, the forged *Protocols*, and Nazi propaganda. That lineage is **DOCUMENTED**.
-9. **King Charles III and Vlad.**
-   - That Charles said "The genealogy shows I am descended from Vlad the Impaler" (Travel Channel UK, *Wild Carpathia*, aired 30 Oct 2011) is **DOCUMENTED**.
-   - The descent chain itself is **CONTESTED** or unverified: it rests on popular genealogy and Geni.com, which Snopes itself used.
-   - His genetic share would be about 1/2^17 at most (≈0.0008%), and probably zero.
+9. **King Charles III and Vlad** (aligned with `/workspace/vlad-tepes-research/REPORT.md` §7b).
+   - That Charles said "The genealogy shows I am descended from Vlad the Impaler" is **DOCUMENTED**: *Wild Carpathia*, Travel Channel, per *The Independent*/PA, 30 Oct 2011. The *Daily Mail* says BBC, which conflicts with this.
+   - The upper route to Claudine Rhédey is **DOCUMENTED** (FCDO blog, 2016).
+   - The link from Claudine back to Vlad is **CONTESTED**, and its key Maria de Valachie–Bornemisza marriage has no source (Dr. Levente Nagy, Telex 2022).
+   - Expected genetic share depends on the uncertain generation count: about 0.0015% at 16 generations, about 0.0008% at 17. Realistically it is probably zero.
    - It is a genealogical curiosity, **not** evidence of any secret group.
 10. **Nephilim and archons.**
     - The texts themselves are real and quotable: Genesis 6:1–4; Numbers 13:33; 1 Enoch 6–10; Hypostasis of the Archons; Ephesians 6:12. That they exist is **DOCUMENTED**.
@@ -101,7 +102,10 @@ The stance closes with 1 Thessalonians 5:21: "Prove all things; hold fast that w
 | Shang = child sacrifice | Yinxu victims were mainly adult males, many non-local captives. | Cheung et al. 2017 (UNVERIFIED citation details) |
 | Washington initiated at Alexandria No. 22 (1752) | Initiated 4 Nov 1752 at the **Lodge at Fredericksburg**. Charter master of Alexandria No. 22 in 1788. | Mount Vernon digital encyclopedia (VERIFIED) |
 | "Prince's Trust Romania" (2015) | **The Prince of Wales's Foundation Romania** (Fundația Prințul de Wales), launched 2 June 2015. | GOV.UK, 3 Jun 2015 (VERIFIED) |
-| Charles's genetic share "under 0.1%" | At 17 generations, ≤1/2^17 ≈ **0.00076%**. Likely **zero** actual DNA. | Arithmetic (below) |
+| Charles documentary on "BBC" (Daily Mail) | *Wild Carpathia*, **Travel Channel**, per contemporary *Independent*/PA report, 30 Oct 2011. Broadcaster conflict noted; first-broadcast date UNVERIFIED. | §11; Vlad §7b.1 |
+| Charles is Vlad's "great-grandson 16 times removed" | The popular wording is inconsistent: *Daily Mail* says direct descent ("16 times removed"); Ancient Origins says collateral ("16-times great-granduncle"). The chain's key link has no source. | §11 C.2; Vlad §7b.2 |
+| Hughes, *The British Chronicles* (2013) | Heritage Books, **2007** (2013 is a later edition titled *Chronicle of the Kings and Queens of Britain*); author credentials UNVERIFIED. | Vlad §7b.5 (Open Library record) |
+| Charles's genetic share "under 0.1%" | Depends on the (uncertain) generation count: 16 generations ≈ 1/2^16 ≈ **0.0015%**; 17 ≈ **0.0008%**. That is roughly 65–130× below 0.1%. Realistically likely **zero** (recombination). | Arithmetic, §11 C.3; `/workspace/vlad-tepes-research/REPORT.md` §7b.3 |
 | Vlad's letter: "23,884 killed" | Two manuscript copies disagree: Munich 23,884 (local tallies sum to 20,099); Wolfenbüttel 23,889 (tallies sum to 22,879). The letter does not mention impalement. | Harai 2025 (VERIFIED) |
 | Le Forestier 1915 | Published 1914 (Paris: Hachette). | Search, UNVERIFIED |
 
@@ -261,7 +265,7 @@ He also writes: "What empire has not put forth, and fervently believed, religiou
 >
 > They appeared after this section was first drafted. Their conclusions **agree** with this section: death cult **UNSUPPORTED** (their C14); secretive elite **UNSUPPORTED** beyond the public Order of the Dragon (C15); "Christian hero," "Christian genocide," and "destroy the enemy" all labeled **OWNER'S INTERPRETIVE FRAME** (C10, C12, C13); Harai's roughly 2,000 total. **For anything Vlad-specific, defer to their REPORT.md.** It is fuller: biography, Order of the Dragon (founded 1408), Augustine, Aquinas, Origen, Tertullian on just war.
 >
-> **One discrepancy to resolve.** Their SUMMARY says the German pamphlets were "first printed in 1488" (Nuremberg, Ayrer). Cazacu 1981 (VERIFIED by me as a Persée record and article) argued for a Vienna incunable of 1463. Their REPORT.md (line ~233) marks Cazacu's 1463 Vienna printing as CONTESTED, because no Vienna press is attested for 1463. Safest wording: "manuscript versions circulated from c. 1463; the earliest surviving dated print is Nuremberg 1488; a 1463 Vienna print is argued (Cazacu 1981) but contested." I have not independently verified the 1488 date.
+> **Pamphlet dating (aligned with Vlad Țepeș Research).** The *Geschichte Dracole Waide* was **composed c. 1462**, at or around Matthias Corvinus's court, to defame Vlad. The **earliest surviving print is Nuremberg 1488** (Marcus Ayrer). A **1463 Vienna print** (argued by Cazacu 1981) is **CONTESTED**, because no Vienna press is attested for 1463. Sources: Repertorium Fontium, https://geschichtsquellen.de/werk/5617, per `/workspace/vlad-tepes-research/SOURCES.md` (VERIFIED by them as a record; not opened by me); Cazacu 1981 (VERIFIED by me as article and record).
 
 ### Claim 3.1: Vlad carried out mass impalements.
 
@@ -273,7 +277,7 @@ He also writes: "What empire has not put forth, and fervently believed, religiou
   - Gabriele Rangoni (1476): 100,000.
   - Chalkokondyles: 20,000 impaled outside Târgoviște, which Kreuter calls literary exaggeration.
   - The Ottoman eyewitness Enveri saw the field but gives no number. Enveri is known via Harai; his text is UNVERIFIED, and Doukas, Tursun Beg and Aşıkpaşazade are likewise UNVERIFIED at the text level, per Vlad Țepeș Research.
-- **The *Geschichte Dracole Waide* (Vienna, 1463):** pamphlet inflation, e.g. 41 merchants (per a letter of Dan III, 2 Apr 1459) become 600 in the pamphlet. Cazacu 1981, *Bibliothèque de l'École des chartes* 139-2: 209–243 (Persée; VERIFIED).
+- **The *Geschichte Dracole Waide*** (composed c. 1462; earliest surviving print Nuremberg 1488; a 1463 Vienna print is CONTESTED): pamphlet inflation, e.g. 41 merchants (per a letter of Dan III, 2 Apr 1459) become 600 in the pamphlet. Cazacu 1981, *Bibliothèque de l'École des chartes* 139-2: 209–243 (Persée; VERIFIED).
 
 All of the above is from **Harai, Dénes, "Counting the Stakes: A Reassessment of Vlad III Dracula's Practice of Collective Impalements in Fifteenth-Century Southeastern Europe,"** *Transactions of the Royal Historical Society*, online 23 Sep 2025, doi:10.1017/S008044012510042X. VERIFIED (full text). **The DOI resolves:** doi.org redirects to the Cambridge Core article page (HTTP 200), and Crossref metadata confirms the title, journal, author (Harai), and online date 2025-09-23. This was checked at 03:52 PT, 6 Oct 2026.
 
@@ -587,64 +591,136 @@ This is a warning about **faction and party**, including the Whiskey-Rebellion-e
 ---
 ## 11. Addendum 2: King Charles III's claimed descent from Vlad III
 
-### Claim C.1: Charles said he is descended from Vlad the Impaler.
+> **Primary treatment:** `/workspace/vlad-tepes-research/REPORT.md` §7b, "The British Royal Descent Claim" (7b.1–7b.6), with the matching table in `/workspace/vlad-tepes-research/SOURCES.md` ("For Death Cult Research" → "Charles III descent claim"; sources H1–H19). This section summarizes §7b and agrees with it; for detail and full quotations, defer to §7b. Reconciled 6 Oct 2026, ~04:00 PT.
 
-**Source.** The documentary *Wild Carpathia* (presenter Charlie Ottley), shown on **Travel Channel UK** and aired **Sunday 30 Oct 2011**. Charles, then Prince of Wales, said:
+### Claim C.1: Charles said on television in 2011 that he descends from Vlad (cf. §7b.1)
 
-> "The genealogy shows I am descended from Vlad the Impaler, so I do have a bit of a stake in the country."
+- **The programme:** *Wild Carpathia*, presented by Charlie Ottley, on the **Travel Channel**, per *The Independent*/PA, 30 Oct 2011 (https://www.independent.co.uk/news/people/news/prince-charles-i-have-a-stake-in-transylvania-s-future-2376584.html; VERIFIED by me and by Vlad Țepeș Research):
+  > "The genealogy shows I am descended from Vlad the Impaler, so I do have a bit of a stake in the country."
+- **The broadcaster conflict:** the *Daily Mail* (Robert Hardman; opened by Vlad Țepeș Research, not by me) calls it "a BBC documentary." The contemporary PA report says the Travel Channel. **Prefer the contemporary PA report, and note the conflict.**
+- **Air date:** not settled. PA says "this Sunday" in a piece timed late on Sunday 30 Oct 2011, which is ambiguous. My earlier "aired 30 Oct 2011" should be read as "reported 30 Oct 2011; first-broadcast date UNVERIFIED." Neither agent watched the footage.
+- **Snopes** (Rascouët-Paz, 21 May 2024; VERIFIED) quotes the same sentence.
+- **Counterpoint:** *The Telegraph* (3 Jan 2011, per §7b; not opened by me) framed the link as "legend."
 
-The Independent/PA, 30 Oct 2011, https://www.independent.co.uk/news/people/news/prince-charles-i-have-a-stake-in-transylvania-s-future-2376584.html (VERIFIED via search content; AP version via ABC30, 27 Oct 2011). NPR (8 Nov 2012) quotes a longer version beginning "Transylvania is in my blood..." via the *Telegraph* (secondary; UNVERIFIED).
+**Status: DOCUMENTED** (contemporary press report of the remark).
 
-**Status: DOCUMENTED** that he said it.
+### Claim C.2: The descent chain (cf. §7b.2)
 
-### Claim C.2: The descent chain is genuine.
+**The upper route, Charles → Claudine Rhédey: DOCUMENTED.** Paul Brummell, "UK – Romania ties: the story of Her Majesty's great-great grandmother," FCDO blog (UK in Romania), 6 Dec 2016: https://blogs.fcdo.gov.uk/paulbrummell/2016/12/06/uk-romania-ties-the-story-of-her-majestys-great-great-grandmother/ (**URL resolves, HTTP 200, opened by me 6 Oct 2026**). The post says:
 
-**Popular chain.** Charles → Queen Mary (Mary of Teck) → her grandmother **Countess Claudine Rhédey von Kis-Rhéde** (b. 21 Sep 1812 Erdőszentgyörgy / Sângeorgiu de Pădure; d. 1 Oct 1841; Wikidata Q265865; UNVERIFIED as opened) → Hungarian/Transylvanian noble lines → Vlad III, usually via his son Mihnea cel Rău. Cited sources:
+- Claudine ("known in Romanian as Claudia") Rhedey was "born here in 1812" at Rhedey Castle, Sangeorgiu de Padure, Mures County.
+- In 1835 she married Duke Alexander of Württemberg. Their son Francis married Princess Mary Adelaide of Cambridge, and "Their eldest daughter, Mary of Teck, was to marry the future King George V."
+- She died in a carriage accident at 29.
+- The Prince of Wales signed the church's visitors' book in 2008, "in a visit to the church in which his great-great-great grandmother is buried."
 
-- David Hughes, *The British Chronicles*. Popular outlets attribute "great-grandson 16 times removed" to it (Cornwall Live, MyLondon; snippets; UNVERIFIED).
-- A later edition, *Chronicle of the Kings and Queens of Britain* (Heritage Books, 2013), a genealogy press (archive.org record; UNVERIFIED as opened).
-- Metro (2024) cites an Adevărul family tree running through Vlad Țepeluș and Mihnea cel Rău (UNVERIFIED).
+The chain is therefore Charles → Elizabeth II → George VI → Mary of Teck → Francis of Teck → Claudine. **The FCDO post does not mention Vlad or Dracula.** It documents only the upper route.
 
-**Fact-check.** Snopes (Anna Rascouët-Paz, 21 May 2024, https://www.snopes.com/fact-check/king-charles-vlad-the-impaler/; VERIFIED) rated the claim "True." Its evidence was Charles's statement, a royal-watcher blog, and **Geni.com**, a crowd-sourced genealogy site. This confirms Juan's caveat: the fact-check leans on Geni.
+**The lower route, Claudine → Vlad: CONTESTED. Its key link is UNSUPPORTED.** Telex (Nagy Nikoletta, 20 Sep 2022; https://telex.hu/ellenorzo/2022/09/20/erzsebet-kiralyno-karoly-herceg-kiraly-drakula-leszarmazottja-vlad-tepes-fejedelem; VERIFIED by me via WebFetch and by Vlad Țepeș Research).
 
-**Caveats:**
+The chain Telex examined runs: Vlad III → Mihnea I (cel Rău) → an intermediate generation → Petru Șchiopul of Moldavia → **Maria de Valachie** → *[no source]* × Péter Bornemisza → Zsuzsanna Bornemisza → the Kendeffy, Inczédy and Barcsay generations → László Rhédey → **Claudine Rhédey (b. 1812)**. The full table is in §7b.2.
 
-1. **No peer-reviewed genealogical study** of the full chain was found (UNVERIFIED negative).
-2. **The Drakula line in Transylvania.** Szilágyi & Nagy 2022, *Studii și Materiale de Istorie Medie* XL: 125–164 (https://real.mtak.hu/158964/1/x05LeventeNagy_FamiliileOlahusHuniadisiDracula.pdf; VERIFIED) record that Ladislau (László) Drakula married Anna Gyulai in 1553 and received part of the Band estates, and that "After 1553 we have no further information about Ladislau Drakula." They cite Paul Binder 1988 on the Drakulas of Sintești (UNVERIFIED). The male lines are thinly documented, so medieval links in the popular chain need archival checking.
-3. **Genetic share.** If Vlad is about 17 generations back (16× great-grandfather), each such ancestor contributes on average 1/2^17 ≈ **0.00076%** of the genome, and 1/2^18 ≈ 0.00038% at 18 generations.
-   - Charles has 2^17 = 131,072 ancestor "slots" at that depth. Far fewer distinct people fill them, because royal and noble intermarriage repeats the same ancestors (**pedigree collapse**). Collapse can raise one ancestor's expected share somewhat, but it stays tiny.
-   - Population geneticists note that beyond about 10–15 generations, many genealogical ancestors contribute **no** detectable DNA at all, because recombination breaks genomes into a limited number of segments. (General point; e.g., Graham Coop's blog writing on genetic vs genealogical ancestors; UNVERIFIED as opened.)
-   - Juan's "under 0.1%" is true but understates it. The answer is about 0.0008% or less, probably zero.
-4. **Romanian connections are real but are not evidence of descent:**
-   - The Prince of Wales's Foundation Romania (Fundația Prințul de Wales) was launched 2 June 2015 (GOV.UK, 3 Jun 2015; VERIFIED).
-   - Charles first visited Transylvania in 1998.
-   - His charitable foundation owns a Saxon house in **Viscri** (Brașov County), and there is a guesthouse property at **Zalánpatak / Valea Zălanului** (Covasna County) managed by Count Tibor Kálnoky (GOV.UK; VERIFIED).
-   - In April 2017 Alba Iulia's mayor Mircea Hava offered him an honorary "Prince of Transylvania" title (Alba24 and AP via search; UNVERIFIED as opened).
-5. **A named scholar disputes the chain.** Telex (Nagy Nikoletta, "Fact-check: tényleg román származású, sőt, egyenesen Drakula leszármazottja III. Károly, az új angol király?", published 20 Sep 2022, 06:01 PT; https://telex.hu/ellenorzo/2022/09/20/erzsebet-kiralyno-karoly-herceg-kiraly-drakula-leszarmazottja-vlad-tepes-fejedelem). **VERIFIED by me** via WebFetch; curl got a Cloudflare 403. The Vlad agent also VERIFIED it. The article interviews **Dr. Levente Nagy** (head of the Romanian Philology Department, ELTE Budapest; co-author of the Szilágyi & Nagy 2022 paper above). Translated from the Hungarian:
-   - **The popular chain:** Vlad III → Mihnea I (cel Rău) → his grandson Petru Șchiopul of Moldavia → daughter **Maria de Valachie** → (alleged) Péter Bornemisza → Zsuzsanna Bornemisza → Kendeffy → Inczédy → Barcsay → László Rhédey → **Claudine Rhédey** → Francis of Teck → Mary of Teck → the Windsors.
-   - **The break:** "no historical source whatsoever" exists for Maria marrying Péter Bornemisza. Reliable sources give her husband as **Zotu Tzigara**, a Greek commander from Ioannina. Telex adds that David Hughes's *The British Chronicles* presents the Maria–Bornemisza marriage "kész tényként" (as established fact), and that "currently known sources do not support it."
-   - **The Kendeffy–Barcsay stretch** is "complete chaos" per Nagy. Checking it would take "two to three hundred years" of archival sources.
-   - **The tree's provenance:** the earliest online appearance Telex found was a Romanian blog of 24 Jul 2013. The only complete tree it found was on **Geneanet**, an open-upload genealogy site, posted by a user who did not reply to Telex.
-   - **Nagy on 1553:** "A Drakula család utolsó tagjáról, akiről még bármi biztosat tudunk, 1553-ból van a legutolsó információ." ("The latest information about the last member of the Drakula family about whom we know anything certain dates from 1553.") This refers to Drakula László, husband of Anna Gyulai.
-   - **Nagy's verdict:** "Ezek szerintem fantazmagóriák" ("In my view these are phantasmagorias"). He also said he "cannot imagine" any genealogical connection between Dracula's family and the British royal family.
-   - **The article's caution:** fictitious genealogies were mass-produced from the 17th century to prove noble descent.
-   - This matches Juan's "contested chain" and "Drakula László 1553" caveats, and adds a named expert. Note that the Snopes "True" rating (Geni plus a blog) and the Telex fact-check (named ELTE philologist) disagree. Telex's sourcing is stronger.
+Dr. Levente Nagy (ELTE Romanian Philology), as quoted by Telex:
+
+- "no historical source whatsoever" exists for Maria marrying Bornemisza. Reliable sources give her husband as Zotu Tzigara of Ioannina.
+- The Kendeffy–Barcsay branch is "total chaos."
+- "A Drakula család utolsó tagjáról, akiről még bármi biztosat tudunk, 1553-ból van a legutolsó információ" (the last certain information about the Drakula family dates from 1553; Drakula László, husband of Anna Gyulai). This matches Szilágyi & Nagy 2022 (VERIFIED).
+- "Ezek szerintem fantazmagóriák" ("These, in my view, are phantasmagorias").
+
+Telex also notes:
+
+- the earliest online appearance of the chart was a Romanian blog of 24 Jul 2013;
+- the only complete tree it found was a user-uploaded one on Geneanet;
+- fictive noble genealogies were mass-produced from the 17th century.
+
+**Sons named.**
+
+- Telex's chart has Mihnea cel Rău, and an "IV. Vlad" who "nem is biztos, hogy létezett" ("may not even have existed").
+- The *Daily Mail* names "Vlad IV and Prince Mihnea."
+- **"Vlad Țepeluș" as a son of Vlad III** appears only as a **Geni.com** label ("Vlad Dracula, V, Tepelus of Dracula," a user-edited profile among Snopes's sources). Status: **UNVERIFIED**, with no scholarly source found by either agent. My earlier mention of Metro/Adevărul naming "Vlad Țepeluș" is also UNVERIFIED (snippet only). Do not teach this son as an established person.
+
+**A wording contradiction to teach.** The popular sources disagree on what the relationship even is:
+
+- *Daily Mail*: Charles is Vlad's "great-grandson 16 times removed." That implies **direct** descent; "removed" is properly a cousin term.
+- Ancient Origins (Richard Clements, 12 Jun 2024; opened by Vlad Țepeș Research, not by me): Vlad is a "16-times great-granduncle… not a direct ancestor." That is **collateral** descent, from a sibling of Vlad.
+- Charles's own words and Snopes both claim direct descent.
+- My earlier attribution of "16 times removed" to Hughes via Cornwall Live and MyLondon is snippet-level only and UNVERIFIED.
+- **Suggested wording:** "a claimed direct descent, which at least one popular source instead describes as collateral."
+
+**Steelman.**
+
+- Every name in the chain is a real person or family.
+- A real Transylvanian Drakula branch existed (Rezachevici 1999, via §7b; Szilágyi & Nagy 2022).
+- Nagy confirms Drakula László "really was Dracula's grandson," and leaves a Gyulai–Rhédey connection open, though finding it would take years of research.
+- Snopes rated the claim "True," using a royal-watcher blog plus Geni.com, "two separate ways."
+
+**Counter-steelman.**
+
+- The key 16th-century marriage has no source, per a named specialist.
+- Snopes's method (user-editable genealogy sites) does not answer Nagy's archival objection.
 
 **Status:**
 
-- Charles said it: **DOCUMENTED**.
-- The chain: **CONTESTED**. The key Maria de Valachie–Bornemisza link is undocumented per Dr. Levente Nagy (Telex 2022). The chain rests on Hughes, Geni, and Geneanet, not a published scholarly pedigree. Full treatment: `/workspace/vlad-tepes-research/REPORT.md` (C18) and `SOURCES.md` ("For Death Cult Research").
-- A meaningful biological link: **UNSUPPORTED** (≤0.0008%, likely zero).
+- Charles → Claudine: **DOCUMENTED**.
+- Claudine → Vlad: **CONTESTED**.
+- Maria de Valachie × Bornemisza: **UNSUPPORTED**.
 
-**What it is NOT.** It is **not** evidence of a secret group, and **not** a link between Vlad and the Illuminati, the Rothschilds, Washington, or any network. A royal genealogical curiosity shared by a large share of European aristocracy is not a conspiracy. Statistically, most people with European ancestry descend from *some* medieval nobles.
+### Claim C.3: Genetic share (cf. §7b.3)
 
-**Recommendation.** A case-study lesson: "How to check a viral genealogy claim." Cover:
+**The share depends on the generation count, and that count is itself uncertain:**
 
-- what the speaker said (documented);
-- where the chain comes from (Hughes, Geni);
-- what a fact-check actually checked (Snopes);
-- the arithmetic of genetic share and pedigree collapse;
-- why descent from a famous person implies nothing about character or conspiracy.
+- §7b's count down the Telex chain puts Vlad at about **16 generations** above Charles. Other versions add one, giving 17.
+- The popular wordings ("16 times removed," "16-times great-granduncle") use the number loosely.
+- The chain may not be a real line of descent at all (C.2).
+
+**If the paper chain were real, the expected autosomal share from a single path would be:**
+
+| Generations back | Ancestral slots (2^n) | Expected share (1/2^n) | Vs. Juan's "under 0.1%" |
+|---|---|---|---|
+| 16 | 65,536 | ≈ **0.0015%** | ~65× smaller |
+| 17 | 131,072 | ≈ **0.0008%** (0.00076%) | ~130× smaller |
+
+- **Pedigree collapse.** If Vlad occupied more than one slot (Snopes's "two separate ways"), the expectation multiplies only by the number of real paths. Two paths at 16 generations would give ≈0.003%. None of the claimed paths is proven.
+- **Realistically, the share may be zero.** DNA is inherited in recombination blocks, not as a smooth fraction. Using Graham Coop's approximation for the chance of inheriting no autosomal DNA from an ancestor k generations back (gcbias.org, 11 Nov 2013; VERIFIED by Vlad Țepeș Research, not opened by me), §7b computes about **98% (k=16) to 99% (k=17)** per path.
+- The route doesn't follow Charles's direct paternal line (Y chromosome) or direct maternal line (mtDNA) either.
+- Juan's "under 0.1%" is technically true, but it overstates the expectation by roughly 65–130×.
+
+**Status:** a meaningful genetic share is **UNSUPPORTED**.
+
+### Claim C.4: The Romanian ties (cf. §7b.4)
+
+All real; none shows a Vlad basis. The documented ancestral links are through the **Rhédey** and **Kálnoky** lines.
+
+- **First visit:** 1998, at the invitation of Count Tibor Kálnoky (Telex; VERIFIED).
+- **Foundation:** **The Prince of Wales's Foundation Romania** (Fundația Prințul de Wales), launched **2 June 2015** (GOV.UK, British Embassy Bucharest, published 3 Jun 2015, https://www.gov.uk/government/news/prince-of-wales-launches-foundation-in-romania; VERIFIED). The brief's "Prince's Trust Romania" is not the correct name.
+- **Viscri:** the property is now a training centre for traditional crafts.
+- **Valea Zălanului / Zalánpatak (Covasna):** "The Prince of Wales's Guesthouse." Its official site attributes the local ancestral link to the **Kálnoky** family, not Vlad (zalan.transylvaniancastle.com, per §7b; not opened by me).
+- **Purchase years** (2006/2010): UNVERIFIED.
+- **Alba Iulia:** Mayor Mircea Hava's invitation to accept the title "Prinț al Transilvaniei" was reported 11 Apr 2017 (Alba24, opened by Vlad Țepeș Research; not by me). No acceptance was found (UNVERIFIED).
+
+### Note on David Hughes, *The British Chronicles* (cf. §7b.5)
+
+- **Bibliographic record:** *British Chronicles* (subtitle per record: *Chronicle of the Kings & Queens of Britain: from the earliest times to the present*), Heritage Books, Westminster, MD, **2007** (30 Sept 2007), 680 pp., ISBN 978-0-7884-3301-6. The Open Library record OL11104395M was VERIFIED by Vlad Țepeș Research, not opened by me. This **corrects** my earlier reference, which gave only the 2013 Heritage Books *Chronicle of the Kings and Queens of Britain*; that is a later edition (UNVERIFIED).
+- Heritage Books is a genealogy and local-history press.
+- **Author credentials: UNVERIFIED.** Open Library lists an "undifferentiated collection of multiple David Hughes," and no academic or genealogical qualification was found.
+- **Book text not seen** by either agent. Per Telex, it presents the Maria–Bornemisza marriage "kész tényként" ("as established fact").
+
+### What it is NOT
+
+- **Not** evidence of a secret group or bloodline network.
+- **Not** evidence that the Crown "continues" Vlad's line.
+- **Not** a link between Vlad and the Illuminati, the Rothschilds, Washington or Venice. None appears anywhere in the chain (§7b.6).
+
+### Recommendation
+
+Use this as a **case-study lesson in checking viral genealogy**, following §7b.6's suggested wording. Set side by side:
+
+- the Independent/PA quote (what was said);
+- the FCDO post (the documented upper route);
+- Snopes's method (user-edited trees);
+- the Telex/Nagy fact-check (a specialist's archival objection);
+- the generation-dependent DNA arithmetic.
+
+Ask learners which evidence deserves more weight (1 Thess 5:21, "Prove all things").
 
 ---
 
@@ -891,7 +967,7 @@ This explains coordinated-*looking* outcomes **without a cabal**: shared incenti
 - **Paris Catacombs sacrifice.** No evidence.
 - **Venice–sacrifice link.** No evidence, and no one even alleges one in the sources found.
 - **Nephilim/archon bloodlines.** Unfalsifiable, and contradicted by the very texts invoked (Eph 6:12; Hypostasis).
-- **Charles–Vlad as a meaningful link.** Genealogically unverified, genetically negligible.
+- **Charles–Vlad as a meaningful link.** The upper route to Claudine Rhédey is documented; the link back to Vlad has an unsourced key marriage (Nagy/Telex). The expected DNA share is about 0.0015–0.0008% depending on generation count, and realistically likely zero.
 - **Collins's "parasitism" and "negative utilitarian" claims.** Assertions from an interested advocate, against demographic data that has material explanations.
 
 **Genuinely contested (say so plainly; name both sides):**

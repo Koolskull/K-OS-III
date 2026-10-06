@@ -90,6 +90,20 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "roles/06", file: "06-the-flow-and-the-two-gifts.md", title: "The flow and the two gifts", estimatedMinutes: 14 },
     ],
   },
+  {
+    slug: "fools",
+    title: "Fools for Christ — Holy Foolishness, Endurance, and Love on Display",
+    summary:
+      "A careful track on the 'fools for Christ' tradition from Paul through Byzantium and Russia to modern framings — keeping hagiography, history, and psychology distinct. 🗣️ Owner’s frame labeled throughout; closes on creation before feeling.",
+    lessons: [
+      { id: "fools/01", file: "01-when-following-looks-like-folly.md", title: "When Following Looks Like Folly", estimatedMinutes: 16 },
+      { id: "fools/02", file: "02-the-salos-in-byzantium.md", title: "The salos in Byzantium", estimatedMinutes: 18 },
+      { id: "fools/03", file: "03-yurodivy-fools-before-the-tsar.md", title: "Yurodivy — fools before the tsar", estimatedMinutes: 16 },
+      { id: "fools/04", file: "04-perfect-fools-in-the-west.md", title: "Perfect fools in the West", estimatedMinutes: 14 },
+      { id: "fools/05", file: "05-madness-mask-or-mission.md", title: "Madness, mask, or mission", estimatedMinutes: 18 },
+      { id: "fools/06", file: "06-endurance-as-love-displayed.md", title: "Endurance as love displayed", estimatedMinutes: 16 },
+    ],
+  },
 ];
 
 export function findLesson(lessonId: string) {

@@ -48,6 +48,7 @@ export const KNOWN_MD_FILES: MdFileRef[] = [
     path: "docs/CREATIVITY_AS_THE_WAY_OUT_README.md",
     title: titleFromPath("docs/CREATIVITY_AS_THE_WAY_OUT_README.md"),
   },
+  { path: "docs/FOOLS_TRACK_STRUCTURE.md", title: titleFromPath("docs/FOOLS_TRACK_STRUCTURE.md") },
   { path: "docs/EDU_REVIEW.md", title: titleFromPath("docs/EDU_REVIEW.md") },
   { path: "docs/SEED_ISSUES.md", title: titleFromPath("docs/SEED_ISSUES.md") },
   { path: "docs/CHAT_SPEC.md", title: titleFromPath("docs/CHAT_SPEC.md") },

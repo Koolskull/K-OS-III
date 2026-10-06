@@ -59,6 +59,21 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "culture-machines/04", file: "04-jungle-ccru-accelerationism.md", title: "Jungle, CCRU, accelerationism", estimatedMinutes: 18 },
       { id: "culture-machines/05", file: "05-aquino-mindwar-presidio.md", title: "Aquino, MindWar, Presidio", estimatedMinutes: 22 },
       { id: "culture-machines/06", file: "06-myth-filters-and-festival-scale.md", title: "Festival scale and myth filters", estimatedMinutes: 16 },
+      { id: "culture-machines/07", file: "07-retro-content-and-the-timeless-instrument.md", title: "Retro content and the timeless instrument", estimatedMinutes: 22 },
+    ],
+  },
+  {
+    slug: "creativity",
+    title: "Creativity as the Way Out",
+    summary:
+      "Creativity as the accessible exit from trauma-shaped states (depression, laziness, imposter syndrome, hopelessness); value as a function of reality via the Jekyll Island diagnostic; creativity as the primary objective function. Christian and secular readings converge. Ships six lessons plus offline learning tools.",
+    lessons: [
+      { id: "creativity/01", file: "01-the-way-out.md", title: "The way out", estimatedMinutes: 15 },
+      { id: "creativity/02", file: "02-build-something-today.md", title: "Build something today", estimatedMinutes: 12 },
+      { id: "creativity/03", file: "03-the-jekyll-island-diagnostic.md", title: "The Jekyll Island diagnostic", estimatedMinutes: 18 },
+      { id: "creativity/04", file: "04-value-that-compounds.md", title: "Value that compounds", estimatedMinutes: 12 },
+      { id: "creativity/05", file: "05-creativity-as-objective-function.md", title: "Creativity as the objective function", estimatedMinutes: 15 },
+      { id: "creativity/06", file: "06-the-two-doors.md", title: "The two doors", estimatedMinutes: 12 },
     ],
   },
 ];

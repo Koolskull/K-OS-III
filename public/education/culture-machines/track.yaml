@@ -6,11 +6,14 @@ summary: >
   Burning Man and SantaCon; Grateful Dead Acid Tests and academic LSD;
   jungle/CCRU/accelerationism; Michael Aquino, MindWar, Temple of Set, and the
   Presidio investigation (documented record versus internet narrative);
-  commercial festival scale and claims that fail evidence checks. Follows
+  commercial festival scale and claims that fail evidence checks; retro-computer
+  content versus the control grammars of the tracker, the Fairlight, and the
+  Synclavier, with institutional claims about mainstream music labeled by their
+  evidence. Follows
   EPISTEMIC_STANCE.md — primary sources first, named interpreters second,
   unsupported totalizing claims labeled as such.
 prerequisites: []
-estimated_hours: 6
+estimated_hours: 7
 flagship: false
 lessons:
   - file: 01-injection-vs-proliferation.md
@@ -30,4 +33,7 @@ lessons:
     status: written
   - file: 06-myth-filters-and-festival-scale.md
     title: Festival scale and myths that fail evidence checks
+    status: written
+  - file: 07-retro-content-and-the-timeless-instrument.md
+    title: Retro content and the timeless instrument
     status: written

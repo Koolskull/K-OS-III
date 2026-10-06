@@ -90,13 +90,41 @@ export default function MalcolmMclaren() {
         In November 2003 <Em>Wired</Em> published McLaren&apos;s essay
         &ldquo;8-Bit Punk&rdquo; (issue 11.11). He describes chip music as
         a folk practice built on machines the corporations had already
-        sold, names Johan Kotlinski&apos;s Little Sound DJ, and sets that
-        practice against what he calls a karaoke culture. Larrazabal read
+        sold. He describes Little Sound Dj and sets the practice against
+        what he calls a karaoke culture. He calls the programmer Role Model
+        (real name: Johan Kotlinski). The nickname is not another author.
+        Kotlinski wrote that program. McLaren did not. The program is at{" "}
+        <Ext href="https://www.littlesounddj.com/">littlesounddj.com</Ext>.
+        The repositories, including lsdj-doc, lsdpatch, lsdpack, and
+        durexforth, are at{" "}
+        <Ext href="https://github.com/jkotlinski">github.com/jkotlinski</Ext>.
+        Larrazabal read
         the piece later, already hostile to the man, and granted the ear.
         The reading, the refusal, and the comparison to a manager he had
         already walked away from are in{" "}
-        <KosRef to="kos://backstage/koolskull">KOOLSKULL</KosRef>, not
-        here. The essay itself is a public document and can be read whole.
+        <KosRef to="kos://backstage/koolskull">KOOLSKULL</KosRef>. The
+        essay itself is a public document and can be read whole.
+      </P>
+
+      <P>
+        Two sentences in the essay have to be kept together. He writes
+        that this is not music as a commodity but music as an idea, the
+        Nintendo generation sampling its youth. He also writes that he
+        found the look of music, fashion at its most cutting edge, so
+        chic. In the same essay he writes that music has always been, for
+        him, a bridge between art and fashion, and that he was smitten the
+        way a fashion victim is smitten. Larrazabal&apos;s later distinction uses
+        the pair, and lesson 07 of Culture Machines works the pair as his
+        example. On his account the chic sentence is McLaren meeting 8-bit
+        as the next aesthetic an audience would pay and adore, a culture
+        to siphon. On his account the machines in the commodity sentence
+        were undiscovered ground for work that had not been heard, offered
+        as gratitude to God rather than as gratification taken from a
+        crowd. He states that pair as gratitude against gratification. He
+        says the Lord Father, the magnificent benevolent Father, and the
+        gifts that Father gives. The Highland Park band called 8-Bit is a
+        different referent from that genre. The article states his aim. It
+        does not adopt the theological aim as its own conclusion.
       </P>
 
       <H2>In this operating system</H2>

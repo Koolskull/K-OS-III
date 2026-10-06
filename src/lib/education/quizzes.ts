@@ -51,9 +51,9 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "The lesson’s approach to Jesus’s teachings is to:",
+        prompt: "The lesson's approach to Jesus's teachings is to:",
         choices: [
-          { id: "a", text: "Replace all other lessons with one denomination’s catechism" },
+          { id: "a", text: "Replace all other lessons with one denomination's catechism" },
           { id: "b", text: "Start from public-domain Gospel texts as a simple spiritual baseline" },
           { id: "c", text: "Argue that no text can be read without a secret society" },
           { id: "d", text: "Ignore the Bible entirely" },
@@ -90,7 +90,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "Monroe’s first major book on the experiences is:",
+        prompt: "Monroe's first major book on the experiences is:",
         choices: [
           { id: "a", text: "The Creature from Jekyll Island" },
           { id: "b", text: "Journeys Out of the Body (1971)" },
@@ -104,7 +104,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
         prompt: "The 1983 Gateway Process document is best described as:",
         choices: [
           { id: "a", text: "A controlled multi-year clinical trial proving OBE" },
-          { id: "b", text: "One officer’s analysis/assessment of Monroe Institute techniques" },
+          { id: "b", text: "One officer's analysis/assessment of Monroe Institute techniques" },
           { id: "c", text: "A novel by Robert Monroe" },
           { id: "d", text: "A Federal Reserve white paper" },
         ],
@@ -134,7 +134,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "a", text: "Only anonymous internet posts" },
           { id: "b", text: "Church Committee materials, IG reports, FOIA / National Security Archive collections" },
           { id: "c", text: "A single 2020 TikTok" },
-          { id: "d", text: "Monroe’s Ultimate Journey" },
+          { id: "d", text: "Monroe's Ultimate Journey" },
         ],
         correctId: "b",
       },
@@ -145,7 +145,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "a", text: "Remote viewing should guide all intelligence operations" },
           { id: "b", text: "Product was too vague for actionable intelligence; continuation not warranted" },
           { id: "c", text: "Stargate never existed" },
-          { id: "d", text: "Only Jessica Utts’s view was published" },
+          { id: "d", text: "Only Jessica Utts's view was published" },
         ],
         correctId: "b",
       },
@@ -168,7 +168,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "Wardenclyffe’s documented funding problem was primarily:",
+        prompt: "Wardenclyffe's documented funding problem was primarily:",
         choices: [
           { id: "a", text: "A completed free-energy machine seized by the FBI" },
           { id: "b", text: "Capital ran out; Morgan declined further advances after scope expansion" },
@@ -179,7 +179,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
-        prompt: "Walter Russell’s work is best labeled in this track as:",
+        prompt: "Walter Russell's work is best labeled in this track as:",
         choices: [
           { id: "a", text: "Peer-reviewed replacement for all laboratory physics" },
           { id: "b", text: "Coherent personal philosophy/cosmology, not adopted as standard physics" },
@@ -195,7 +195,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
           { id: "a", text: "Unlimited free energy for everyone with no generation cost" },
           { id: "b", text: "Systems for transmitting electrical energy — not automatically over-unity free energy" },
           { id: "c", text: "That Wardenclyffe delivered power globally" },
-          { id: "d", text: "That Russell wrote Tesla’s patents" },
+          { id: "d", text: "That Russell wrote Tesla's patents" },
         ],
         correctId: "b",
       },
@@ -218,7 +218,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
-        prompt: "Griffin’s The Creature from Jekyll Island is treated here as:",
+        prompt: "Griffin's The Creature from Jekyll Island is treated here as:",
         choices: [
           { id: "a", text: "The sole primary legal text of the Fed" },
           { id: "b", text: "A named dissenting synthesis to read alongside the Act and mainstream histories" },
@@ -296,7 +296,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
-        prompt: "Cacophony Society’s relationship to early Burning Man is:",
+        prompt: "Cacophony Society's relationship to early Burning Man is:",
         choices: [
           { id: "a", text: "Documented publicity, staffing, and shared prank culture" },
           { id: "b", text: "Completely unrelated" },
@@ -324,7 +324,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "Kesey’s early LSD access is historically linked to:",
+        prompt: "Kesey's early LSD access is historically linked to:",
         choices: [
           { id: "a", text: "Only black-market chemists with no research history" },
           { id: "b", text: "Academic / federally connected research volunteer settings before the Acid Tests" },
@@ -335,7 +335,7 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q2",
-        prompt: "The Grateful Dead’s role at the Acid Tests was primarily:",
+        prompt: "The Grateful Dead's role at the Acid Tests was primarily:",
         choices: [
           { id: "a", text: "House band / sonic backdrop for the multimedia events" },
           { id: "b", text: "Secret Federal Reserve auditors" },
@@ -367,14 +367,14 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
         choices: [
           { id: "a", text: "Warwick theory-fiction including Plant, Land, Fisher" },
           { id: "b", text: "The 1913 Federal Reserve Act" },
-          { id: "c", text: "Alcor’s first cryopreservation" },
+          { id: "c", text: "Alcor's first cryopreservation" },
           { id: "d", text: "SantaCon 1994 only" },
         ],
         correctId: "a",
       },
       {
         id: "q2",
-        prompt: "Jungle music’s relationship to CCRU writing was:",
+        prompt: "Jungle music's relationship to CCRU writing was:",
         choices: [
           { id: "a", text: "CCRU invented jungle before any DJs" },
           { id: "b", text: "Scene-driven music that CCRU engaged as a sonic/theoretical model" },
@@ -404,10 +404,10 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
         id: "q1",
         prompt: "From PSYOP to MindWar (1980) is:",
         choices: [
-          { id: "a", text: "A documented open staff study on PSYOP doctrine, not proven as MKUltra ‘Operation Mind War’" },
+          { id: "a", text: "A documented open staff study on PSYOP doctrine, not proven as MKUltra 'Operation Mind War'" },
           { id: "b", text: "A criminal conviction of Aquino" },
           { id: "c", text: "A Federal Reserve charter" },
-          { id: "d", text: "Monroe’s third book" },
+          { id: "d", text: "Monroe's third book" },
         ],
         correctId: "a",
       },
@@ -435,12 +435,12 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
       },
       {
         id: "q4",
-        prompt: "Army CID ‘titling’ Aquino means:",
+        prompt: "Army CID 'titling' Aquino means:",
         choices: [
           { id: "a", text: "A criminal conviction in federal court" },
-          { id: "b", text: "His name appeared in the title block of an investigation report (litigated; not the same as a conviction)" },
-          { id: "c", text: "He was elected to the Senate" },
-          { id: "d", text: "He passed the AIR remote-viewing test" },
+          { id: "b", text: "His name appeared in the titling database without charges being filed" },
+          { id: "c", text: "A promotion to colonel" },
+          { id: "d", text: "A Medal of Honor citation" },
         ],
         correctId: "b",
       },
@@ -452,34 +452,117 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     questions: [
       {
         id: "q1",
-        prompt: "Viral Island Boys / Epstein kid photos have been:",
+        prompt: "Festival scale in this track is best described as:",
         choices: [
-          { id: "a", text: "Proven authentic court exhibits" },
-          { id: "b", text: "Fact-checked as AI-generated / fabricated in major fact checks" },
-          { id: "c", text: "Alcor membership cards" },
-          { id: "d", text: "CCRU seminar flyers" },
+          { id: "a", text: "Proof that every large gathering is a psyop" },
+          { id: "b", text: "A mix of genuine bottom-up scenes and commercial/institutional scaling" },
+          { id: "c", text: "Always identical to 1965 Acid Tests" },
+          { id: "d", text: "Irrelevant to culture-machine analysis" },
         ],
         correctId: "b",
       },
       {
         id: "q2",
-        prompt: "Milady Maker is documented as:",
+        prompt: "Myth filters in this track require:",
         choices: [
-          { id: "a", text: "A proven government Q+++ psyop" },
-          { id: "b", text: "A 2021 Ethereum NFT project from Remilia Collective" },
-          { id: "c", text: "An Army PSYOP field manual" },
-          { id: "d", text: "A Monroe Focus level" },
+          { id: "a", text: "Accepting the most dramatic version of events" },
+          { id: "b", text: "Checking claims against primary sources and documented records" },
+          { id: "c", text: "Ignoring mainstream accounts entirely" },
+          { id: "d", text: "Only counting celebrity endorsements" },
         ],
         correctId: "b",
       },
       {
         id: "q3",
-        prompt: "Alcor is:",
+        prompt: "The track's method on contested cultural history is:",
         choices: [
-          { id: "a", text: "A proven secret lab freezing missing ravers without consent as policy" },
-          { id: "b", text: "A real nonprofit cryonics org; members arrange cryopreservation after legal death" },
-          { id: "c", text: "The 1910 Jekyll Island clubhouse" },
-          { id: "d", text: "A jungle pirate radio station" },
+          { id: "a", text: "Pick the side with the best story" },
+          { id: "b", text: "Present documented record vs internet narrative, cite sources, leave contradictions visible" },
+          { id: "c", text: "Ban all discussion of occult topics" },
+          { id: "d", text: "Treat every claim as equally true" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "culture-machines/07": {
+    lessonId: "culture-machines/07",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The timeless part of the C64, the Amiga, and the Fairlight, in this lesson, is:",
+        choices: [
+          { id: "a", text: "The beige case as a souvenir" },
+          { id: "b", text: "The control grammar: frame-rate registers, the effect column, Page R, the sequencer" },
+          { id: "c", text: "The retail price alone" },
+          { id: "d", text: "A startup chime in a nostalgia video" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Jazz from Hell (1986) and its Grammy are recorded here as:",
+        choices: [
+          { id: "a", text: "A live band album that won Best Instrumental Composition for the title track" },
+          { id: "b", text: "Synclavier pieces by Zappa except the live solo St. Etienne; the album won Best Rock Instrumental Performance in 1988" },
+          { id: "c", text: "A Fairlight record made by Herbie Hancock" },
+          { id: "d", text: "An LSDJ cartridge" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Juan Larrazabal's account that institutions pushed mainstream hip hop to incite violence is:",
+        choices: [
+          { id: "a", text: "Adopted as the lesson's finding" },
+          { id: "b", text: "Filed as his account; he calls the connections mostly anecdotal; a contract, grant, memo, or named program would be the next evidence" },
+          { id: "c", text: "Disproved by the existence of trackers" },
+          { id: "d", text: "The same document as Prince's 1993 Warner protest" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q4",
+        prompt: "The design rule this lesson states for K-OS is:",
+        choices: [
+          { id: "a", text: "The interface bends until it feels familiar" },
+          { id: "b", text: "The user adjusts to a small, dense grammar so decisions stay fast" },
+          { id: "c", text: "Nostalgia for the case is the specification" },
+          { id: "d", text: "Final Cut Pro is the model for musical speed" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q5",
+        prompt: "In this lesson, 8-Bit and 8-bit name:",
+        choices: [
+          { id: "a", text: "The same Highland Park band McLaren managed" },
+          { id: "b", text: "A Highland Park band that built the Beck tracks in 2004–2005, and separately the international chip-music practice" },
+          { id: "c", text: "Only a Wired magazine photoshoot" },
+          { id: "d", text: "Only 8 Bit Weapon" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q6",
+        prompt: "Larrazabal's stated split from McLaren's \"8-Bit Punk\" is:",
+        choices: [
+          { id: "a", text: "They agreed the point of the machines was the look a crowd would adore" },
+          { id: "b", text: "Gratitude: new work in undiscovered territory, offered because God gave the gift. Gratification: an aesthetic arranged so an audience will pay and adore" },
+          { id: "c", text: "The essay is the manual for the phrase screen" },
+          { id: "d", text: "The essay never mentions fashion" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q7",
+        prompt: "Who wrote Little Sound Dj, and where is it published?",
+        choices: [
+          { id: "a", text: "Malcolm McLaren, in Wired, November 2003" },
+          { id: "b", text: "Johan Kotlinski. The program is at littlesounddj.com. His repositories are at github.com/jkotlinski" },
+          { id: "c", text: "Andy Bollas, as the Highland Park band 8-Bit" },
+          { id: "d", text: "Karsten Obarski, as Ultimate Soundtracker" },
         ],
         correctId: "b",
       },

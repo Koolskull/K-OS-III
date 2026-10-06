@@ -820,6 +820,124 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     ],
   },
 
+  // Sovereignty — add missing quizzes for 07–09
+  "sovereignty/07": {
+    lessonId: "sovereignty/07",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Lesson 07 separates Weinstein’s claims into which three layers?",
+        choices: [
+          { id: "a", text: "Physics content, sociology of science, and history of physics" },
+          { id: "b", text: "Politics, religion, and art" },
+          { id: "c", text: "Marketing, HR, and finance" },
+          { id: "d", text: "Only physics content" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Which mainstream point appears in the lesson?",
+        choices: [
+          { id: "a", text: "String theory is 'the official physics of the United States'" },
+          { id: "b", text: "String theory is one research program among many; many departments barely touch it" },
+          { id: "c", text: "Consensus never has internal critics" },
+          { id: "d", text: "Geometric Unity is the Standard Model" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "A motive claim like 'the field was made safe' should be supported by:",
+        choices: [
+          { id: "a", text: "Eloquence alone" },
+          { id: "b", text: "Documents and evidence, not just rhetoric" },
+          { id: "c", text: "Upvotes" },
+          { id: "d", text: "A single podcast" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "sovereignty/08": {
+    lessonId: "sovereignty/08",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "This lesson frames Weinstein primarily as:",
+        choices: [
+          { id: "a", text: "A total outsider" },
+          { id: "b", text: "A dejected insider with many insider stamps but no chair" },
+          { id: "c", text: "A career politician" },
+          { id: "d", text: "A medieval theologian" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which shelf‑placement is matched correctly?",
+        choices: [
+          { id: "a", text: "Russell — faculty‑track mathematician; Weinstein — outsider mystic" },
+          { id: "b", text: "Monroe — broadcast professional; labs borrowed him" },
+          { id: "c", text: "Tesla — never inside any institution" },
+          { id: "d", text: "Weinstein — 19th‑century cartographer" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "The lesson’s caution about 'submit a paper' is that it can be:",
+        choices: [
+          { id: "a", text: "A door that never opens for some people (a labor‑market pattern), not automatic proof of correctness" },
+          { id: "b", text: "A guarantee of truth" },
+          { id: "c", text: "A physics law" },
+          { id: "d", text: "A ban on journals" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "sovereignty/09": {
+    lessonId: "sovereignty/09",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "This lesson is primarily a:",
+        choices: [
+          { id: "a", text: "Genealogy proving a bloodline" },
+          { id: "b", text: "Comparison plate of worldviews and claimed findings" },
+          { id: "c", text: "Patent application" },
+          { id: "d", text: "Manifesto for a lab" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "One echo the lesson names is:",
+        choices: [
+          { id: "a", text: "Both present a generated taxonomy from a single geometry/form" },
+          { id: "b", text: "Both reject all geometry" },
+          { id: "c", text: "Both are the same theory in different words" },
+          { id: "d", text: "Both deny observers exist" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "Which 'what it is not' is stated in the lesson?",
+        choices: [
+          { id: "a", text: "Weinstein formalized Russell" },
+          { id: "b", text: "The exercise is not a social graph or a claim of equivalence" },
+          { id: "c", text: "Russell wrote GU’s equations" },
+          { id: "d", text: "The lesson proves GU" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
   // Creativity — missing entries added from lesson checkout sections
   "creativity/01": {
     lessonId: "creativity/01",

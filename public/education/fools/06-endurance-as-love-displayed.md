@@ -45,7 +45,7 @@ Red Skelton (internal K‑OS research; use only VERIFIED claims):
 
 Optional frame link (brief; OWNER’S FRAME):
 
-- Robert Monroe as “underrated, underground legend” whose self‑directed toolkit repurposed golden‑age radio craft toward consciousness/sound without institutional cover; scale is not worth’s measure. If cited, anchor only on facts marked VERIFIED in research/robert‑monroe‑research‑report.md. Otherwise leave a `[RESEARCH: Monroe report update — pending]` slot.
+- Robert Monroe as an underground, self‑directed R&D figure: a broadcast executive who turned his studio/sound craft toward consciousness research outside academia. Verified anchors: his first‑person 1958 experiences arose inside his own sound R&D; Army INSCOM later cleared him (SECRET, 1980) and paid $24,400 for training in 1983; Lt. Col. McDonnell’s 1983 assessment called Gateway “plausible” in physical terms (one officer’s view). See research/robert‑monroe‑research‑report.md for citations and caveats. This is offered only as the owner’s framing echo: endurance and self‑directed pursuit as love that outlasts the world’s verdict.
 
 ---
 

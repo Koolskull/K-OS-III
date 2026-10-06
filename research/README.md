@@ -11,9 +11,10 @@ Index:
 - vlad-tepes-summary.md — Subject: Vlad III Țepeș plain-English summary (companion to the report). Date: 2026-10-06. Summary: internal, not published.
 - red-skelton-research-report.md — Subject: Red Skelton (cultural citation research). Date: 2026-10-06. Summary: internal, not published.
 - red-skelton-sources.md — Subject: Red Skelton bibliography (cultural citation research). Date: 2026-10-06. Summary: internal, not published.
+- robert-monroe-research-report.md — Subject: Robert Monroe (adversarial research). Date: 2026-10-06. Summary: internal, not published.
 
 Notes:
 - Each report was written before or alongside PR #15 (Roles track), so statements like "no public/education/roles/ folder exists yet" reflect master at the time of writing.
 - Downloaded source PDFs and text extracts are kept off-repo (copyright and size) on the owner's research machine.
-- Pending reports still to be ingested later into this folder: Monroe, Flow State ("something working through them"); Fools for Christ (education track research).
+- Pending reports still to be ingested later into this folder: Flow State ("something working through them"); Fools for Christ (education track research).
 - The death-cults track report and sources were revised on 2026-10-06.

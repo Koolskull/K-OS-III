@@ -1,6 +1,7 @@
 import React from "react";
 import { DitherIllust, parseIllustKind } from "@/components/apps/education/DitherIllust";
 import { openKos, parseKos } from "@/lib/os/kos-nav";
+import { resolveMdLink } from "@/lib/education/mdLink";
 
 /** Minimal markdown renderer for education lessons (+ {{illust:kind|caption}} shortcodes). */
 export function renderMarkdown(md: string): React.ReactNode[] {
@@ -34,13 +35,14 @@ export function renderMarkdown(md: string): React.ReactNode[] {
       else {
         const lm = t.match(/\[([^\]]+)\]\(([^)]+)\)/);
         if (lm) {
-          const target = parseKos(lm[2]);
-          if (target) {
+          const href = lm[2];
+          const inCorpusPath = resolveMdLink(href);
+          if (inCorpusPath) {
             parts.push(
               <button
                 key={`a${k++}`}
                 type="button"
-                onClick={() => openKos(target)}
+                onClick={() => openKos({ app: "education", kind: "mdfile", path: inCorpusPath })}
                 style={{
                   background: "none",
                   border: "none",
@@ -55,11 +57,33 @@ export function renderMarkdown(md: string): React.ReactNode[] {
               </button>,
             );
           } else {
-            parts.push(
-              <a key={`a${k++}`} href={lm[2]} target="_blank" rel="noreferrer" style={{ color: "#66aaff" }}>
-                {lm[1]}
-              </a>,
-            );
+            const target = parseKos(href);
+            if (target) {
+              parts.push(
+                <button
+                  key={`a${k++}`}
+                  type="button"
+                  onClick={() => openKos(target)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#ffff00",
+                    font: "inherit",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  {lm[1]}
+                </button>,
+              );
+            } else {
+              parts.push(
+                <a key={`a${k++}`} href={href} target="_blank" rel="noreferrer" style={{ color: "#66aaff" }}>
+                  {lm[1]}
+                </a>,
+              );
+            }
           }
         }
       }

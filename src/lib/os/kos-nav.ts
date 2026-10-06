@@ -13,6 +13,7 @@
 
 export type KosTarget =
   | { app: "education"; track: string; lesson: string }
+  | { app: "education"; kind: "mdfile"; path: string }
   | { app: "backstage-wiki"; entry: string }
   | { app: "stardrain-wiki"; entry: string }
   | { app: "updates"; week?: string };
@@ -71,19 +72,29 @@ export function appIdFor(target: KosTarget): "education" | "backstage-wiki" | "s
 }
 
 export function parseKos(href: string): KosTarget | null {
-  const match = href.trim().match(/^kos:\/\/(academy|backstage|stardrain|updates)(?:\/([^/\s?#]+))?(?:\/([^/\s?#]+))?\/?$/);
-  if (!match) return null;
-  const kind = match[1];
-  const first = match[2];
-  const second = match[3];
+  const trimmed = href.trim();
+  // md file: allow slashes in the path, but no spaces
+  const md = trimmed.match(/^kos:\/\/md\/([^?\s#]+)\/?$/);
+  if (md) {
+    return { app: "education", kind: "mdfile", path: md[1] };
+  }
+  // updates: optional week id
+  const upd = trimmed.match(/^kos:\/\/updates(?:\/([^/\s?#]+))?\/?$/);
+  if (upd) {
+    return { app: "updates", week: upd[1] || undefined };
+  }
+  const m = trimmed.match(/^kos:\/\/(academy|backstage|stardrain)\/([^/\s?#]+)(?:\/([^/\s?#]+))?\/?$/);
+  if (!m) return null;
+  const kind = m[1];
+  const first = m[2];
+  const second = m[3];
   if (kind === "academy") {
     if (!second) return null;
     return { app: "education", track: first, lesson: second };
   }
   if (kind === "backstage") return { app: "backstage-wiki", entry: first };
   if (kind === "stardrain") return { app: "stardrain-wiki", entry: first };
-  // updates: optional week id
-  return { app: "updates", week: first || undefined };
+  return null;
 }
 
 export function subscribeKos(fn: (target: KosTarget) => void): () => void {

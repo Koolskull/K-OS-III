@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { peekPending, subscribeKos } from "@/lib/os/kos-nav";
+import { peekPending, subscribeKos, openKos } from "@/lib/os/kos-nav";
 import { assetUrl } from "@/lib/assets";
 import { EDUCATION_TRACKS, findLesson, lessonMarkdownPath } from "@/lib/education/catalog";
 import { getQuiz } from "@/lib/education/quizzes";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/education/progress";
 import type { ProgressMap } from "@/lib/education/types";
 import { renderMarkdown } from "@/lib/education/renderMarkdown";
+import { findMdFile, mdDownloadFilename } from "@/lib/education/mdFiles";
 import {
   loadProfile,
   updateIdentity,
@@ -43,7 +44,8 @@ type Surface = "lessons" | "observatory";
 type View =
   | { kind: "home" }
   | { kind: "track"; slug: string }
-  | { kind: "lesson"; lessonId: string; mode: "read" | "quiz" };
+  | { kind: "lesson"; lessonId: string; mode: "read" | "quiz" }
+  | { kind: "mdfile"; path: string };
 
 function statusGlyph(status: string | undefined): string {
   if (status === "passed") return "✓";
@@ -115,9 +117,17 @@ export function EducationApp() {
   const [surface, setSurface] = useState<Surface>("lessons");
 
   useEffect(() => {
-    if (peekPending("education")) setSurface("lessons");
+    const p = peekPending();
+    if (p && p.app === "education") {
+      // Route mdfile targets to the Education viewer; tracks/lessons to Academy.
+      if ((p as any).kind === "mdfile") setSurface("observatory");
+      else setSurface("lessons");
+    }
     return subscribeKos((target) => {
-      if (target.app === "education") setSurface("lessons");
+      if (target.app === "education") {
+        if ((target as any).kind === "mdfile") setSurface("observatory");
+        else setSurface("lessons");
+      }
     });
   }, []);
 
@@ -185,22 +195,43 @@ function EducationInner() {
     setView({ kind: "lesson", lessonId, mode: "read" });
   }, []);
 
-  // Load markdown when lesson opens
+  // React to kos-open events for in-app md files
   useEffect(() => {
-    if (view.kind !== "lesson") {
+    return subscribeKos((target) => {
+      if (target.app === "education" && (target as any).kind === "mdfile") {
+        const path = (target as any).path as string;
+        setView({ kind: "mdfile", path });
+        requestAnimationFrame(() => {
+          const el = document.getElementById("education-main-scroll");
+          if (el) el.scrollTop = 0;
+        });
+      }
+    });
+  }, []);
+
+  // Load markdown when lesson or mdfile opens
+  useEffect(() => {
+    if (view.kind !== "lesson" && view.kind !== "mdfile") {
       setMd(null);
       setMdError(null);
-      return;
-    }
-    const found = findLesson(view.lessonId);
-    if (!found) {
-      setMdError("Lesson not found in catalog.");
       return;
     }
     let cancelled = false;
     setLoading(true);
     setMdError(null);
-    const path = lessonMarkdownPath(found.track.slug, found.lesson.file);
+    let path = "";
+    if (view.kind === "lesson") {
+      const found = findLesson(view.lessonId);
+      if (!found) {
+        setMdError("Lesson not found in catalog.");
+        setLoading(false);
+        return;
+      }
+      path = lessonMarkdownPath(found.track.slug, found.lesson.file);
+    } else {
+      // mdfile
+      path = "/" + view.path.replace(/^\/+/, "");
+    }
     fetch(assetUrl(path))
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status} loading ${path}`);
@@ -341,7 +372,14 @@ function EducationInner() {
             height: "100%",
           }}
         >
-          {view.kind === "home" && <HomeView progress={progress} onOpenTrack={(slug) => setView({ kind: "track", slug })} onOpenLesson={openLesson} />}
+          {view.kind === "home" && (
+            <HomeView
+              progress={progress}
+              onOpenTrack={(slug) => setView({ kind: "track", slug })}
+              onOpenLesson={openLesson}
+              onOpenMd={(path) => setView({ kind: "mdfile", path })}
+            />
+          )}
           {view.kind === "track" && (
             <TrackView
               slug={view.slug}
@@ -363,6 +401,15 @@ function EducationInner() {
                 if (found) setView({ kind: "track", slug: found.track.slug });
                 else setView({ kind: "home" });
               }}
+            />
+          )}
+          {view.kind === "mdfile" && (
+            <MdFileView
+              path={view.path}
+              md={md}
+              loading={loading}
+              error={mdError}
+              onBack={() => setView({ kind: "home" })}
             />
           )}
           {view.kind === "lesson" && view.mode === "quiz" && (
@@ -394,10 +441,12 @@ function HomeView({
   progress,
   onOpenTrack,
   onOpenLesson,
+  onOpenMd,
 }: {
   progress: ProgressMap;
   onOpenTrack: (slug: string) => void;
   onOpenLesson: (id: string) => void;
+  onOpenMd: (path: string) => void;
 }) {
   return (
     <>
@@ -407,7 +456,15 @@ function HomeView({
         Completions are recorded in your local user profile so you can share a transcript.
       </p>
       <p style={{ ...muted, marginBottom: 20 }}>
-        Contested topics follow EPISTEMIC_STANCE: primary sources first; mainstream and dissenting accounts named; unsupported claims labeled.
+        Contested topics follow{" "}
+        <button
+          type="button"
+          onClick={() => onOpenMd("docs/EPISTEMIC_STANCE.md")}
+          style={{ ...plainBtn, color: "#ffff00", textDecoration: "underline", fontSize: 12 }}
+        >
+          EPISTEMIC_STANCE.md
+        </button>
+        {" "}&mdash; click to read it in-app.
       </p>
       <ProfileTranscriptCard progress={progress} />
       {EDUCATION_TRACKS.map((track) => {
@@ -439,6 +496,75 @@ function HomeView({
       <div style={{ marginTop: 32, borderTop: "2px solid #444", paddingTop: 12, fontSize: 10, color: "#666", letterSpacing: 1 }}>
         ☦ K-OS EDUCATION · PROVE ALL THINGS
       </div>
+    </>
+  );
+}
+
+function MdFileView({
+  path,
+  md,
+  loading,
+  error,
+  onBack,
+}: {
+  path: string;
+  md: string | null;
+  loading: boolean;
+  error: string | null;
+  onBack: () => void;
+}) {
+  const known = findMdFile(path);
+  const title = known?.title ?? path;
+  const download = () => {
+    if (!md) return;
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = mdDownloadFilename(path);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <>
+      <button type="button" onClick={onBack} style={{ ...plainBtn, color: "#888", marginBottom: 12, fontSize: 11 }}>
+        ← BACK
+      </button>
+      <div style={{ fontSize: 10, color: "#888", letterSpacing: 1, marginBottom: 8 }}>{path}</div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginBottom: 12,
+          gap: 8,
+        }}
+      >
+        <h1 style={h1}>{title}</h1>
+        <button
+          type="button"
+          onClick={download}
+          disabled={!md || loading}
+          style={{
+            background: md && !loading ? "#ffff00" : "#333",
+            color: md && !loading ? "#000" : "#666",
+            border: "none",
+            padding: "6px 12px",
+            fontFamily: "inherit",
+            fontSize: 10,
+            letterSpacing: 1,
+            cursor: md && !loading ? "pointer" : "not-allowed",
+            fontWeight: 700,
+          }}
+        >
+          DOWNLOAD
+        </button>
+      </div>
+      {loading && <p style={muted}>Loading document…</p>}
+      {error && <p style={{ color: "#ff6666", fontSize: 12 }}>{error}</p>}
+      {md && !loading && <div>{renderMarkdown(md)}</div>}
     </>
   );
 }

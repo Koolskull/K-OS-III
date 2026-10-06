@@ -12,6 +12,7 @@ Index:
 - red-skelton-research-report.md — Subject: Red Skelton (cultural citation research). Date: 2026-10-06. Summary: internal, not published.
 - red-skelton-sources.md — Subject: Red Skelton bibliography (cultural citation research). Date: 2026-10-06. Summary: internal, not published.
 - robert-monroe-research-report.md — Subject: Robert Monroe (adversarial research). Date: 2026-10-06. Summary: internal, not published.
+- robert-monroe-sources.md — Subject: Robert Monroe sources and bibliography. Date: 2026-10-06. Summary: internal, not published.
 - fools-for-christ-research-report.md — Subject: Fools for Christ (education track research). Date: 2026-10-06. Summary: internal, not published.
 - fools-for-christ-track-outline.md — Subject: Fools for Christ education track outline. Date: 2026-10-06. Summary: internal, not published.
 
@@ -20,3 +21,4 @@ Notes:
 - Downloaded source PDFs and text extracts are kept off-repo (copyright and size) on the owner's research machine.
 - Pending reports still to be ingested later into this folder: Flow State ("something working through them").
 - The death-cults track report and sources were revised on 2026-10-06.
+- The Robert Monroe report was revised on 2026-10-06 for owner addenda.

@@ -1,0 +1,59 @@
+# SOURCES — Robert A. Monroe report (deduplicated)
+
+Numbering matches `ROBERT_MONROE_REPORT.md`. Type: **P** = primary (period document, Monroe's own text, government/tax/patent/trademark record); **S** = secondary; **I** = interested party (TMI, Hemi-Sync/Interstate, or TMI-authorized). Accessed 2026-10-06 PT unless noted. Raw copies and extracts: `notes/raw/`, notes in `notes/*.md`.
+
+| # | Source | Type | URL | Supports |
+|---|---|---|---|---|
+| 1 | Russell, R., *The Journey of Robert Monroe* (Hampton Roads, 2007) | S / I (TMI-linked) | https://archive.org/details/the-journey-of-robert-monroe-from-out-of-body-explorer-to-monroe-robert-a-russel | Family; college; radio career; Name That Tune claim (contradicted); 1956 sleep-learning R&D (p. 82); research funding "separate from his cable interests" (pp. 91–92); radio stations sold for cable plus a $400k loan; Whistlefield purchase 1971 and lab (pp. 140–141); "at his own expense" (p. 176); Twemlow/Gabbard (p. 175); Atwater 1977 (pp. 170–172); Roberts Mountain purchase, donor, LP offer (pp. 213–217); first Faber Gateway July 1979; McMoneagle Gateway 1982 and contract (p. 238); patent "for the FFR" error (p. 166) |
+| 2 | U.S. Army INSCOM, Information Paper, 5 Jan 1984 (CIA-RDP96-00788R001700270004-2) | P | https://archive.org/details/cia-readingroom-document-cia-rdp96-00788r001700270004-2 | Wabash birth; association "dates to 1978"; NAC 18 Jan 1980 |
+| 3 | "RE/ Robert Allan Monroe" biographical sheet (CIA-RDP96-00788R001700270007-9) | P (self-supplied CV) | https://archive.org/details/cia-readingroom-document-cia-rdp96-00788r001700270007-9 | "400 programs," "all of the orchestral music," 28 weekly; 1973 founding |
+| 4 | Buzby, LTC B., CENTER LANE Executive Summary, 26 Aug 1983 (CIA-RDP96-00788R001700220013-7) | P | https://archive.org/details/cia-readingroom-document-cia-rdp96-00788r001700220013-7 | Activity from April 1978; SECRET clearance 11 Sep 1980; training from March 1982; $24,400 |
+| 5 | McDonnell, LTC W. M., "Analysis and Assessment of Gateway Process," 9 Jun 1983 (CIA-RDP96-00788R001700210016-5) | P | https://archive.org/details/cia-readingroom-document-cia-rdp96-00788r001700210016-5 | "You tasked me"; Bentov; hologram; Focus 12/15/21; "sound, rational basis"; "organization-wide exploitation"; ten-number result |
+| 6 | Robert Allan Monroe short résumé (Who's Who–style) | P (self-supplied) | https://archive.org/details/robert-monroe-short-resume | Birth; B.A. 1937; company dates; Mutual VP; Southern States Radio 1961–75 |
+| 7 | Wehrstein, "Robert Monroe," Psi Encyclopedia (2018) | S | https://psi-encyclopedia.spr.ac.uk/articles/robert-monroe/ | Lexington claim (contradicted); Tart summary |
+| 8 | Wikipedia, "Robert Monroe" | S | https://en.wikipedia.org/wiki/Robert_Monroe | RAM 1953; 28 monthly |
+| 9 | TMI, "About the Monroe Institute" | I | https://www.monroeinstitute.org/pages/our-purpose | Kentucky/Indiana childhood; B.A. |
+| 10 | Older TMI biography (mirror) | I | http://gbppr.net/mindcontrolforums/hambone/robert-monroe.html | 19 weekly; 1974 founding |
+| 11 | *Radio-Craft*, Nov 1940 | P | https://www.worldradiohistory.com/Archive-Radio-Craft/1940s/Radio-Craft-1940-11.pdf | Rocky Gordon authorship; field sound |
+| 12 | TMI archive, radio clippings 1943–63 | P (TMI-curated) | https://archive.org/details/newspaper-articles-ram-radio | Rocky Gordon; Scramble; WRGM; Durham |
+| 13 | *Broadcasting*, 7 Sep 1942 | P | https://www.worldradiohistory.com/Archive-BC/BC-1942/1942-09-07-BC.pdf | Scramble existed |
+| 14 | Thompson, N., *A Curious Man* (Crown, 2013) | S | no stable URL (online text copy) | Scramble credited to Storer/Ripley |
+| 15 | *Radio Daily*, 17 Jan 1950 | P | https://www.worldradiohistory.com/Archive-Radio-Daily/RD-1950/Radio-Daily-1950-Jan.pdf | High Adventure written/directed/produced/scored |
+| 16 | *Radio Daily*, 23 Feb 1952 | P | https://www.worldradiohistory.com/Archive-Radio-Daily/RD-1952/RD-1952-02-23.pdf | Nightmare association |
+| 17 | Haendiges, *John Steele, Adventurer* log | S | https://www.otrsite.com/logs/logj1040.htm | Producer credit |
+| 18 | Haendiges, *High Adventure* log | S | https://www.otrsite.com/logs/logh1085.htm | Run dates |
+| 19 | (withdrawn) *Radio Stars & Television*, Mar 1949 | — | file URL not recoverable | not cited |
+| 20 | *Broadcasting Yearbook* 1955 | P | https://www.worldradiohistory.com/Archive-BC-YB/1955/1955-BC-YB.pdf | Someone else in Mutual programming post |
+| 21 | *Broadcasting Yearbook* 1956 | P | https://www.worldradiohistory.com/Archive-BC-YB/1956/1956-BC-YB.pdf | Monroe Mutual VP; not on board |
+| 22 | Wikipedia, "Name That Tune" | S | https://en.wikipedia.org/wiki/Name_That_Tune | Salter creator |
+| 23 | NYPL, Harry Salter papers | S (archival) | https://archives.nypl.org/the/22719 | Salter original producer |
+| 24 | American Heritage Center, Harry Salter Papers #09053 | S (archival) | https://archiveswest.orbiscascade.org/ark:/80444/xv583722 | Salter creator |
+| 25 | TMI archive, "Newspaper Articles about Robert A. Monroe" (1995 *Richmond Times-Dispatch* obituary; Lucid Mind Center bio) | P (TMI-curated) / I | https://archive.org/details/newspaper-articles-ram | Death; "guru" quote; first OBE in bed/glider, Westchester; "1967" cable (contradicted); Lexington (contradicted) |
+| 26 | TMI archive, cable clippings 1962–75 | P (TMI-curated) | https://archive.org/details/newspaper-articles-ram-cable | Jefferson Cable 1963/64; 90% sale 1965; Monroe president at 30 Apr 1975 sale |
+| 27 | Monroe, *Journeys Out of the Body* (1971; later edition with Foreword and Tart intro) | P | https://archive.org/details/journeys-out-of-the-body-robert-a.-monroe | 1958 tape/cramp/couch/bed sequence; fears; Gordon/Bradshaw; "family to support"; Locale II/III; Tart lab; "blew my cover"; "material world of business" |
+| 28 | Monroe, *Far Journeys* (1985) | P | https://archive.org/details/far-journeys-robert-a.-monroe | "not an ego factor"; "self-preservation … curiosity"; voluntary lab; INSPECS; Gateway "not a financial success" |
+| 29 | *Kirkus Reviews*, 1 Oct 1971 | S | https://www.kirkusreviews.com/book-reviews/robert-a-monroe/journeys-out-of-the-body/ | "scientific garblese" |
+| 30 | US Patent 3,884,218 | P | https://patents.google.com/patent/US3884218A/en | Filed 30 Sep 1970 by Monroe Industries; granted 20 May 1975; AM by EEG waveshape; claim 1 text |
+| 31 | US Patent 5,213,562 | P | https://patents.google.com/patent/US5213562A/en | Dove 1839; Monroe "coined" FFR |
+| 32 | US Patent 5,356,368 | P | https://patents.google.com/patent/US5356368A/en | "coined the term HEMI-SYNC" |
+| 33 | Garcia-Argibay et al. (2019), *Psychological Research* | S (peer-reviewed) | https://link.springer.com/article/10.1007/s00426-018-1066-8 | Meta-analysis g = 0.45 |
+| 34 | Ingendoh et al. (2023), *PLOS ONE* | S (peer-reviewed) | https://pmc.ncbi.nlm.nih.gov/articles/PMC10198548/ | EEG entrainment 5 for / 8 against / 1 mixed |
+| 35 | Simon & Emmons (1956), *J. Exp. Psychol.*; RAND RM-1442 | S (peer-reviewed) | https://www.rand.org/pubs/research_memoranda/RM1442.html ; https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:13295494&resultType=core&format=json | Sleep learning "impractical and probably impossible" |
+| 36a–c | Kliempt 1999; Lewis 2004; Dabu-Bondoc 2003 | S (peer-reviewed) | https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:10460529%20OR%20EXT_ID:14742401%20OR%20EXT_ID:12933400&resultType=core&format=json | Anesthesia trials split |
+| 37 | Busby, *WIRED*, 5 Nov 2025 | S | https://www.wired.com/story/the-cia-used-this-psychic-meditation-program-its-never-been-more-popular/ | Prices; 12,500 participants since 2022; "absence of scientific evidence"; 1971 founding |
+| 38 | Wikipedia, "Walt Disney" | S | https://en.wikipedia.org/wiki/Walt_Disney | Oscar records; Disneyland |
+| 39 | Copyright Office records (aggregated) | P (via aggregator) | https://www.copyrightencyclopedia.com/robert-monroe-laboratory-procedures-metamusic-under-par/ | 1980s Metamusic works for hire |
+| 40 | K-OS-III `docs/EPISTEMIC_STANCE.md` | Project | private repo (GitHub connector) | Editorial frame |
+| 41 | Flow State article + verification log | Project | `/workspace/flow-state-research/` | Cross-reference |
+| 42 | Monroe, R. A., "Early History and Development of the Monroe Institute" (undated; c. 1977 by internal evidence) | P / I | https://www.monroeinstitute.org/pages/early-history-research-article | R&D Division of Monroe Industries "(1958)"; Institute "created" 1971; binaural suggested by team member; Focus 10; Esalen 1973 → M-5000/Gateway; 1,500 participants in four years; "not … intent of offering proof"; "literally millions" (TMI bio appended) |
+| 43 | Hemi-Sync / Interstate Industries, "About us" | I | https://hemi-sync.com/learn/about-us/ | 1956 R&D division using "commercial" audio methods; 1962 VA, Monroe Industries; 1985 Interstate; research subsidiary divested as nonprofit 1985; RAM 1953; "28 programs monthly"; board claim |
+| 44 | "The Well-Traveled Mind of Robert Monroe," *Tidewater Living*, 1986 (TMI archive) | P (TMI-curated) | https://archive.org/details/newspaper-articles-ram | "pumping his own money"; 90% tax bracket; paid for itself 1984; nonprofit 1985; feared board/stockholders; tired of OBE travel about ten years earlier |
+| 45 | ProPublica Nonprofit Explorer, The Monroe Institute (IRS Form 990 data) | P (tax data) | https://projects.propublica.org/nonprofits/organizations/900681223 | 501(c)(3); EIN 90-0681223; exemption June 2011; FY2025 revenue $7,694,796, 70.0% program services, 17.8% inventory; FY2024 $5,975,703 |
+| 46 | TMI, "Lifeline" program page | I | https://www.monroeinstitute.org/products/lifeline | Conceived 1991; Focus 23–27; "The Park"; soul retrieval |
+| 47 | Monroe, "The Step Beyond" (TMI blog; Monroe text, not checked against printed *Ultimate Journey*) | P / I | https://www.monroeinstitute.org/blogs/blog/the-step-beyond | 1965 "Park" visit claim; Lifeline origin |
+| 48 | TMI, "Exploration 27" program page | I | https://www.monroeinstitute.org/products/exploration-27 ; https://www.monroeinstitute.org/products/exploration-27-virtual | Focus 34/35; "nonphysical intelligences" |
+| 49 | Trademark records: HEMI-SYNC Reg. 1,569,367 (markinton); HEMI SYNC Reg. 5,632,385 (furm); METAMUSIC per WIPO D2008-1628 | P (USPTO data via aggregators) / WIPO decision | https://markinton.com/trademark/hemi-sync-73758007 ; https://furm.com/trademarks/hemi-sync-87905359 ; https://www.wipo.int/amc/en/domains/decisions/html/2008/d2008-1628.html | Brand owned by for-profit Interstate Industries; 1989 registration cancelled 1997; 2018 registration live; METAMUSIC 1986 |
+| 50–53 | 50 unused. 51: ClinicalTrials.gov NCT07256665 "Cracking Consciousness" (Efforia/Neuphoria/Monroe). 52: Fabrizi & Ditye (2025), SFU Vienna publication page. 53: TMI 2025 Professional Division Conference page | S / I | https://clinicaltrials.gov/study/NCT07256665 ; https://www.sfu.ac.at/en/publication/gateway-experience-facilitates-psychological-well-being/ ; https://info.monroeinstitute.org/pd-conference-2025 | Single-arm EEG study, completed 2026-01-10; n = 12 Gateway vs relaxation; Dunseath directs Research Division |
+| 54 | "(TMI-ARMY Files) 1983 – Analysis and Assessment of Gateway Process," incl. page 25; uploaded by archive@monroeinstitute.org 2021-04-14 | P (TMI-curated) | https://archive.org/details/1983-analysis-and-assessment-of-gateway-process | Recovered page 25 text (Holy Spirit; "portal"; "truth in the larger sense") |
+
+**Not used (and why):** a Vice article on page 25, which calls the document CIA rather than Army and makes a shaky terminology claim; theinfoweb.org, which misstates McMoneagle's family tie to Monroe; the third-party PDF of McMoneagle's *Mind Trek*, which has uncertain provenance; and Lucid Mind Center's 1970/1965 dates (tertiary, and they conflict with the clippings).

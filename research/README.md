@@ -15,6 +15,7 @@ Index:
 - robert-monroe-sources.md — Subject: Robert Monroe sources and bibliography. Date: 2026-10-06. Summary: internal, not published.
 - fools-for-christ-research-report.md — Subject: Fools for Christ (education track research). Date: 2026-10-06. Summary: internal, not published.
 - fools-for-christ-track-outline.md — Subject: Fools for Christ education track outline. Date: 2026-10-06. Summary: internal, not published.
+- vlad-tepes-christian-hero-report.md — Title: Vlad III Țepeș as a 'Christian Hero' Against Ottoman Oppression: Campaigns, Status, Theology, and the Testimony of Pius II; by Video Angle Research. Summary: internal, not published.
 
 Notes:
 - Each report was written before or alongside PR #15 (Roles track), so statements like "no public/education/roles/ folder exists yet" reflect master at the time of writing.
@@ -22,3 +23,4 @@ Notes:
 - Pending reports still to be ingested later into this folder: Flow State ("something working through them").
 - The death-cults track report and sources were revised on 2026-10-06.
 - The Robert Monroe report was revised on 2026-10-06 for owner addenda.
+- Companion note: `vlad-tepes-christian-hero-report.md` is a companion to `vlad-tepes-research-report.md`. Its section 8 lists 13 proposed corrections to the earlier report. These are not applied yet; existing `vlad-tepes` files remain unmodified. The owner's view that "the papacy is a biased witness" is labeled in the report as his interpretive frame.

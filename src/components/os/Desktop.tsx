@@ -15,41 +15,15 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { TRACKER_TITLE } from "@/components/apps/thrash-tracker/dm2/model";
+import { SHELL_APPS } from "@/lib/os/shell/catalog";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
+  installedIds: readonly string[];
 }
 
-interface DesktopIcon {
-  id: string;
-  label: string;
-  glyph: string;
-  width?: number;
-}
-
-const ICONS: DesktopIcon[] = [
-  { id: "identity", label: "IDENTITY", glyph: "◉" },
-  { id: "bible", label: "HOLY BIBLE", glyph: "✝" },
-  { id: "thrash-tracker", label: TRACKER_TITLE, glyph: "☦", width: 96 },
-  { id: "kooldraw", label: "KOOLDRAW", glyph: "◻" },
-  { id: "shotlist", label: "SHOTLIST", glyph: "▦" },
-  { id: "tilemap", label: "TILEMAP", glyph: "▤" },
-  { id: "nodemap", label: "NODEMAP", glyph: "◈" },
-  { id: "stance", label: "EPISTEMIC STANCE", glyph: "¶" },
-  { id: "skulltext", label: "SKULLTEXT", glyph: "☠" },
-  { id: "skullmash", label: "SKULLMASH", glyph: "◎" },
-  { id: "notes", label: "NOTES", glyph: "✎" },
-  { id: "games", label: "GAMES", glyph: ">" },
-  { id: "manual", label: "MANUAL", glyph: "?" },
-  { id: "education", label: "EDUCATION", glyph: "§" },
-  { id: "stardrain-wiki", label: "STARDRAIN", glyph: "☄" },
-  { id: "backstage-wiki", label: "BACKSTAGE", glyph: "◐" },
-  { id: "studio", label: "STUDIO", glyph: "▣" },
-  { id: "prodev", label: "PRODEV", glyph: "▥" },
-];
-
-export function Desktop({ onLaunchApp }: DesktopProps) {
+export function Desktop({ onLaunchApp, installedIds }: DesktopProps) {
+  const icons = SHELL_APPS.filter((app) => installedIds.includes(app.id));
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const lastClickRef = React.useRef<{ id: string; time: number } | null>(null);
 
@@ -93,7 +67,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
           height: "calc(100% - var(--dm-taskbar-h, 32px))",
         }}
       >
-        {ICONS.map((icon) => {
+        {icons.map((icon) => {
           const isSelected = selectedIcon === icon.id;
           return (
             <div
@@ -102,7 +76,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
               aria-label={icon.label}
               onClick={() => handleIconClick(icon.id)}
               style={{
-                width: icon.width ? `${icon.width}px` : "64px",
+                width: icon.iconWidth ? `${icon.iconWidth}px` : "64px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",

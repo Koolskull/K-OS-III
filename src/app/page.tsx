@@ -33,7 +33,6 @@ import { Taskbar } from "@/components/os/Taskbar";
 import { AppWindow } from "@/components/os/AppWindow";
 import type { WindowState } from "@/components/os/AppWindow";
 import { ThrashPhoneShell } from "@/components/apps/thrash-tracker/ThrashPhoneShell";
-import { TRACKER_TITLE } from "@/components/apps/thrash-tracker/dm2/model";
 import { BibleReader } from "@/components/apps/bible/BibleReader";
 import { GameMenu } from "@/components/apps/games/GameMenu";
 import { KoolDrawApp } from "@/components/apps/kooldraw/KoolDrawApp";
@@ -57,29 +56,20 @@ import {
 import { IdentityApp } from "@/components/apps/identity/IdentityApp";
 import { StudioApp } from "@/components/apps/studio/StudioApp";
 import { ProdevApp } from "@/components/apps/prodev/ProdevApp";
+import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
+import { ShellTerminal } from "@/components/os/ShellTerminal";
 import { assetUrl } from "@/lib/assets";
 import { CreativeWorkflowProvider } from "@/lib/creative";
+import {
+  SHELL_APPS,
+  defaultInstalledIds,
+  readInstalledIds,
+  writeInstalledIds,
+  type ShellAppId,
+} from "@/lib/os/shell/catalog";
 
 
-type AppId =
-  | "thrash-tracker"
-  | "bible"
-  | "games"
-  | "kooldraw"
-  | "manual"
-  | "stardrain-wiki"
-  | "backstage-wiki"
-  | "tilemap"
-  | "shotlist"
-  | "skulltext"
-  | "skullmash"
-  | "education"
-  | "nodemap"
-  | "stance"
-  | "notes"
-  | "identity"
-  | "studio"
-  | "prodev";
+type AppId = ShellAppId;
 
 interface OpenWindow {
   id: string;
@@ -89,26 +79,9 @@ interface OpenWindow {
   zIndex: number;
 }
 
-const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = {
-  "thrash-tracker": { title: TRACKER_TITLE, width: 1000, height: 620 },
-  bible: { title: "HOLY BIBLE", width: 640, height: 500 },
-  games: { title: "GAMES", width: 700, height: 550 },
-  kooldraw: { title: "KOOLDRAW", width: 800, height: 600 },
-  manual: { title: "K-OS MANUAL", width: 880, height: 600 },
-  "stardrain-wiki": { title: "STARDRAIN WIKI", width: 860, height: 620 },
-  "backstage-wiki": { title: "BACKSTAGE", width: 860, height: 620 },
-  tilemap: { title: "TILEMAP PAINTER", width: 960, height: 700 },
-  shotlist: { title: "SHOTLIST", width: 900, height: 640 },
-  skulltext: { title: "SKULLTEXT", width: 900, height: 640 },
-  skullmash: { title: "SKULLMASH", width: 1100, height: 720 },
-  education: { title: "EDUCATION", width: 920, height: 640 },
-  nodemap: { title: "NODEMAP", width: 1000, height: 700 },
-  stance: { title: "EPISTEMIC STANCE", width: 780, height: 620 },
-  notes: { title: "NOTES", width: 860, height: 620 },
-  identity: { title: "IDENTITY", width: 640, height: 560 },
-  studio: { title: "2KOOL STUDIO", width: 900, height: 640 },
-  prodev: { title: "PRODEV", width: 900, height: 640 },
-};
+const APP_DEFAULTS: Record<AppId, { title: string; width: number; height: number }> = Object.fromEntries(
+  SHELL_APPS.map((app) => [app.id, { title: app.title, width: app.width, height: app.height }]),
+) as Record<AppId, { title: string; width: number; height: number }>;
 
 let windowCounter = 0;
 
@@ -117,6 +90,20 @@ export default function KoolskullOS() {
   const [windows, setWindows] = useState<OpenWindow[]>([]);
   const [focusedWindowId, setFocusedWindowId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(1);
+  const [installedIds, setInstalledIds] = useState<string[]>(defaultInstalledIds);
+
+  useEffect(() => {
+    setInstalledIds(readInstalledIds());
+  }, []);
+
+  const installApp = useCallback((appId: string) => {
+    setInstalledIds((prev) => {
+      if (prev.includes(appId)) return prev;
+      const next = [...prev, appId];
+      writeInstalledIds(next);
+      return next;
+    });
+  }, []);
 
   const launchApp = useCallback((appId: string) => {
     const id = appId as AppId;
@@ -233,7 +220,7 @@ export default function KoolskullOS() {
         className="w-full h-full relative overflow-hidden"
         style={{ backgroundColor: "#000000" }}
       >
-        <Desktop onLaunchApp={launchApp} />
+        <Desktop onLaunchApp={launchApp} installedIds={installedIds} />
 
         {windows.map((win) => (
           <AppWindow
@@ -281,6 +268,9 @@ export default function KoolskullOS() {
             {win.appId === "identity" && <IdentityApp />}
             {win.appId === "studio" && <StudioApp />}
             {win.appId === "prodev" && <ProdevApp />}
+            {win.appId === "picotracker" && (
+              <PicoTrackerApp isFocused={win.id === focusedWindowId} />
+            )}
           </AppWindow>
         ))}
 
@@ -293,6 +283,12 @@ export default function KoolskullOS() {
           focusedId={focusedWindowId}
           onWindowClick={handleTaskbarClick}
           onShowDesktop={showDesktop}
+        />
+
+        <ShellTerminal
+          installedIds={installedIds}
+          onLaunchApp={launchApp}
+          onInstall={installApp}
         />
 
         {/* Screen glitch overlay */}

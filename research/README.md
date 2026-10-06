@@ -20,11 +20,14 @@ Index:
 - flanagan-neurophone-research-report.md — Subject: Patrick Flanagan and the Neurophone (biography, patents, DIY sources, safety-first build lessons). From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
 - flanagan-neurophone-sources.md — Subject: Patrick Flanagan and the Neurophone (sources). From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
 - flanagan-neurophone-verification-log.md — Subject: Patrick Flanagan and the Neurophone (verification log). From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
+- theremin-research-report.md — Subject: the theremin. From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
+- theremin-sources.md — Subject: the theremin (sources). From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
+- theremin-verification-log.md — Subject: the theremin (verification log). From Flow State Research. Date: 2026-10-06. Summary: internal, not published.
 
 Notes:
 - Each report was written before or alongside PR #15 (Roles track), so statements like "no public/education/roles/ folder exists yet" reflect master at the time of writing.
 - Downloaded source PDFs and text extracts are kept off-repo (copyright and size) on the owner's research machine.
-- Pending reports still to be ingested later into this folder: Flow State ("something working through them"); a theremin report from the same researcher.
+- Pending reports still to be ingested later into this folder: Flow State ("something working through them").
 - The death-cults track report and sources were revised on 2026-10-06.
 - The Robert Monroe report was revised on 2026-10-06 for owner addenda.
 - Companion note: `vlad-tepes-christian-hero-report.md` is a companion to `vlad-tepes-research-report.md`. Its section 8 lists 13 proposed corrections to the earlier report. These are not applied yet; existing `vlad-tepes` files remain unmodified. The owner's view that "the papacy is a biased witness" is labeled in the report as his interpretive frame.

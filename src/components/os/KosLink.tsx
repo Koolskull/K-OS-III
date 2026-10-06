@@ -101,8 +101,10 @@ export function useKosLesson(onLesson: (track: string, lesson: string) => void) 
   useEffect(() => {
     const apply = (target: KosTarget) => {
       if (target.app !== "education") return;
-      onLesson(target.track, target.lesson);
-      consumePending("education");
+      if ("track" in target && "lesson" in target) {
+        onLesson(target.track, target.lesson);
+        consumePending("education");
+      }
     };
     const waiting = peekPending("education");
     if (waiting && waiting.app === "education") apply(waiting);

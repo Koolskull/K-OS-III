@@ -76,6 +76,20 @@ export const EDUCATION_TRACKS: EducationTrackMeta[] = [
       { id: "creativity/06", file: "06-the-two-doors.md", title: "The two doors", estimatedMinutes: 12 },
     ],
   },
+  {
+    slug: "roles",
+    title: "Roles — Feminism, Tradition, and Adaptive Households",
+    summary:
+      "Feminism and 'traditional roles' read against the historical record of women’s labor; households as adaptive systems that shift roles by ability and need; spiritual 'flow' and secular practice kept as two open doors. Ships six lessons plus four offline tools.",
+    lessons: [
+      { id: "roles/01", file: "01-the-two-polite-positions.md", title: "The two polite positions", estimatedMinutes: 16 },
+      { id: "roles/02", file: "02-the-curated-vignette.md", title: "The curated vignette", estimatedMinutes: 18 },
+      { id: "roles/03", file: "03-roles-that-shift.md", title: "Roles that shift", estimatedMinutes: 12 },
+      { id: "roles/04", file: "04-grueling-labor-the-real-tradition.md", title: "Grueling labor, the real tradition", estimatedMinutes: 18 },
+      { id: "roles/05", file: "05-the-fear-manifestation-loop.md", title: "The fear–manifestation loop", estimatedMinutes: 12 },
+      { id: "roles/06", file: "06-the-flow-and-the-two-gifts.md", title: "The flow and the two gifts", estimatedMinutes: 14 },
+    ],
+  },
 ];
 
 export function findLesson(lessonId: string) {

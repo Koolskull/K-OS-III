@@ -19,6 +19,12 @@ For the system spec, see `docs/KNOWLEDGE_CORPUS.md`.
 
 ---
 
+## Updates / weekly build log
+
+The Creativity track's weekly build log is now an in-OS feature. Open **UPDATES** (`kos://updates`) to see weekly entries (Built · Reused · Compounded). To add an entry, edit `src/data/build-log.ts` and rebuild.
+
+---
+
 ## Wired tracks
 
 | Document | What it covers | Status |

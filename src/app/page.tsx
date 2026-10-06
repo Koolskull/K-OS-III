@@ -43,6 +43,7 @@ import TilemapApp from "@/components/apps/tilemap/TilemapApp";
 import ShotlistApp from "@/components/apps/shotlist/ShotlistApp";
 import { SkullTextApp } from "@/components/apps/skulltext/SkullTextApp";
 import { EducationApp } from "@/components/apps/education/EducationApp";
+import { UpdatesApp } from "@/components/apps/updates/UpdatesApp";
 import SkullMashApp from "@/components/apps/skullmash/SkullMashApp";
 import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
@@ -239,6 +240,7 @@ export default function KoolskullOS() {
             )}
             {win.appId === "bible" && <BibleReader />}
             {win.appId === "games" && <GameMenu />}
+            {win.appId === "updates" && <UpdatesApp />}
             {win.appId === "kooldraw" && (
               <KoolDrawApp isFocused={win.id === focusedWindowId} />
             )}

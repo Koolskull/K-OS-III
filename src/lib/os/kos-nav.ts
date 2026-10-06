@@ -14,7 +14,8 @@
 export type KosTarget =
   | { app: "education"; track: string; lesson: string }
   | { app: "backstage-wiki"; entry: string }
-  | { app: "stardrain-wiki"; entry: string };
+  | { app: "stardrain-wiki"; entry: string }
+  | { app: "updates"; week?: string };
 
 export const KOS_EVENT = "kos-open";
 const STORAGE_KEY = "kos-open-pending";
@@ -49,7 +50,13 @@ export function restorePendingFromStorage(): KosTarget | null {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const target = JSON.parse(raw) as KosTarget;
-    if (!target || (target.app !== "education" && target.app !== "backstage-wiki" && target.app !== "stardrain-wiki")) {
+    if (
+      !target ||
+      (target.app !== "education" &&
+        target.app !== "backstage-wiki" &&
+        target.app !== "stardrain-wiki" &&
+        target.app !== "updates")
+    ) {
       return null;
     }
     pending = target;
@@ -59,12 +66,12 @@ export function restorePendingFromStorage(): KosTarget | null {
   }
 }
 
-export function appIdFor(target: KosTarget): "education" | "backstage-wiki" | "stardrain-wiki" {
-  return target.app === "education" ? "education" : target.app;
+export function appIdFor(target: KosTarget): "education" | "backstage-wiki" | "stardrain-wiki" | "updates" {
+  return target.app;
 }
 
 export function parseKos(href: string): KosTarget | null {
-  const match = href.trim().match(/^kos:\/\/(academy|backstage|stardrain)\/([^/\s?#]+)(?:\/([^/\s?#]+))?\/?$/);
+  const match = href.trim().match(/^kos:\/\/(academy|backstage|stardrain|updates)(?:\/([^/\s?#]+))?(?:\/([^/\s?#]+))?\/?$/);
   if (!match) return null;
   const kind = match[1];
   const first = match[2];
@@ -74,7 +81,9 @@ export function parseKos(href: string): KosTarget | null {
     return { app: "education", track: first, lesson: second };
   }
   if (kind === "backstage") return { app: "backstage-wiki", entry: first };
-  return { app: "stardrain-wiki", entry: first };
+  if (kind === "stardrain") return { app: "stardrain-wiki", entry: first };
+  // updates: optional week id
+  return { app: "updates", week: first || undefined };
 }
 
 export function subscribeKos(fn: (target: KosTarget) => void): () => void {

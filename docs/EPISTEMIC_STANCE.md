@@ -66,6 +66,7 @@ The Reader Notes folder (`docs/READER_NOTES/`) hosts companion documents that pr
 - **History of wireless power and "free energy" claims** — Tesla's documented work, the historical record of Wardenclyffe, modern academic assessment, and the popular-independent-research account.
 - **Monetary history** — competing accounts of the gold standard, fiat, and the design choices made in 20th-century monetary policy.
 - **Competing accounts of early computing history** — what was rediscovered vs. what was invented, where credit landed vs. where it should have.
+- **Feminism and traditional female roles** — mainstream and dissenting accounts presented with sources and attributions; the historical record of women’s labor set beside popular images; conclusion left to the reader. (See the `roles/` education track for lessons and tools; a Reader Note may follow.) 
 
 Each is added when a contributor takes the time to write it well. Each is reviewed against the editorial guardrails above before merging.
 

@@ -15,7 +15,8 @@ export type KosTarget =
   | { app: "education"; track: string; lesson: string }
   | { app: "education"; kind: "mdfile"; path: string }
   | { app: "backstage-wiki"; entry: string }
-  | { app: "stardrain-wiki"; entry: string };
+  | { app: "stardrain-wiki"; entry: string }
+  | { app: "updates"; week?: string };
 
 export const KOS_EVENT = "kos-open";
 const STORAGE_KEY = "kos-open-pending";
@@ -50,7 +51,13 @@ export function restorePendingFromStorage(): KosTarget | null {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const target = JSON.parse(raw) as KosTarget;
-    if (!target || (target.app !== "education" && target.app !== "backstage-wiki" && target.app !== "stardrain-wiki")) {
+    if (
+      !target ||
+      (target.app !== "education" &&
+        target.app !== "backstage-wiki" &&
+        target.app !== "stardrain-wiki" &&
+        target.app !== "updates")
+    ) {
       return null;
     }
     pending = target;
@@ -60,8 +67,8 @@ export function restorePendingFromStorage(): KosTarget | null {
   }
 }
 
-export function appIdFor(target: KosTarget): "education" | "backstage-wiki" | "stardrain-wiki" {
-  return target.app === "education" ? "education" : target.app;
+export function appIdFor(target: KosTarget): "education" | "backstage-wiki" | "stardrain-wiki" | "updates" {
+  return target.app;
 }
 
 export function parseKos(href: string): KosTarget | null {
@@ -70,6 +77,11 @@ export function parseKos(href: string): KosTarget | null {
   const md = trimmed.match(/^kos:\/\/md\/([^?\s#]+)\/?$/);
   if (md) {
     return { app: "education", kind: "mdfile", path: md[1] };
+  }
+  // updates: optional week id
+  const upd = trimmed.match(/^kos:\/\/updates(?:\/([^/\s?#]+))?\/?$/);
+  if (upd) {
+    return { app: "updates", week: upd[1] || undefined };
   }
   const m = trimmed.match(/^kos:\/\/(academy|backstage|stardrain)\/([^/\s?#]+)(?:\/([^/\s?#]+))?\/?$/);
   if (!m) return null;
@@ -81,7 +93,8 @@ export function parseKos(href: string): KosTarget | null {
     return { app: "education", track: first, lesson: second };
   }
   if (kind === "backstage") return { app: "backstage-wiki", entry: first };
-  return { app: "stardrain-wiki", entry: first };
+  if (kind === "stardrain") return { app: "stardrain-wiki", entry: first };
+  return null;
 }
 
 export function subscribeKos(fn: (target: KosTarget) => void): () => void {

@@ -151,7 +151,7 @@ The tools live as markdown under `public/education/creativity/tools/` so they sh
 ## Open decisions
 
 - [ ] Confirm the six-lesson split, or merge 04 and 05.
-- [ ] Confirm tool names and whether the weekly build log should be a recurring in-OS feature rather than a markdown template.
+- [x] Weekly build log is a recurring in-OS feature — surfaced in the UPDATES app (`kos://updates`). Resolved 2026-10-06 by owner.
 - [ ] Tone pass: every lesson's opening paragraph should be readable by someone in acute distress. Short sentences. No jargon before it is defined.
 - [ ] Whether lesson 03's cross-link to Sovereignty 06 should be a hard prerequisite (block access) or a soft recommendation (link, but allow reading).
 

@@ -25,6 +25,7 @@ export interface ShellApp {
 }
 
 export const SHELL_APPS: ShellApp[] = [
+  { id: "updates", title: "UPDATES", label: "UPDATES", glyph: "!", width: 820, height: 600, aliases: ["updates", "news", "log", "changelog"], installed: true },
   { id: "identity", title: "IDENTITY", label: "IDENTITY", glyph: "◉", width: 640, height: 560, aliases: ["id"], installed: true },
   { id: "bible", title: "HOLY BIBLE", label: "HOLY BIBLE", glyph: "✝", width: 640, height: 500, aliases: ["bible", "kjv"], installed: true },
   { id: "thrash-tracker", title: TRACKER_TITLE, label: TRACKER_TITLE, glyph: "☦", width: 1000, height: 620, iconWidth: 96, aliases: ["thrash", "tracker", "datamoshpit", "dm2"], installed: true },

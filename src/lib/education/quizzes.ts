@@ -820,6 +820,595 @@ export const LESSON_QUIZZES: Record<string, LessonQuiz> = {
     ],
   },
 
+  // Sovereignty — add missing quizzes for 07–09
+  "sovereignty/07": {
+    lessonId: "sovereignty/07",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Lesson 07 separates Weinstein’s claims into which three layers?",
+        choices: [
+          { id: "a", text: "Physics content, sociology of science, and history of physics" },
+          { id: "b", text: "Politics, religion, and art" },
+          { id: "c", text: "Marketing, HR, and finance" },
+          { id: "d", text: "Only physics content" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Which mainstream point appears in the lesson?",
+        choices: [
+          { id: "a", text: "String theory is 'the official physics of the United States'" },
+          { id: "b", text: "String theory is one research program among many; many departments barely touch it" },
+          { id: "c", text: "Consensus never has internal critics" },
+          { id: "d", text: "Geometric Unity is the Standard Model" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "A motive claim like 'the field was made safe' should be supported by:",
+        choices: [
+          { id: "a", text: "Eloquence alone" },
+          { id: "b", text: "Documents and evidence, not just rhetoric" },
+          { id: "c", text: "Upvotes" },
+          { id: "d", text: "A single podcast" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "sovereignty/08": {
+    lessonId: "sovereignty/08",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "This lesson frames Weinstein primarily as:",
+        choices: [
+          { id: "a", text: "A total outsider" },
+          { id: "b", text: "A dejected insider with many insider stamps but no chair" },
+          { id: "c", text: "A career politician" },
+          { id: "d", text: "A medieval theologian" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which shelf‑placement is matched correctly?",
+        choices: [
+          { id: "a", text: "Russell — faculty‑track mathematician; Weinstein — outsider mystic" },
+          { id: "b", text: "Monroe — broadcast professional; labs borrowed him" },
+          { id: "c", text: "Tesla — never inside any institution" },
+          { id: "d", text: "Weinstein — 19th‑century cartographer" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "The lesson’s caution about 'submit a paper' is that it can be:",
+        choices: [
+          { id: "a", text: "A door that never opens for some people (a labor‑market pattern), not automatic proof of correctness" },
+          { id: "b", text: "A guarantee of truth" },
+          { id: "c", text: "A physics law" },
+          { id: "d", text: "A ban on journals" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "sovereignty/09": {
+    lessonId: "sovereignty/09",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "This lesson is primarily a:",
+        choices: [
+          { id: "a", text: "Genealogy proving a bloodline" },
+          { id: "b", text: "Comparison plate of worldviews and claimed findings" },
+          { id: "c", text: "Patent application" },
+          { id: "d", text: "Manifesto for a lab" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "One echo the lesson names is:",
+        choices: [
+          { id: "a", text: "Both present a generated taxonomy from a single geometry/form" },
+          { id: "b", text: "Both reject all geometry" },
+          { id: "c", text: "Both are the same theory in different words" },
+          { id: "d", text: "Both deny observers exist" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "Which 'what it is not' is stated in the lesson?",
+        choices: [
+          { id: "a", text: "Weinstein formalized Russell" },
+          { id: "b", text: "The exercise is not a social graph or a claim of equivalence" },
+          { id: "c", text: "Russell wrote GU’s equations" },
+          { id: "d", text: "The lesson proves GU" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  // Creativity — missing entries added from lesson checkout sections
+  "creativity/01": {
+    lessonId: "creativity/01",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The tract’s core claim is that trauma-shaped states are primarily problems of:",
+        choices: [
+          { id: "a", text: "Willpower" },
+          { id: "b", text: "Reshaped expectations" },
+          { id: "c", text: "Intelligence" },
+          { id: "d", text: "Environment only" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Why does creative production not require you to feel worthy first?",
+        choices: [
+          { id: "a", text: "Because talent guarantees motivation" },
+          { id: "b", text: "Because output can be external and verifiable before feelings change" },
+          { id: "c", text: "Because others will praise it immediately" },
+          { id: "d", text: "Because it avoids hard work" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "In this lesson, 'the output precedes the feeling' means:",
+        choices: [
+          { id: "a", text: "Feeling motivated produces output" },
+          { id: "b", text: "Identity follows evidence of action, not vice versa" },
+          { id: "c", text: "Only quality matters" },
+          { id: "d", text: "Posting online is required" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "creativity/02": {
+    lessonId: "creativity/02",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "What defines 'done' for the first build?",
+        choices: [
+          { id: "a", text: "When you feel proud" },
+          { id: "b", text: "When a person other than you could open it and see it" },
+          { id: "c", text: "When it goes viral" },
+          { id: "d", text: "When it is perfect" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which tool ships with this lesson?",
+        choices: [
+          { id: "a", text: "value-diagnostic.md" },
+          { id: "b", text: "first-build-template.md" },
+          { id: "c", text: "compounding-sketch.md" },
+          { id: "d", text: "transcript-prompt.md" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Why does the template ask what the build 'proves'?",
+        choices: [
+          { id: "a", text: "To measure likes" },
+          { id: "b", text: "To anchor agency in evidence rather than intention" },
+          { id: "c", text: "To grade it for a class" },
+          { id: "d", text: "To replace future planning" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "creativity/03": {
+    lessonId: "creativity/03",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The 1910 Jekyll Island meeting produced which plan?",
+        choices: [
+          { id: "a", text: "The Interstate Highway plan" },
+          { id: "b", text: "The Aldrich Plan" },
+          { id: "c", text: "Operation Paperclip" },
+          { id: "d", text: "The Manhattan Project" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "The tract’s test for value is:",
+        choices: [
+          { id: "a", text: "If it is popular, it has value" },
+          { id: "b", text: "If it is real, it has value; facades fail over time" },
+          { id: "c", text: "If it is secret, it has value" },
+          { id: "d", text: "If it is expensive, it has value" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Why does the diagnostic ask what time has shown?",
+        choices: [
+          { id: "a", text: "Markets never change" },
+          { id: "b", text: "Time distinguishes durable substance from facades" },
+          { id: "c", text: "To reward hype" },
+          { id: "d", text: "Because memory is perfect" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "creativity/04": {
+    lessonId: "creativity/04",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "In this lesson, the signature of something that actually produces is:",
+        choices: [
+          { id: "a", text: "Linear growth" },
+          { id: "b", text: "Exponential growth (compounding)" },
+          { id: "c", text: "Scarcity only" },
+          { id: "d", text: "A large team" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "The compounding sketch asks you to count:",
+        choices: [
+          { id: "a", text: "Likes per post" },
+          { id: "b", text: "How many times a thing can be reused or shared" },
+          { id: "c", text: "Hours worked" },
+          { id: "d", text: "How many tools you tried" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "A nervous system shaped by permanent negative experience tends to treat outputs as:",
+        choices: [
+          { id: "a", text: "Final and failures as total" },
+          { id: "b", text: "Reusable components" },
+          { id: "c", text: "Guaranteed wins" },
+          { id: "d", text: "Irrelevant" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "creativity/05": {
+    lessonId: "creativity/05",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "“Primary objective function” here means:",
+        choices: [
+          { id: "a", text: "A moral claim about art" },
+          { id: "b", text: "The variable you optimize for to get long-term, exponential growth" },
+          { id: "c", text: "A brand slogan" },
+          { id: "d", text: "The same as interest rates" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Why does the claim hold 'from any worldview'?",
+        choices: [
+          { id: "a", text: "Because creativity is popular" },
+          { id: "b", text: "Because both theological creation and secular emergence reward production that compounds" },
+          { id: "c", text: "Because it avoids measurement" },
+          { id: "d", text: "Because markets never fail" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "The weekly build log’s third field is:",
+        choices: [
+          { id: "a", text: "Compounded" },
+          { id: "b", text: "Hours" },
+          { id: "c", text: "Budget" },
+          { id: "d", text: "Team" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "creativity/06": {
+    lessonId: "creativity/06",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "The two doors in this lesson are:",
+        choices: [
+          { id: "a", text: "Christian theological reading and a secular practice reading" },
+          { id: "b", text: "Only conservative and only feminist" },
+          { id: "c", text: "Policy and memes" },
+          { id: "d", text: "Silence and posting" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Does the tract require the reader to choose one door?",
+        choices: [
+          { id: "a", text: "Yes — pick one and close the other" },
+          { id: "b", text: "No — both doors remain open; you may move between them" },
+          { id: "c", text: "Only the secular door is allowed" },
+          { id: "d", text: "Only the Christian door is allowed" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "What does VISION.md call the project’s identity structure?",
+        choices: [
+          { id: "a", text: "A single locked door" },
+          { id: "b", text: "Two doors, one house" },
+          { id: "c", text: "Only a hallway" },
+          { id: "d", text: "A maze" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+
+  // Fools track
+  "fools/01": {
+    lessonId: "fools/01",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "In 1 Corinthians, whose verdict is the 'foolishness' of the cross in this lesson’s reading?",
+        choices: [
+          { id: "a", text: "God’s" },
+          { id: "b", text: "The world’s" },
+          { id: "c", text: "Only Paul’s enemies" },
+          { id: "d", text: "No one’s — it’s a mistranslation" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "What does the owner’s frame say separates costly obedience from recklessness?",
+        choices: [
+          { id: "a", text: "Social approval" },
+          { id: "b", text: "Discernment ('which hills to die on')" },
+          { id: "c", text: "Size of audience" },
+          { id: "d", text: "A single rule in all cases" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "What alternative does the lesson end on?",
+        choices: [
+          { id: "a", text: "Make a statement at any cost" },
+          { id: "b", text: "Try creation instead — the output precedes the feeling" },
+          { id: "c", text: "Wait to feel worthy first" },
+          { id: "d", text: "Silence" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "fools/02": {
+    lessonId: "fools/02",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Who wrote the Life of Symeon the Holy Fool and where was his see?",
+        choices: [
+          { id: "a", text: "Nikephoros of Constantinople" },
+          { id: "b", text: "Leontius of Neapolis on Cyprus" },
+          { id: "c", text: "Palladius of Tabennesi" },
+          { id: "d", text: "Ivan the Terrible" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Why is Andrew’s historicity marked CONTESTED in this track?",
+        choices: [
+          { id: "a", text: "Because his Life is late (10th c.) and fictionalizes its setting" },
+          { id: "b", text: "Because no one edited any texts then" },
+          { id: "c", text: "Because miracles are impossible" },
+          { id: "d", text: "Because he never slept" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "What does Trullo canon 60 show in this context?",
+        choices: [
+          { id: "a", text: "The Church always canonized fools" },
+          { id: "b", text: "Institutional suspicion of performance without sanctity" },
+          { id: "c", text: "A ban on monastic life" },
+          { id: "d", text: "That Andrew never existed" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "fools/03": {
+    lessonId: "fools/03",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "What does 'yurodivy' name here?",
+        choices: [
+          { id: "a", text: "A Western friar" },
+          { id: "b", text: "A Russian holy fool — often a critic of power" },
+          { id: "c", text: "A Byzantine emperor" },
+          { id: "d", text: "A legal code" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q2",
+        prompt: "Which reading treats the fool as a critic of power?",
+        choices: [
+          { id: "a", text: "P4 Psychological" },
+          { id: "b", text: "P5 Social/prophetic (parrhesia)" },
+          { id: "c", text: "P2 Western Catholic" },
+          { id: "d", text: "P3 Literary-only" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Why are tsar-confrontation stories often given weaker tags?",
+        choices: [
+          { id: "a", text: "Because nothing happened" },
+          { id: "b", text: "Because many rest on single-source hagiography or chronicles" },
+          { id: "c", text: "Because Russia has no archives" },
+          { id: "d", text: "Because dates are unknown" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "fools/04": {
+    lessonId: "fools/04",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Which Western text contains Francis’s 'perfect joy' teaching used here?",
+        choices: [
+          { id: "a", text: "The Little Flowers of St Francis (ch. 8)" },
+          { id: "b", text: "Summa Theologiae" },
+          { id: "c", text: "City of God" },
+          { id: "d", text: "Palladius’s Lausiac History" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "The main East/West difference named here is:",
+        choices: [
+          { id: "a", text: "No difference exists" },
+          { id: "b", text: "Eastern feigned madness vs Western joyful humiliation; no formal fool rank in the West" },
+          { id: "c", text: "Only miracles in the West" },
+          { id: "d", text: "Only politics in the East" },
+        ],
+        correctId: "b",
+      },
+      {
+        id: "q3",
+        prompt: "Who argues for a shared 'folly' spirituality across traditions (attribution)?",
+        choices: [
+          { id: "a", text: "John Saward (Perfect Fools, 1980)" },
+          { id: "b", text: "Gananath Obeyesekere" },
+          { id: "c", text: "Benedicta Ward" },
+          { id: "d", text: "Sergey Ivanov" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
+  "fools/05": {
+    lessonId: "fools/05",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "Which pair distinguishes two different 'madness' readings central to this lesson?",
+        choices: [
+          { id: "a", text: "Chosen folly vs imputed madness (punitive psychiatry)" },
+          { id: "b", text: "Physics vs chemistry" },
+          { id: "c", text: "Dogma vs heresy" },
+          { id: "d", text: "Art vs science" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "What does the track decline to adjudicate about historical figures?",
+        choices: [
+          { id: "a", text: "Their inner states and diagnoses" },
+          { id: "b", text: "Their feast days" },
+          { id: "c", text: "Their names" },
+          { id: "d", text: "Their locations" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "Which tool pairs with this lesson to compare readings on one case?",
+        choices: [
+          { id: "a", text: "first-build-template.md" },
+          { id: "b", text: "five-readings-grid.md" },
+          { id: "c", text: "value-diagnostic.md" },
+          { id: "d", text: "transcript-prompt.md" },
+        ],
+        correctId: "b",
+      },
+    ],
+  },
+  "fools/06": {
+    lessonId: "fools/06",
+    passRatio: 1,
+    questions: [
+      {
+        id: "q1",
+        prompt: "State the owner’s frame in this lesson (recognition, not agreement):",
+        choices: [
+          { id: "a", text: "Saints who were unusually enduring of bizarre experiences to display love for Christ" },
+          { id: "b", text: "Only missionaries are fools" },
+          { id: "c", text: "Everyone must court humiliation" },
+          { id: "d", text: "Only politics matters" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q2",
+        prompt: "Which Creativity idea does this lesson map the frame onto?",
+        choices: [
+          { id: "a", text: "The output precedes the feeling" },
+          { id: "b", text: "Do nothing until inspired" },
+          { id: "c", text: "Only talk counts" },
+          { id: "d", text: "Quality before quantity always" },
+        ],
+        correctId: "a",
+      },
+      {
+        id: "q3",
+        prompt: "What are the two doors named here?",
+        choices: [
+          { id: "a", text: "Christian theological door and secular practice door" },
+          { id: "b", text: "Only policy and memes" },
+          { id: "c", text: "Silence and posting" },
+          { id: "d", text: "Only East and only West" },
+        ],
+        correctId: "a",
+      },
+    ],
+  },
   "antediluvian/06": {
     lessonId: "antediluvian/06",
     passRatio: 1,

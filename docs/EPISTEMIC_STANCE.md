@@ -74,6 +74,10 @@ Each is added when a contributor takes the time to write it well. Each is review
 
 Technical specifications. A function either returns the right value or it doesn't. The K-Wallet spec describes how signing works; there is not a "dissenting account" of how an ECDSA signature is computed. The Datamoshpit data model is what it is. Code is judged by whether it works, not by editorial pluralism.
 
+## Reader Notes seed ideas
+
+- **Holy foolishness (fools-for-Christ)** — biblical moral “fool” versus holy fool; Byzantium and Russia; Western cousins; Soviet punitive psychiatry and imputed madness; modern framings and secular appropriations. Track: `public/education/fools/*`. Structure doc: `docs/FOOLS_TRACK_STRUCTURE.md`. Status tags used: VERIFIED / SUPPORTED / HAGIOGRAPHY / CONTESTED / CLAIMED / UNVERIFIED / CONTRADICTED / NOT ADJUDICATED.
+
 ## Why we do this
 
 Because the alternative — picking a verdict and presenting it as settled — is what most software, most platforms, most curricula, and most encyclopedias already do. The world has enough of that. K-OS is small enough to do something different.

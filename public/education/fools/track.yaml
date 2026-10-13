@@ -1,0 +1,41 @@
+title: Fools for Christ — Holy Foolishness, Endurance, and Love on Display
+slug: fools
+summary: >-
+  A careful track on the “fools for Christ” tradition from Paul through
+  Byzantium and Russia to modern cases — holding together hagiographic,
+  historical, and psychological readings without collapsing them. It follows
+  the repo’s epistemic rules: named positions, cited sources, and visible
+  disagreement. 🗣️ Owner’s frame (labeled): some saints were unusually
+  enduring of bizarre experiences as a display of love; most readers are not
+  called to humiliation or death but to build — creation before feeling.
+prerequisites: [sovereignty]
+estimated_hours: 3
+flagship: false
+lessons:
+  - file: 01-when-following-looks-like-folly.md
+    title: When Following Looks Like Folly
+    status: written
+  - file: 02-the-salos-in-byzantium.md
+    title: The salos in Byzantium
+    status: written
+  - file: 03-yurodivy-fools-before-the-tsar.md
+    title: Yurodivy — fools before the tsar
+    status: written
+  - file: 04-perfect-fools-in-the-west.md
+    title: Perfect fools in the West
+    status: written
+  - file: 05-madness-mask-or-mission.md
+    title: Madness, mask, or mission
+    status: written
+  - file: 06-endurance-as-love-displayed.md
+    title: Endurance as love displayed
+    status: written
+tools:
+  - file: tools/claim-sorter.md
+    title: Claim sorter
+  - file: tools/vita-check.md
+    title: Vita check
+  - file: tools/five-readings-grid.md
+    title: Five readings grid
+  - file: tools/endurance-and-love-log.md
+    title: Endurance and love log

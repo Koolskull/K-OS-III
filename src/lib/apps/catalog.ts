@@ -351,7 +351,7 @@ export const APP_CATALOG: AppPackage[] = [
     name: "Marketplace",
     label: "MARKETPLACE",
     glyph: "▣",
-    description: "Buy, sell, and mint Remilia-aligned NFTs. Money is ETH, USDC, BTC, XMR, and CULT.",
+    description: "Buy, sell, and mint koolskull collections. Money is ETH, USDC, BTC, XMR, and CULT.",
     tier: "bundled",
     version: "1.2.0",
     preinstall: true,

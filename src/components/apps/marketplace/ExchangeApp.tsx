@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Interface, getAddress } from "ethers";
-import { SANCTIONED_NFTS } from "@/data/sanctioned-nfts";
+import { floorCollections } from "@/data/sanctioned-nfts";
 import { CURRENCIES, SEAPORT_16, type CurrencyId, atomicCurrency, currencyById } from "@/data/market";
 import { ALL_MINTS } from "@/data/scatter-mints";
 import { MIYAMAKER_MINI } from "@/data/sanctioned-nfts";
 import { loadMintCollection, requestScatterMintPrepared } from "@/lib/mintClient";
 import { type ScatterCollection, priceLabel, scatterImage } from "@/lib/scatter";
 import { listSettlement, openPayableLists, parsePrice, payAddressOk, scaleListPrice } from "@/lib/market/money";
-import { cachedListings, dropListing, forgetPending, loadOlder, rememberPending, syncBook } from "@/lib/market/book";
+import { cachedListings, dropListing, forgetPending, rememberPending, syncBook } from "@/lib/market/book";
 import {
   approveCollectionTx,
   approvedForAll,
@@ -30,13 +30,12 @@ import {
   sendTx,
   signSeaport,
   buildSeaportOrder,
-  tokenMeta,
   transferErc20Tx,
   transferNftTx,
   waitReceipt,
 } from "@/lib/market/chain";
 import { type FloorListing, type KOrder, parseKOrder } from "@/lib/market/orders";
-import { openSeaFloor } from "@/lib/market/opensea";
+import { openSeaAsk, openSeaFloor, openSeaGallery, openSeaNfts, type CatalogNft } from "@/lib/market/opensea";
 import {
   connectEthereumProvider,
   discoverEip6963Wallets,
@@ -57,23 +56,25 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [wallets, setWallets] = useState<Eip6963Detail[]>([]);
   const [rows, setRows] = useState<FloorListing[]>([]);
   const [sea, setSea] = useState<FloorListing[]>([]);
-  const [seaReady, setSeaReady] = useState(false);
+  const [gallery, setGallery] = useState<CatalogNft[]>([]);
+  const [galleryNext, setGalleryNext] = useState<string | null>(null);
+  const [galleryReady, setGalleryReady] = useState(false);
+  const [reload, setReload] = useState(0);
   const [colFilter, setColFilter] = useState("all");
-  const [curFilter, setCurFilter] = useState<"all" | CurrencyId>("all");
-  const [picked, setPicked] = useState<FloorListing | null>(null);
-  const [images, setImages] = useState<Record<string, string | null>>({});
+  const [view, setView] = useState<CatalogNft | null>(null);
+  const [viewAsk, setViewAsk] = useState<FloorListing | null>(null);
+  const [viewBusy, setViewBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [bad, setBad] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paste, setPaste] = useState("");
-  const asked = useRef(new Set<string>());
 
   const [mintSlug, setMintSlug] = useState(ALL_MINTS[0]?.slug ?? "mialien-eth");
   const [mintCol, setMintCol] = useState<ScatterCollection | null>(null);
   const [mintList, setMintList] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
 
-  const [sellCol, setSellCol] = useState(SANCTIONED_NFTS.find((c) => c.id === "mialien-eth")?.address ?? SANCTIONED_NFTS[0].address);
+  const [sellCol, setSellCol] = useState(floorCollections().find((c) => c.id === "mialien-eth")?.address ?? floorCollections()[0].address);
   const [tokenId, setTokenId] = useState("");
   const [currency, setCurrency] = useState<CurrencyId>("CULT");
   const [price, setPrice] = useState("");
@@ -86,52 +87,77 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     setWallets((prev) => (prev.some((x) => x.info.uuid === w.info.uuid) ? prev : [...prev, w]));
   }), []);
 
-  const refresh = async () => {
-    const bookPromise = syncBook().then((book) => setRows(book));
-    const seaPromise = openSeaFloor().then((asks) => {
-      setSea(asks);
-      setSeaReady(true);
-    });
-    const [book, asks] = await Promise.allSettled([bookPromise, seaPromise]);
-    if (asks.status === "rejected") throw asks.reason;
-    if (book.status === "rejected") throw book.reason;
-  };
-
-  useEffect(() => {
-    setRows(cachedListings());
-    void refresh().catch((e) => {
-      setBad(true);
-      setMsg(e instanceof Error ? e.message : "Book unavailable");
-    });
-  }, []);
-
-  const shown = useMemo(() => {
-    return [...sea, ...rows].filter((row) => {
-      const symbol = row.paySymbol || row.order.currency;
-      if (curFilter !== "all" && symbol !== curFilter) return false;
-      if (colFilter === "all") return true;
-      if (colFilter === "art") return Boolean(row.order.art);
-      return SANCTIONED_NFTS.find((c) => c.address.toLowerCase() === row.order.nft?.contract.toLowerCase())?.id === colFilter;
-    });
-  }, [rows, sea, colFilter, curFilter]);
-
-  const imageKey = shown.map((row) => row.id).join("|");
   useEffect(() => {
     let stop = false;
-    for (const row of shown) {
-      const nft = row.order.nft;
-      if (!nft || asked.current.has(row.id)) continue;
-      asked.current.add(row.id);
-      void tokenMeta(nft.contract, nft.tokenId).then((meta) => {
-        if (!stop) setImages((m) => ({ ...m, [row.id]: meta.image }));
-      });
-    }
+    setGalleryReady(false);
+    setRows(cachedListings());
+    void (async () => {
+      const book = syncBook();
+      const asks = openSeaFloor();
+      const page = openSeaGallery(colFilter, null);
+      const [bookResult, askResult, pageResult] = await Promise.allSettled([book, asks, page]);
+      if (stop) return;
+      if (bookResult.status === "fulfilled") setRows(bookResult.value);
+      if (askResult.status === "fulfilled") setSea(askResult.value);
+      if (pageResult.status === "fulfilled") {
+        setGallery(pageResult.value.nfts);
+        setGalleryNext(pageResult.value.next);
+      } else {
+        setBad(true);
+        setMsg(pageResult.reason instanceof Error ? pageResult.reason.message : "Collection unavailable");
+      }
+      setGalleryReady(true);
+    })();
     return () => {
       stop = true;
     };
-    // imageKey tracks the visible set. `shown` is derived from it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageKey]);
+  }, [colFilter, reload]);
+
+  function matchListing(nft: CatalogNft): FloorListing | null {
+    return [...sea, ...rows].find((row) => {
+      const token = row.order.nft;
+      if (!token) return false;
+      if (token.contract.toLowerCase() !== nft.contract.toLowerCase()) return false;
+      if (token.tokenId === nft.tokenId) return true;
+      if (!/^\d+$/.test(token.tokenId) || !/^\d+$/.test(nft.tokenId)) return false;
+      return BigInt(token.tokenId) === BigInt(nft.tokenId);
+    }) ?? null;
+  }
+
+  async function openItem(nft: CatalogNft) {
+    setView(nft);
+    const known = matchListing(nft);
+    setViewAsk(known);
+    if (known) return;
+    setViewBusy(true);
+    try {
+      const ask = await openSeaAsk(nft.slug, nft.tokenId, nft.collectionName);
+      setViewAsk(ask);
+      if (ask) setSea((prev) => (prev.some((row) => row.id === ask.id) ? prev : [...prev, ask]));
+    } catch (e) {
+      setBad(true);
+      setMsg(e instanceof Error ? e.message : "OpenSea listing unavailable");
+    }
+    setViewBusy(false);
+  }
+
+  async function more() {
+    if (!galleryNext || colFilter === "all") return;
+    setBusy(true);
+    setBad(false);
+    try {
+      const page = await openSeaNfts(colFilter, galleryNext);
+      setGallery((prev) => {
+        const seen = new Set(prev.map((nft) => nft.id));
+        return [...prev, ...page.nfts.filter((nft) => !seen.has(nft.id))];
+      });
+      setGalleryNext(page.next);
+    } catch (e) {
+      setBad(true);
+      setMsg(e instanceof Error ? e.message : "Collection unavailable");
+    }
+    setBusy(false);
+  }
 
   async function connect(p?: Eip1193Provider) {
     setMsg(null);
@@ -188,7 +214,6 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   return (
     <div style={root}>
       <div style={header}>
-        <span style={{ color: "#00ff00", letterSpacing: 2 }}>MARKET</span>
         {(["floor", "mint", "sell", "bag", "art"] as Pane[]).map((id) => (
           <button key={id} type="button" style={pane === id ? on : btn} onClick={() => setPane(id)}>
             {id.toUpperCase()}
@@ -215,41 +240,61 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
           ))}
         </div>
       )}
-      <div style={note}>
-        OPENSEA ASKS FOR THESE COLLECTIONS ARE ON THE FLOOR. ETH, USDC, AND CULT MOVE WITH THE NFT IN ONE TRANSACTION.
-        K-OS FEE IS 0. AN OPENSEA FEE IS SHOWN ON THAT LISTING. NETWORK FEE IS ETH GAS, SHOWN IN THE WALLET.
-      </div>
       {msg && <div style={bad ? error : status}>{msg}</div>}
 
       {pane === "floor" && (
         <div style={scroll}>
           <div style={chipRow}>
-            <Chip on={colFilter === "all"} label="ALL" click={() => setColFilter("all")} />
-            {SANCTIONED_NFTS.map((c) => (
-              <Chip key={c.id} on={colFilter === c.id} label={c.name.toUpperCase()} click={() => setColFilter(c.id)} />
+            <Chip on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setView(null); }} />
+            {floorCollections().map((c) => (
+              <Chip key={c.id} on={colFilter === c.id} label={c.name.toUpperCase()} click={() => { setColFilter(c.id); setView(null); }} />
             ))}
-            <Chip on={colFilter === "art"} label="ART" click={() => setColFilter("art")} />
+            <button type="button" style={btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
           </div>
-          <div style={chipRow}>
-            <Chip on={curFilter === "all"} label="ANY COIN" click={() => setCurFilter("all")} />
-            {CURRENCIES.map((c) => (
-              <Chip key={c.id} on={curFilter === c.id} label={c.id} click={() => setCurFilter(c.id)} />
-            ))}
-            <button type="button" style={btn} disabled={busy} onClick={() => void run(async () => setRows(await syncBook()))}>REFRESH</button>
-            <button type="button" style={btn} disabled={busy} onClick={() => void run(async () => setRows(await loadOlder()))}>OLDER</button>
-          </div>
-          {shown.length === 0 && <div style={pad}>{seaReady ? "NO LISTINGS IN THIS WINDOW." : "READING OPENSEA…"}</div>}
-          {shown.map((row) => (
-            <button key={row.id} type="button" style={rowBtn} onClick={() => setPicked(row)}>
-              <Thumb src={row.order.art?.image || images[row.id]} />
-              <div style={{ flex: 1, textAlign: "left" }}>
-                <div>{row.collectionName.toUpperCase()} {row.order.nft ? `#${row.order.nft.tokenId}` : row.order.art?.title}</div>
-                <div style={dim}>{shortAddr(row.order.offerer)} · {row.venue === "opensea" ? "OPENSEA" : row.order.kind === "seaport" ? "ATOMIC" : "DIRECT"}</div>
+          {view && (
+            <div>
+              <div style={{ padding: "0 12px" }}>
+                <button type="button" style={btn} onClick={() => { setView(null); setViewAsk(null); }}>BACK</button>
               </div>
-              <div style={{ color: "#00ff00" }}>{row.price}</div>
-            </button>
-          ))}
-          {picked && <Detail row={picked} image={picked.order.art?.image || images[picked.id] || null} mine={acct?.toLowerCase() === picked.order.offerer.toLowerCase()} busy={busy} buyer={buyer} setBuyer={setBuyer} onBuy={() => void run(() => buy(picked))} onCancel={() => void run(() => cancel(picked))} onSend={() => void run(() => sendNft(picked))} />}
+              {viewBusy && <div style={pad}>READING LISTING…</div>}
+              {!viewBusy && viewAsk && (
+                <Detail
+                  row={viewAsk}
+                  image={view.image}
+                  mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
+                  busy={busy}
+                  buyer={buyer}
+                  setBuyer={setBuyer}
+                  onBuy={() => void run(() => buy(viewAsk))}
+                  onCancel={() => void run(() => cancel(viewAsk))}
+                  onSend={() => void run(() => sendNft(viewAsk))}
+                />
+              )}
+              {!viewBusy && !viewAsk && <Quiet nft={view} />}
+            </div>
+          )}
+          {!galleryReady && <div style={pad}>READING COLLECTION…</div>}
+          {galleryReady && gallery.length === 0 && <div style={pad}>NO TOKENS IN THIS WINDOW.</div>}
+          <div style={grid}>
+            {gallery.map((nft) => {
+              const ask = matchListing(nft);
+              const selected = view?.id === nft.id;
+              return (
+                <button key={nft.id} type="button" style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }} onClick={() => void openItem(nft)}>
+                  {nft.image ? <img src={nft.image} alt="" style={tileImg} /> : <div style={tileImg} />}
+                  <div style={tileMeta}>
+                    <span>{nft.name.toUpperCase()}</span>
+                    <span style={{ color: "#00ff00" }}>{ask ? ask.price : "—"}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {colFilter !== "all" && galleryNext && (
+            <div style={pad}>
+              <button type="button" style={btn} disabled={busy} onClick={() => void more()}>MORE</button>
+            </div>
+          )}
           <div style={pad}>
             <div style={dim}>PASTE A SIGNED ORDER</div>
             <textarea value={paste} onChange={(e) => setPaste(e.target.value)} style={area} />
@@ -316,7 +361,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
             THE WALLET APPROVES SEAPORT FOR THIS WHOLE COLLECTION, THEN SIGNS THE ORDER, THEN POSTS IT. EACH STEP IS ITS OWN CONFIRM.
           </div>
           <div style={chipRow}>
-            {SANCTIONED_NFTS.map((c) => (
+            {floorCollections().map((c) => (
               <Chip key={c.id} on={sellCol.toLowerCase() === c.address.toLowerCase()} label={c.name.toUpperCase()} click={() => setSellCol(c.address)} />
             ))}
           </div>
@@ -535,7 +580,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       await waitReceipt(hash);
       dropListing(row.id);
       if (row.venue === "opensea") setSea((prev) => prev.filter((item) => item.id !== row.id));
-      setPicked(null);
+      setViewAsk(null);
       setMsg(`Bought ${hash.slice(0, 10)}…`);
       return;
     }
@@ -569,7 +614,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     forgetPending(row.order);
     dropListing(row.id);
     if (row.venue === "opensea") setSea((prev) => prev.filter((item) => item.id !== row.id));
-    setPicked(null);
+    setViewAsk(null);
     setRows(cachedListings());
     setMsg("Listing cancelled.");
   }
@@ -664,6 +709,26 @@ function Detail({
   );
 }
 
+function Quiet({ nft }: { nft: CatalogNft }) {
+  return (
+    <div style={detail}>
+      <Thumb src={nft.image} big />
+      <div style={{ flex: 1 }}>
+        <div style={{ color: "#00ff00" }}>{nft.name.toUpperCase()}</div>
+        <div style={dim}>{nft.collectionName.toUpperCase()} · NOT LISTED</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <a href={`https://etherscan.io/nft/${nft.contract}/${nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
+            ETHERSCAN
+          </a>
+          <a href={`https://opensea.io/item/ethereum/${nft.contract}/${nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
+            OPENSEA
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Fee({ lines }: { lines: [string, string][] }) {
   return (
     <div style={{ marginTop: 8 }}>
@@ -714,7 +779,6 @@ const scroll: React.CSSProperties = { flex: 1, overflow: "auto", minHeight: 0 };
 const pad: React.CSSProperties = { padding: 12 };
 const chipRow: React.CSSProperties = { display: "flex", gap: 6, flexWrap: "wrap", padding: "8px 12px" };
 const dim: React.CSSProperties = { color: "#888", fontSize: 8, letterSpacing: 1, lineHeight: 1.5 };
-const note: React.CSSProperties = { ...dim, padding: "6px 12px", borderBottom: "1px solid #222" };
 const error: React.CSSProperties = { color: "#ff5555", fontSize: 9, padding: "4px 12px" };
 const status: React.CSSProperties = { color: "#00ff00", fontSize: 9, padding: "4px 12px" };
 const btn: React.CSSProperties = {
@@ -752,6 +816,38 @@ const rowBtn: React.CSSProperties = {
   fontFamily: "var(--dm-font-primary)",
   fontSize: 10,
   cursor: "pointer",
+};
+const grid: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))",
+  gap: 8,
+  padding: 12,
+};
+const tile: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  padding: 0,
+  border: "1px solid #333",
+  background: "#000",
+  color: "#fff",
+  fontFamily: "var(--dm-font-primary)",
+  fontSize: 8,
+  textAlign: "left",
+  cursor: "pointer",
+};
+const tileImg: React.CSSProperties = {
+  width: "100%",
+  aspectRatio: "1",
+  objectFit: "cover",
+  background: "#111",
+  imageRendering: "pixelated",
+};
+const tileMeta: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+  padding: "0 6px 6px",
 };
 const thumb: React.CSSProperties = {
   width: 42,

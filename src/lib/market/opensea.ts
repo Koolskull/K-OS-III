@@ -1,5 +1,5 @@
 import { formatUnits, getAddress } from "ethers";
-import { SANCTIONED_NFTS } from "@/data/sanctioned-nfts";
+import { fallbackTokenImage, floorCollections, type SanctionedCollection } from "@/data/sanctioned-nfts";
 import { CULT_ADDRESS, SEAPORT_16, USDC_ADDRESS, type CurrencyId } from "@/data/market";
 import { formatPrice } from "@/lib/market/money";
 import { type ConsiderationItem, type FloorListing, type KOrder, type OfferItem, type OrderComponents } from "@/lib/market/orders";
@@ -9,11 +9,25 @@ const KEY_STORE = "kos-opensea-key-v1";
 /** OpenSea's fee recipient. Shown as its own line so the cut is not folded into the price. */
 const OPENSEA_FEE = "0x0000a26b00c1f0df003000390027140000faa719";
 const PAGE = 20;
+const NFT_PAGE = 48;
+
+export interface CatalogNft {
+  id: string;
+  collectionId: string;
+  collectionName: string;
+  slug: string;
+  contract: string;
+  tokenId: string;
+  name: string;
+  image: string | null;
+}
 
 interface SavedKey {
   key: string;
   exp: number;
 }
+
+let keyRequest: Promise<string> | null = null;
 
 async function readKey(): Promise<string> {
   let saved: SavedKey | null = null;
@@ -23,6 +37,15 @@ async function readKey(): Promise<string> {
     saved = null;
   }
   if (saved?.key && saved.exp > Date.now() + 60_000) return saved.key;
+  if (!keyRequest) {
+    keyRequest = mintKey().finally(() => {
+      keyRequest = null;
+    });
+  }
+  return keyRequest;
+}
+
+async function mintKey(): Promise<string> {
   const res = await fetch(`${API}/auth/keys`, {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
@@ -178,10 +201,78 @@ function feeLines(items: ConsiderationItem[], offerer: string, symbol: string, d
   return [...buckets.entries()].map(([label, amount]) => [label, `${formatUnits(amount, decimals)} ${symbol}`]);
 }
 
-/** Cheapest active OpenSea asks for the sanctioned collections. */
+function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | null {
+  if (!value || typeof value !== "object" || !col.openseaSlug) return null;
+  const row = value as Record<string, unknown>;
+  const tokenId = digits(row.identifier);
+  if (!tokenId) return null;
+  let contract = "";
+  try {
+    contract = getAddress(String(row.contract));
+  } catch {
+    return null;
+  }
+  const display = typeof row.display_image_url === "string" ? row.display_image_url : "";
+  const rawImage = typeof row.image_url === "string" ? row.image_url : "";
+  const named = typeof row.name === "string" ? row.name.trim() : "";
+  return {
+    id: `${contract.toLowerCase()}:${tokenId}`,
+    collectionId: col.id,
+    collectionName: col.name,
+    slug: col.openseaSlug,
+    contract,
+    tokenId,
+    name: named || `${col.name} #${tokenId}`,
+    image: display || rawImage || fallbackTokenImage(contract, tokenId),
+  };
+}
+
+/** One page of a koolskull collection, listed or not. */
+export async function openSeaNfts(collectionId: string, cursor: string | null): Promise<{ nfts: CatalogNft[]; next: string | null }> {
+  const col = floorCollections().find((item) => item.id === collectionId);
+  if (!col?.openseaSlug) return { nfts: [], next: null };
+  const key = await readKey();
+  const query = new URLSearchParams({ limit: String(NFT_PAGE) });
+  if (cursor) query.set("next", cursor);
+  const body = (await osGet(`/collection/${col.openseaSlug}/nfts?${query}`, key)) as {
+    nfts?: unknown[];
+    next?: unknown;
+  } | null;
+  const nfts = (body?.nfts ?? []).map((row) => nftFromApi(row, col)).filter((row): row is CatalogNft => Boolean(row));
+  const next = typeof body?.next === "string" && body.next ? body.next : null;
+  return { nfts, next };
+}
+
+/** First page of every floor collection, or one collection when an id is passed. */
+export async function openSeaGallery(collectionId: string, cursor: string | null): Promise<{ nfts: CatalogNft[]; next: string | null }> {
+  if (collectionId === "all") {
+    const pages = await Promise.all(floorCollections().map((col) => openSeaNfts(col.id, null)));
+    const seen = new Set<string>();
+    const nfts: CatalogNft[] = [];
+    for (const page of pages) {
+      for (const nft of page.nfts) {
+        if (seen.has(nft.id)) continue;
+        seen.add(nft.id);
+        nfts.push(nft);
+      }
+    }
+    return { nfts, next: null };
+  }
+  return openSeaNfts(collectionId, cursor);
+}
+
+/** Best ask for one token. Null when it is not listed. */
+export async function openSeaAsk(slug: string, tokenId: string, collectionName: string): Promise<FloorListing | null> {
+  if (!/^\d+$/.test(tokenId)) return null;
+  const key = await readKey();
+  const body = await osGet(`/listings/collection/${encodeURIComponent(slug)}/nfts/${tokenId}/best`, key);
+  return listingFromApi(body, collectionName);
+}
+
+/** Cheapest active OpenSea asks for the koolskull collections on the floor. */
 export async function openSeaFloor(): Promise<FloorListing[]> {
   const key = await readKey();
-  const collections = SANCTIONED_NFTS.filter((col) => col.openseaSlug);
+  const collections = floorCollections().filter((col) => col.openseaSlug);
   const pages = await Promise.all(
     collections.map(async (col) => {
       const body = (await osGet(`/listings/collection/${col.openseaSlug}/best?limit=${PAGE}`, key)) as {

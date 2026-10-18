@@ -88,6 +88,18 @@ export const SANCTIONED_NFTS: SanctionedCollection[] = [
   },
 ];
 
+/** Public floor on koolskull.com. The other sanctioned collections stay buyable. */
+const FLOOR_IDS = new Set([
+  "miyamaker-mini",
+  "mialien-eth",
+  "kool-skull-s-halloween-special",
+  "bannerz-by-koolskull",
+]);
+
+export function floorCollections(): SanctionedCollection[] {
+  return SANCTIONED_NFTS.filter((c) => FLOOR_IDS.has(c.id));
+}
+
 export function sanctionedAddresses(): string[] {
   return SANCTIONED_NFTS.map((c) => c.address.toLowerCase());
 }

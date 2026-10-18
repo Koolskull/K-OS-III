@@ -17,8 +17,10 @@ import {
   cancelTx,
   ensureErc20Allowance,
   erc20Balance,
+  erc20Consideration,
   ethBalance,
   fulfillTx,
+  nativeConsideration,
   orderFilledOrCancelled,
   ownerOf,
   readCounter,
@@ -34,6 +36,7 @@ import {
   waitReceipt,
 } from "@/lib/market/chain";
 import { type FloorListing, type KOrder, parseKOrder } from "@/lib/market/orders";
+import { openSeaFloor } from "@/lib/market/opensea";
 import {
   connectEthereumProvider,
   discoverEip6963Wallets,
@@ -53,6 +56,8 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [provider, setProvider] = useState<Eip1193Provider | null>(null);
   const [wallets, setWallets] = useState<Eip6963Detail[]>([]);
   const [rows, setRows] = useState<FloorListing[]>([]);
+  const [sea, setSea] = useState<FloorListing[]>([]);
+  const [seaReady, setSeaReady] = useState(false);
   const [colFilter, setColFilter] = useState("all");
   const [curFilter, setCurFilter] = useState<"all" | CurrencyId>("all");
   const [picked, setPicked] = useState<FloorListing | null>(null);
@@ -82,7 +87,14 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   }), []);
 
   const refresh = async () => {
-    setRows(await syncBook());
+    const bookPromise = syncBook().then((book) => setRows(book));
+    const seaPromise = openSeaFloor().then((asks) => {
+      setSea(asks);
+      setSeaReady(true);
+    });
+    const [book, asks] = await Promise.allSettled([bookPromise, seaPromise]);
+    if (asks.status === "rejected") throw asks.reason;
+    if (book.status === "rejected") throw book.reason;
   };
 
   useEffect(() => {
@@ -94,13 +106,14 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   }, []);
 
   const shown = useMemo(() => {
-    return rows.filter((row) => {
-      if (curFilter !== "all" && row.order.currency !== curFilter) return false;
+    return [...sea, ...rows].filter((row) => {
+      const symbol = row.paySymbol || row.order.currency;
+      if (curFilter !== "all" && symbol !== curFilter) return false;
       if (colFilter === "all") return true;
       if (colFilter === "art") return Boolean(row.order.art);
       return SANCTIONED_NFTS.find((c) => c.address.toLowerCase() === row.order.nft?.contract.toLowerCase())?.id === colFilter;
     });
-  }, [rows, colFilter, curFilter]);
+  }, [rows, sea, colFilter, curFilter]);
 
   const imageKey = shown.map((row) => row.id).join("|");
   useEffect(() => {
@@ -203,8 +216,8 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
         </div>
       )}
       <div style={note}>
-        ETH, USDC, AND CULT MOVE WITH THE NFT IN ONE TRANSACTION. BTC AND XMR ARE PAID FROM YOUR WALLET.
-        K-OS FEE IS 0. PROTOCOL FEE IS 0. NETWORK FEE IS ETH GAS, SHOWN IN THE WALLET.
+        OPENSEA ASKS FOR THESE COLLECTIONS ARE ON THE FLOOR. ETH, USDC, AND CULT MOVE WITH THE NFT IN ONE TRANSACTION.
+        K-OS FEE IS 0. AN OPENSEA FEE IS SHOWN ON THAT LISTING. NETWORK FEE IS ETH GAS, SHOWN IN THE WALLET.
       </div>
       {msg && <div style={bad ? error : status}>{msg}</div>}
 
@@ -225,13 +238,13 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
             <button type="button" style={btn} disabled={busy} onClick={() => void run(async () => setRows(await syncBook()))}>REFRESH</button>
             <button type="button" style={btn} disabled={busy} onClick={() => void run(async () => setRows(await loadOlder()))}>OLDER</button>
           </div>
-          {shown.length === 0 && <div style={pad}>NO LISTINGS IN THIS WINDOW.</div>}
+          {shown.length === 0 && <div style={pad}>{seaReady ? "NO LISTINGS IN THIS WINDOW." : "READING OPENSEA…"}</div>}
           {shown.map((row) => (
             <button key={row.id} type="button" style={rowBtn} onClick={() => setPicked(row)}>
               <Thumb src={row.order.art?.image || images[row.id]} />
               <div style={{ flex: 1, textAlign: "left" }}>
                 <div>{row.collectionName.toUpperCase()} {row.order.nft ? `#${row.order.nft.tokenId}` : row.order.art?.title}</div>
-                <div style={dim}>{shortAddr(row.order.offerer)} · {row.order.kind === "seaport" ? "ATOMIC" : "DIRECT"}</div>
+                <div style={dim}>{shortAddr(row.order.offerer)} · {row.venue === "opensea" ? "OPENSEA" : row.order.kind === "seaport" ? "ATOMIC" : "DIRECT"}</div>
               </div>
               <div style={{ color: "#00ff00" }}>{row.price}</div>
             </button>
@@ -497,7 +510,19 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
         dropListing(row.id);
         throw new Error("That listing is filled or cancelled.");
       }
-      if (order.currency === "ETH") {
+      const native = nativeConsideration(order);
+      const coins = row.venue === "opensea" ? erc20Consideration(order) : [];
+      if (row.venue === "opensea") {
+        if (native > BigInt(0)) {
+          const bal = await ethBalance(address);
+          if (bal < native) throw new Error("Not enough ETH for the price. Gas is extra.");
+        }
+        for (const coin of coins) {
+          const bal = await erc20Balance(coin.token, address);
+          if (bal < coin.amount) throw new Error(`Not enough ${row.paySymbol || "token"}.`);
+          await ensureErc20Allowance(eth, address, coin.token, SEAPORT_16, coin.amount);
+        }
+      } else if (order.currency === "ETH") {
         const bal = await ethBalance(address);
         if (bal < BigInt(order.raw)) throw new Error("Not enough ETH for the price. Gas is extra.");
       } else {
@@ -509,6 +534,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       const hash = await sendTx(eth, address, fulfillTx(order));
       await waitReceipt(hash);
       dropListing(row.id);
+      if (row.venue === "opensea") setSea((prev) => prev.filter((item) => item.id !== row.id));
       setPicked(null);
       setMsg(`Bought ${hash.slice(0, 10)}…`);
       return;
@@ -536,12 +562,13 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       const hash = await sendTx(eth, address, cancelTx(row.order));
       await waitReceipt(hash);
     }
-    if (row.id.startsWith("0x")) {
+    if (row.venue !== "opensea" && row.id.startsWith("0x")) {
       const hash = await sendTx(eth, address, revokeTx(row.id));
       await waitReceipt(hash);
     }
     forgetPending(row.order);
     dropListing(row.id);
+    if (row.venue === "opensea") setSea((prev) => prev.filter((item) => item.id !== row.id));
     setPicked(null);
     setRows(cachedListings());
     setMsg("Listing cancelled.");
@@ -598,8 +625,10 @@ function Detail({
               : [
                   ["PRICE", row.price],
                   ["K-OS FEE", "0"],
-                  ["PROTOCOL FEE", "0"],
-                  ["SELLER RECEIVES", row.price],
+                  ...(row.fees ?? [
+                    ["PROTOCOL FEE", "0"],
+                    ["SELLER RECEIVES", row.price],
+                  ]),
                   ["NETWORK", "ETH GAS IN THE WALLET"],
                 ]
           }
@@ -622,6 +651,11 @@ function Detail({
           {order.nft && (
             <a href={`https://etherscan.io/nft/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
               ETHERSCAN
+            </a>
+          )}
+          {row.venue === "opensea" && order.nft && (
+            <a href={`https://opensea.io/item/ethereum/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
+              OPENSEA
             </a>
           )}
         </div>

@@ -279,13 +279,34 @@ function parameterTuple(p: OrderComponents) {
   return row;
 }
 
+export function nativeConsideration(order: KOrder): bigint {
+  const items = order.seaport?.parameters.consideration ?? [];
+  return items.reduce((sum, item) => (item.itemType === 0 ? sum + BigInt(item.startAmount) : sum), BigInt(0));
+}
+
+export function erc20Consideration(order: KOrder): { token: string; amount: bigint }[] {
+  const totals = new Map<string, bigint>();
+  for (const item of order.seaport?.parameters.consideration ?? []) {
+    if (item.itemType !== 1) continue;
+    const token = getAddress(item.token);
+    totals.set(token, (totals.get(token) ?? BigInt(0)) + BigInt(item.startAmount));
+  }
+  return [...totals.entries()].map(([token, amount]) => ({ token, amount }));
+}
+
+export function fulfillSignedTx(parameters: OrderComponents, signature: string, value: bigint): TxRequest {
+  const data = seaport.encodeFunctionData("fulfillOrder", [[parameterTuple(parameters), signature], ZERO_BYTES32]);
+  return { to: SEAPORT_16, data, value };
+}
+
 export function fulfillTx(order: KOrder): TxRequest {
   const p = order.seaport?.parameters;
   const signature = order.seaport?.signature;
   if (!p || !signature) throw new Error("This listing is not an on-chain sale.");
-  const data = seaport.encodeFunctionData("fulfillOrder", [[parameterTuple(p), signature], ZERO_BYTES32]);
-  const value = order.currency === "ETH" ? BigInt(order.raw) : BigInt(0);
-  return { to: SEAPORT_16, data, value };
+  const items = p.consideration;
+  const native = nativeConsideration(order);
+  const value = order.currency === "ETH" ? (items.length > 0 ? native : BigInt(order.raw)) : BigInt(0);
+  return fulfillSignedTx(p, signature, value);
 }
 
 export function cancelTx(order: KOrder): TxRequest {

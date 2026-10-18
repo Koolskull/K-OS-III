@@ -62,6 +62,11 @@ export interface FloorListing {
   order: KOrder;
   price: string;
   collectionName: string;
+  /** OpenSea ask. Absent on orders posted from this OS. */
+  venue?: "opensea";
+  /** Coin the buyer actually pays, when it is not one of the K-OS rails. */
+  paySymbol?: string;
+  fees?: [string, string][];
 }
 
 const TYPED = {

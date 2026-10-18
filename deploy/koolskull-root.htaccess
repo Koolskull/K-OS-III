@@ -1,0 +1,8 @@
+<IfModule mod_headers.c>
+Header set Cross-Origin-Embedder-Policy "credentialless"
+Header set Cross-Origin-Opener-Policy "same-origin"
+</IfModule>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# This domain inherits the “PHP” package.
+# php -- END cPanel-generated handler, do not edit

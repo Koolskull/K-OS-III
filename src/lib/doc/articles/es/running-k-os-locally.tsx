@@ -16,13 +16,13 @@ export default function RunningKOSLocally() {
       <UList>
         <Li>
           <Strong>Node.js v20 o más reciente.</Strong> Descarga de{" "}
-          <a href="https://nodejs.org" style={{ color: "#ffff00" }}>nodejs.org</a>.
+          <a href="https://nodejs.org" style={{ color: "#00ff00" }}>nodejs.org</a>.
           Instala con la configuración por defecto.
         </Li>
         <Li>
           <Strong>Git.</Strong> Casi seguro ya está instalado en Mac y Linux.
           En Windows, instala vía{" "}
-          <a href="https://git-scm.com" style={{ color: "#ffff00" }}>git-scm.com</a>{" "}
+          <a href="https://git-scm.com" style={{ color: "#00ff00" }}>git-scm.com</a>{" "}
           o usa WSL.
         </Li>
         <Li>

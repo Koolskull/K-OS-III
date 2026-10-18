@@ -9,10 +9,10 @@
  */
 
 import { AccountApp } from "@/components/apps/account/AccountApp";
-import { HAS_BACKEND } from "@/lib/buildFlags";
+import { HAS_ACCOUNT } from "@/lib/buildFlags";
 
 export default function AccountPage() {
-  if (!HAS_BACKEND) {
+  if (!HAS_ACCOUNT) {
     return (
       <div
         style={{

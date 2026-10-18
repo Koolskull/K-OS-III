@@ -1,4 +1,4 @@
-/* SKULLMASH — K-OS III chrome (black / white / yellow, hard edges, mono) */
+/* SKULLMASH — K-OS III chrome (black / white / green, hard edges, mono) */
 .sm-root {
   --sm-bg: #000000;
   --sm-surface: #0a0a0a;
@@ -8,7 +8,7 @@
   --sm-dim: #444444;
   --sm-border: #333333;
   --sm-border-hi: #555555;
-  --sm-accent: #ffff00;
+  --sm-accent: #00ff00;
   --sm-danger: #ff4444;
   --sm-font: var(--dm-font-primary, "sometype-mono", "kongtext", "Courier New", monospace);
   height: 100%;
@@ -197,7 +197,7 @@
   color: #000;
 }
 
-/* Primary action — yellow invert, not green pill */
+/* Primary action — green invert */
 .sm-next {
   display: inline-flex;
   align-items: center;
@@ -386,7 +386,7 @@
 .sm-hint {
   border: 1px solid #444;
   background: #000000;
-  color: #ffff00;
+  color: #00ff00;
   font-family: var(--sm-font);
   font-size: var(--dm-ui-font-xs, 9px);
   letter-spacing: 1px;

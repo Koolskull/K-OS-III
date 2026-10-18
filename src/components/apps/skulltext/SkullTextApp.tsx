@@ -407,7 +407,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
           minHeight: 32,
         }}
       >
-        <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginRight: 4 }}>
+        <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11, marginRight: 4 }}>
           ☦ SKULLTEXT
         </span>
         <button type="button" style={btn()} onClick={() => newFile(".txt")} title="Ctrl+N">
@@ -480,7 +480,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
                     style={{
                       padding: "4px 8px",
                       background: selected ? "#111100" : "transparent",
-                      borderLeft: selected ? "2px solid #ffff00" : "2px solid transparent",
+                      borderLeft: selected ? "2px solid #00ff00" : "2px solid transparent",
                       cursor: "pointer",
                     }}
                     onClick={() => !renaming && openFile(f.id)}
@@ -522,7 +522,7 @@ export function SkullTextApp({ isFocused = true }: SkullTextAppProps) {
                         <span
                           style={{
                             fontSize: 10,
-                            color: selected ? "#ffff00" : "#ccc",
+                            color: selected ? "#00ff00" : "#ccc",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",

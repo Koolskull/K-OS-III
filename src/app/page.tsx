@@ -27,6 +27,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { BootSequence } from "@/components/os/BootSequence";
 import { Desktop } from "@/components/os/Desktop";
 import { Taskbar } from "@/components/os/Taskbar";
@@ -51,12 +52,32 @@ import { NodeMapApp } from "@/components/apps/nodemap/NodeMapApp";
 import { StanceApp } from "@/components/apps/stance/StanceApp";
 import { NotesApp } from "@/components/apps/notes/NotesApp";
 import { AppManagerApp } from "@/components/apps/appmanager/AppManagerApp";
+import { DiscographyApp } from "@/components/apps/discography/DiscographyApp";
+import { AlbumArtApp } from "@/components/apps/discography/AlbumArtApp";
+import { ArtGalleryApp } from "@/components/apps/artgallery/ArtGalleryApp";
+import { CartApp } from "@/components/apps/cart/CartApp";
+import { MarketplaceApp } from "@/components/apps/marketplace/MarketplaceApp";
+import { NftMintApp } from "@/components/apps/nftmint/NftMintApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
-import { HAS_BACKEND } from "@/lib/buildFlags";
+import { HAS_ACCOUNT, HAS_BACKEND } from "@/lib/buildFlags";
 import { APP_CATALOG, type AppId } from "@/lib/apps/catalog";
 import { canLaunchApp, recordAppOpen } from "@/lib/apps/installStore";
+import { getAlbum, webampTracks, type MusicAlbum } from "@/lib/discography";
+
+const WebampOverlay = dynamic(
+  () => import("@/components/apps/discography/WebampOverlay").then((m) => m.WebampOverlay),
+  { ssr: false },
+);
+
 import { usageClockBlur, usageClockFocus } from "@/lib/apps/usageClock";
 import { syncActivityToAccount } from "@/lib/apps/activitySync";
+
+type LaunchOpts =
+  | KChatLaunchOpts
+  | { rail: "wallet" | "matrix"; peerHandle: string }
+  | { sequenceId: number }
+  | { projectId: number }
+  | { albumSlug: string };
 // PicoTracker disabled — Datamoshpit covers this workflow
 // import { PicoTrackerApp } from "@/components/apps/picotracker/PicoTrackerApp";
 
@@ -97,13 +118,15 @@ export default function KoolskullOS() {
   const [shotlistLaunch, setShotlistLaunch] = useState<{ sequenceId: number } | undefined>(undefined);
   const [kooldrawLaunch, setKooldrawLaunch] = useState<{ projectId: number } | undefined>(undefined);
   const [appManagerHighlight, setAppManagerHighlight] = useState<string | null>(null);
+  const [currentAlbum, setCurrentAlbum] = useState<MusicAlbum | null>(null);
+  const [showWebamp, setShowWebamp] = useState(false);
 
-  const launchApp = useCallback((appId: string, launchOpts?: KChatLaunchOpts | { rail: "wallet" | "matrix"; peerHandle: string } | { sequenceId: number } | { projectId: number }) => {
+  const launchApp = useCallback((appId: string, launchOpts?: LaunchOpts) => {
     let id = appId as AppId;
     // Legacy id from earlier thin implementation
     if ((appId as string) === "app-manager") id = "appmanager";
 
-    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id)) return;
+    if (!HAS_BACKEND && BACKEND_ONLY_APPS.has(id) && !(id === "account" && HAS_ACCOUNT)) return;
 
     // Not installed → open App Manager with that package highlighted
     if (!canLaunchApp(id) && id !== "appmanager") {
@@ -127,6 +150,37 @@ export default function KoolskullOS() {
     }
     if (id === "kooldraw" && launchOpts && "projectId" in launchOpts) {
       setKooldrawLaunch(launchOpts);
+    }
+
+    // Album art: close/reopen so the cover matches the newly selected album
+    // (live OS handleSelectAlbum). Skip the "already open → focus" path.
+    if (id === "albumart") {
+      const slug =
+        launchOpts && "albumSlug" in launchOpts ? launchOpts.albumSlug : currentAlbum?.id;
+      const album = getAlbum(slug) ?? currentAlbum;
+      if (album) setCurrentAlbum(album);
+      windowCounter++;
+      const windowId = `${id}-${windowCounter}`;
+      const artDefaults = APP_DEFAULTS.albumart;
+      const newWindow: OpenWindow = {
+        id: windowId,
+        appId: id,
+        title: album ? album.title : artDefaults.title,
+        state: {
+          x: Math.max(50, Math.floor(typeof window !== "undefined" ? window.innerWidth / 2 + 80 : 400)),
+          y: 80,
+          width: artDefaults.width,
+          height: artDefaults.height,
+          isMinimized: false,
+          isMaximized: false,
+        },
+        zIndex: nextZIndex,
+      };
+      setWindows((prev) => [...prev.filter((w) => w.appId !== "albumart"), newWindow]);
+      setFocusedWindowId(windowId);
+      usageClockFocus(id);
+      setNextZIndex((z) => z + 1);
+      return;
     }
 
     // If app is already open, focus it
@@ -167,7 +221,7 @@ export default function KoolskullOS() {
     setFocusedWindowId(windowId);
     usageClockFocus(id);
     setNextZIndex((z) => z + 1);
-  }, [windows, nextZIndex]);
+  }, [windows, nextZIndex, currentAlbum]);
 
   const focusWindow = useCallback((id: string) => {
     setFocusedWindowId(id);
@@ -303,8 +357,38 @@ export default function KoolskullOS() {
               <PRODEVApp onOpenShotlistSequence={(sequenceId) => launchApp("shotlist", { sequenceId })} />
             )}
             {win.appId === "chat" && <KChatApp launch={chatLaunch} />}
+            {win.appId === "discography" && (
+              <DiscographyApp
+                onAlbumClick={(album) => {
+                  setCurrentAlbum(album);
+                  setShowWebamp(true);
+                  launchApp("albumart", { albumSlug: album.id });
+                }}
+                onOpenCart={() => launchApp("cart")}
+              />
+            )}
+            {win.appId === "albumart" && (
+              <AlbumArtApp album={currentAlbum} isMaximized={win.state.isMaximized} />
+            )}
+            {win.appId === "artgallery" && (
+              <ArtGalleryApp
+                onOpenCart={() => launchApp("cart")}
+                onOpenMarketplace={() => launchApp("marketplace")}
+              />
+            )}
+            {win.appId === "cart" && <CartApp />}
+            {win.appId === "marketplace" && <MarketplaceApp />}
+            {win.appId === "nftmint" && <NftMintApp />}
           </AppWindow>
         ))}
+
+        {showWebamp && currentAlbum && (
+          <WebampOverlay
+            key={currentAlbum.id}
+            tracks={webampTracks(currentAlbum)}
+            onClose={() => setShowWebamp(false)}
+          />
+        )}
 
         <Taskbar
           windows={windows.map((w) => ({
@@ -316,6 +400,11 @@ export default function KoolskullOS() {
           onWindowClick={handleTaskbarClick}
           onShowDesktop={showDesktop}
           onLaunchApp={launchApp}
+          webampOpen={showWebamp}
+          onWebampClick={() => {
+            if (showWebamp) setShowWebamp(false);
+            else if (currentAlbum) setShowWebamp(true);
+          }}
         />
 
       </div>

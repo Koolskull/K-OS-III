@@ -82,10 +82,10 @@ function saveNotes(notes: Note[]) {
 
 const btn = (active = false, danger = false): React.CSSProperties => ({
   padding: "4px 8px",
-  background: active ? "#ffff00" : "#000000",
+  background: active ? "#00ff00" : "#000000",
   color: active ? "#000000" : danger ? "#ff6666" : "#cccccc",
   border: active
-    ? "1px solid #ffff00"
+    ? "1px solid #00ff00"
     : danger
       ? "1px solid #663333"
       : "1px solid #555555",
@@ -301,7 +301,7 @@ export function NotesApp({ isFocused = true }: NotesAppProps) {
       >
         <span
           style={{
-            color: "#ffff00",
+            color: "#00ff00",
             letterSpacing: 2,
             fontSize: 11,
             marginRight: 4,
@@ -439,7 +439,7 @@ export function NotesApp({ isFocused = true }: NotesAppProps) {
                       padding: "6px 8px",
                       background: selected ? "#111100" : "transparent",
                       borderLeft: selected
-                        ? "2px solid #ffff00"
+                        ? "2px solid #00ff00"
                         : "2px solid transparent",
                       cursor: "pointer",
                     }}
@@ -454,7 +454,7 @@ export function NotesApp({ isFocused = true }: NotesAppProps) {
                       <span
                         style={{
                           fontSize: 10,
-                          color: selected ? "#ffff00" : "#ccc",
+                          color: selected ? "#00ff00" : "#ccc",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -662,7 +662,7 @@ export function NotesApp({ isFocused = true }: NotesAppProps) {
                       borderBottom: "1px solid #222",
                       fontSize: 9,
                       letterSpacing: 2,
-                      color: "#ffff00",
+                      color: "#00ff00",
                     }}
                   >
                     <span>TO-DO LIST</span>

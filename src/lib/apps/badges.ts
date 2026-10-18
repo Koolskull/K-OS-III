@@ -3,9 +3,10 @@
  *      BADGES — local stub (PocketBase sync later)
  */
 
+import { BRAND } from "@/lib/buildFlags";
 import { APP_CATALOG, type AppId, getAppPackage } from "./catalog";
 
-const BADGES_KEY = "kos-user-badges-v1";
+const BADGES_KEY = `kos-user-badges-v1-${BRAND}`;
 
 export interface EarnedBadge {
   badgeId: string;

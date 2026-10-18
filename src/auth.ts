@@ -76,6 +76,7 @@ function readCookie(cookieHeader: string | null, name: string): string | undefin
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   adapter: PostgresAdapter(pool),
   session: { strategy: "jwt" },
   providers: [

@@ -164,7 +164,7 @@ function Pad({
     borderColor = active ? "#ff4444" : "#331111";
     backgroundColor = active ? "#1a0808" : "#080404";
   } else if (soloed) {
-    borderColor = active ? "#ffff00" : "#aaaa00";
+    borderColor = active ? "#00ff00" : "#aaaa00";
     backgroundColor = active ? "#2a2a00" : "#0a0a00";
   }
 

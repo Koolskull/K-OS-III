@@ -146,7 +146,7 @@ const STATUS_LABEL: Record<ChecklistItemRow["status"], string> = {
 };
 const STATUS_COLOR: Record<ChecklistItemRow["status"], string> = {
   todo: "#666",
-  "in-progress": "#ffff00",
+  "in-progress": "#00ff00",
   done: "#00ff88",
 };
 

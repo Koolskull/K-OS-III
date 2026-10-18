@@ -80,7 +80,7 @@ function StardrainWikiInner() {
         style={{
           background: "transparent",
           border: "none",
-          color: currentId === null ? "#ffff00" : "#aaaaaa",
+          color: currentId === null ? "#00ff00" : "#aaaaaa",
           fontFamily: "inherit",
           fontSize: "inherit",
           letterSpacing: "inherit",
@@ -118,7 +118,7 @@ function StardrainWikiInner() {
                     style={{
                       background: "transparent",
                       border: "none",
-                      color: e.id === currentId ? "#ffff00" : "#cccccc",
+                      color: e.id === currentId ? "#00ff00" : "#cccccc",
                       fontFamily: "inherit",
                       fontSize: "inherit",
                       letterSpacing: "inherit",
@@ -246,7 +246,7 @@ function StardrainWikiInner() {
                 style={{
                   fontSize: titleFont,
                   letterSpacing: 2,
-                  color: "#ffff00",
+                  color: "#00ff00",
                   marginBottom: 6,
                   borderBottom: "1px solid #444",
                   paddingBottom: 8,
@@ -277,7 +277,7 @@ function StardrainWikiInner() {
                 style={{
                   fontSize: titleFont,
                   letterSpacing: 2,
-                  color: "#ffff00",
+                  color: "#00ff00",
                   marginBottom: 6,
                   borderBottom: "1px solid #444",
                   paddingBottom: 8,
@@ -310,7 +310,7 @@ function StardrainWikiInner() {
                       style={{
                         fontSize: h2Font,
                         letterSpacing: 2,
-                        color: "#ffff00",
+                        color: "#00ff00",
                         marginBottom: 8,
                         paddingBottom: 4,
                         borderBottom: "1px solid #333",

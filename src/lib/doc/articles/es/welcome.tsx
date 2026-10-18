@@ -58,7 +58,7 @@ export default function Welcome() {
         veredicto. Ver{" "}
         <a
           href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md"
-          style={{ color: "#ffff00" }}
+          style={{ color: "#00ff00" }}
         >
           EPISTEMIC_STANCE.md
         </a>{" "}

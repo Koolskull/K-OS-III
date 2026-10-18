@@ -387,7 +387,7 @@ function ReuseSwatch({
           left: 0,
           right: 0,
           fontSize: 5,
-          color: "#ffff00",
+          color: "#00ff00",
           background: "rgba(0,0,0,0.7)",
           textAlign: "center",
         }}
@@ -454,7 +454,7 @@ function HorizontalCell({
         flexShrink: 0,
         cursor: "pointer",
         border: isActive ? "2px solid #ffffff" : `1px solid ${borderColor}`,
-        outline: isDragOver ? "2px solid #ffff00" : "none",
+        outline: isDragOver ? "2px solid #00ff00" : "none",
         backgroundColor: "#0a0a0a",
         padding: 2,
         touchAction: "none",
@@ -515,7 +515,7 @@ function VerticalRow({
         minHeight: ROW,
         borderTop: isRowStart ? rowBorder : "1px solid #111",
         background: isActive ? "#1a1a1a" : isDragOver ? "#222200" : "transparent",
-        outline: isDragOver ? "1px solid #ffff00" : "none",
+        outline: isDragOver ? "1px solid #00ff00" : "none",
         touchAction: "none",
       }}
     >
@@ -528,7 +528,7 @@ function VerticalRow({
           flexShrink: 0,
           border: "none",
           background: "transparent",
-          color: isActive ? "#ffff00" : "#666",
+          color: isActive ? "#00ff00" : "#666",
           fontSize: 8,
           fontFamily: "var(--dm-font-primary)",
           cursor: "pointer",
@@ -623,7 +623,7 @@ function VerticalCell({
       ) : (
         <>
           <canvas ref={ref} style={{ width: 14, height: 14, imageRendering: "pixelated", flexShrink: 0 }} />
-          <span style={{ fontSize: 6, color: isActiveLayer ? "#ffff00" : "#666" }}>{hexId}</span>
+          <span style={{ fontSize: 6, color: isActiveLayer ? "#00ff00" : "#666" }}>{hexId}</span>
         </>
       )}
     </button>

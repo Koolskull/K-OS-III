@@ -10,6 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   availableCatalog,
+  isDesktopApp,
   type AppId,
   type AppPackage,
   isCoreApp,
@@ -65,7 +66,7 @@ export function AppManagerApp({ highlightAppId, onOpenApp }: AppManagerAppProps)
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  const catalog = useMemo(() => availableCatalog(), []);
+  const catalog = useMemo(() => availableCatalog().filter(isDesktopApp), []);
 
   const rows = useMemo(() => {
     return catalog.filter((pkg) => {
@@ -93,7 +94,7 @@ export function AppManagerApp({ highlightAppId, onOpenApp }: AppManagerAppProps)
     <div style={root}>
       <header style={header}>
         <div>
-          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 14 }}>APP MANAGER</div>
+          <div style={{ color: "#00ff00", letterSpacing: 2, fontSize: 14 }}>APP MANAGER</div>
           <div style={{ color: "#888", fontSize: 10, marginTop: 4, letterSpacing: 1 }}>
             INSTALL · BADGES · TIME SPENT · SYNC TO PROFILE WHEN LOGGED IN
           </div>
@@ -106,8 +107,8 @@ export function AppManagerApp({ highlightAppId, onOpenApp }: AppManagerAppProps)
               onClick={() => setFilter(f)}
               style={{
                 ...chip,
-                borderColor: filter === f ? "#ffff00" : "#444",
-                color: filter === f ? "#ffff00" : "#aaa",
+                borderColor: filter === f ? "#00ff00" : "#444",
+                color: filter === f ? "#00ff00" : "#aaa",
               }}
             >
               {f.toUpperCase()}
@@ -169,7 +170,7 @@ export function AppManagerApp({ highlightAppId, onOpenApp }: AppManagerAppProps)
                 .reverse()
                 .map((b) => (
                   <li key={b.id + String(b.earnedAt)} style={badgeRow}>
-                    <div style={{ color: "#ffff00", fontSize: 11 }}>{b.title}</div>
+                    <div style={{ color: "#00ff00", fontSize: 11 }}>{b.title}</div>
                     <div style={{ color: "#666", fontSize: 9, marginTop: 2 }}>{b.description}</div>
                   </li>
                 ))}
@@ -219,8 +220,8 @@ function PackageCard({
     <div
       style={{
         ...card,
-        borderColor: highlight ? "#ffff00" : installed ? "#335533" : "#333",
-        boxShadow: highlight ? "0 0 0 1px #ffff00" : undefined,
+        borderColor: highlight ? "#00ff00" : installed ? "#335533" : "#333",
+        boxShadow: highlight ? "0 0 0 1px #00ff00" : undefined,
       }}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -366,8 +367,8 @@ const glyphBox: React.CSSProperties = {
 
 const btnPrimary: React.CSSProperties = {
   background: "#000",
-  border: "1px solid #ffff00",
-  color: "#ffff00",
+  border: "1px solid #00ff00",
+  color: "#00ff00",
   fontFamily: "inherit",
   fontSize: 10,
   letterSpacing: 1,

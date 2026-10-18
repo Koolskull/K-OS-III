@@ -12,8 +12,8 @@ export default function RunningKOSLocally() {
 
       <H2>首先你需要什么</H2>
       <UList>
-        <Li><Strong>Node.js v20 或更新版本。</Strong>从 <a href="https://nodejs.org" style={{ color: "#ffff00" }}>nodejs.org</a> 下载。使用默认设置安装。</Li>
-        <Li><Strong>Git。</Strong>在 Mac 和 Linux 上几乎肯定已经安装。在 Windows 上，通过 <a href="https://git-scm.com" style={{ color: "#ffff00" }}>git-scm.com</a> 安装或使用 WSL。</Li>
+        <Li><Strong>Node.js v20 或更新版本。</Strong>从 <a href="https://nodejs.org" style={{ color: "#00ff00" }}>nodejs.org</a> 下载。使用默认设置安装。</Li>
+        <Li><Strong>Git。</Strong>在 Mac 和 Linux 上几乎肯定已经安装。在 Windows 上，通过 <a href="https://git-scm.com" style={{ color: "#00ff00" }}>git-scm.com</a> 安装或使用 WSL。</Li>
         <Li><Strong>大约 1 GB 的磁盘空间。</Strong>K-OS 本身很小，但其依赖（Next.js、Three.js、Tone.js 等）会累积起来。</Li>
       </UList>
 

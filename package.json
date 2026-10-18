@@ -5,9 +5,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 5555",
+    "dev:koolskull": "NEXT_PUBLIC_BRAND=koolskull next dev -p 5555",
+    "dev:koolskull:bun": "NEXT_PUBLIC_BRAND=koolskull bun --bun next dev -p 5555",
+    "dev:koolskull:https": "NEXT_PUBLIC_BRAND=koolskull bun --bun next dev --experimental-https --experimental-https-key ./certificates/localhost-key.pem --experimental-https-cert ./certificates/localhost.pem -p 5555",
     "build": "next build",
     "build:export": "NEXT_PUBLIC_BASE_PATH=/K-OS-III NEXT_PUBLIC_BRAND=kos3 ./scripts/build-static.sh",
     "build:2kooltv": "NEXT_PUBLIC_BASE_PATH= NEXT_PUBLIC_BRAND=2kooltv ./scripts/build-static.sh",
+    "build:koolskull": "./scripts/build-koolskull-static.sh",
+    "deploy:koolskull": "./deploy/deploy-koolskull.sh",
+    "deploy:koolskull:dry": "./deploy/deploy-koolskull.sh --dry-run",
+    "pack:koolskull": "./scripts/pack-koolskull-cpanel.sh",
     "start": "next start -p 5555",
     "lint": "tsc --noEmit",
     "preview:export": "npm run build:export && cd out && python3 -m http.server 4044"
@@ -61,7 +68,8 @@
     "tailwindcss": "^4.2.1",
     "three": "^0.183.2",
     "tone": "^15.1.22",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "webamp": "^2.3.1"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0"

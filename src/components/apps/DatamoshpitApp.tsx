@@ -1553,7 +1553,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               fontFamily: "var(--dm-font-primary)",
               fontSize: "8px",
               color: sceneVmDemoIdx !== null ? "#000000" : "#888888",
-              backgroundColor: sceneVmDemoIdx !== null ? "#ffff00" : "transparent",
+              backgroundColor: sceneVmDemoIdx !== null ? "#00ff00" : "transparent",
               border: "1px solid #888888",
               padding: "0 4px",
               cursor: "pointer",
@@ -1623,7 +1623,7 @@ export function DatamoshpitApp({ isFocused }: DatamoshpitAppProps) {
               style={{
                 fontFamily: "var(--dm-font-primary)",
                 fontSize: "8px",
-                color: pendingScene !== null ? "#ffff00" : "#888888",
+                color: pendingScene !== null ? "#00ff00" : "#888888",
                 letterSpacing: "1px",
               }}
             >

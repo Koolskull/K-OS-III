@@ -200,7 +200,7 @@ export function ExportView({ sequence, selectedShotId, onClose }: ExportViewProp
           flexWrap: "wrap",
         }}
       >
-        <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>
+        <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>
           ⎙ EXPORT / PRINT
         </span>
 

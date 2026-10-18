@@ -52,7 +52,7 @@ export default function Welcome() {
         呈现辩论本身而非定论。请参阅项目的{" "}
         <a
           href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md"
-          style={{ color: "#ffff00" }}
+          style={{ color: "#00ff00" }}
         >
           EPISTEMIC_STANCE.md
         </a>{" "}

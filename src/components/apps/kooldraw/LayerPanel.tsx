@@ -140,7 +140,7 @@ export function LayerPanel({
               minHeight: ROW_H,
               padding: "2px 4px",
               backgroundColor: isDragOver ? "#222200" : isActive ? "#1a1a1a" : "transparent",
-              outline: isDragOver ? "1px solid #ffff00" : "none",
+              outline: isDragOver ? "1px solid #00ff00" : "none",
               borderLeft: isActive ? "2px solid #fff" : "2px solid transparent",
               display: "flex",
               alignItems: "center",

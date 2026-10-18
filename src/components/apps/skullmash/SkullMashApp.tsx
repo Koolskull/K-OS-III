@@ -270,7 +270,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       for (let i = 1; i < currentStroke.length; i++) {
         ctx.lineTo(currentStroke[i]!.x, currentStroke[i]!.y);
       }
-      ctx.strokeStyle = "#ffff00";
+      ctx.strokeStyle = "#00ff00";
       ctx.lineWidth = lw;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
@@ -307,7 +307,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
       for (const pin of pins) {
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffff00";
+        ctx.fillStyle = "#00ff00";
         ctx.fill();
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
@@ -1034,7 +1034,7 @@ export default function SkullMashApp({ isFocused = true }: Props) {
                 </div>
                 <p style={{ maxWidth: 340, textAlign: "center", fontSize: 9, color: "#666", letterSpacing: 1, textTransform: "uppercase", lineHeight: 1.7, fontFamily: "var(--dm-font-primary)" }}>
                   Drop a photo · trace closed shapes ·{" "}
-                  <span style={{ color: "#ffff00" }}>Next</span> · pin-warp · export.
+                  <span style={{ color: "#00ff00" }}>Next</span> · pin-warp · export.
                   Optional NFT mint (for a fee) planned.
                 </p>
               </div>

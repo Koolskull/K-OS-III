@@ -202,7 +202,7 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
         className="flex-shrink-0 px-3 py-3 border-t-2 text-center"
         style={{
           borderColor: "#333333",
-          color: "#ffff00",
+          color: "#00ff00",
           fontSize: "11px",
           letterSpacing: "2px",
           backgroundColor: "#0a0a0a",

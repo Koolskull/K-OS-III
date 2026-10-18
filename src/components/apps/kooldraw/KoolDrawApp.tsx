@@ -1530,7 +1530,7 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
               style={{
                 ...toolBtn(false),
                 backgroundColor: packedColorToHex(ditherColorB),
-                border: showDitherColorB ? "1px solid #ffff00" : "1px solid #333",
+                border: showDitherColorB ? "1px solid #00ff00" : "1px solid #333",
                 color: "#fff",
                 textShadow: "0 0 2px #000, 0 0 2px #000",
               }}
@@ -2045,7 +2045,7 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
             background: "#222",
           }}
         >
-          <span style={{ fontSize: 8, color: "#ffff00", letterSpacing: 1 }}>NEW ANIMATION</span>
+          <span style={{ fontSize: 8, color: "#00ff00", letterSpacing: 1 }}>NEW ANIMATION</span>
         </div>
 
         <div style={{ padding: 8 }}>
@@ -2171,8 +2171,8 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
             style={{
               width: "100%",
               height: 28,
-              border: "1px solid #ffff00",
-              background: "#ffff00",
+              border: "1px solid #00ff00",
+              background: "#00ff00",
               color: "#000",
               fontFamily: "inherit",
               fontSize: 8,
@@ -2251,10 +2251,10 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
     <div ref={rootRef} className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: "#000", fontFamily: "var(--dm-font-primary)", fontSize: 9, imageRendering: "pixelated", color: "#fff", position: "relative" }}>
       {setupModal}
       {embeddedMode ? (
-        <div className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0" style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}>
-          <span style={{ color: "#ffff00", letterSpacing: 2 }}>{embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}</span>
+        <div className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0" style={{ borderColor: "#00ff00", backgroundColor: "#222200", minHeight: 22 }}>
+          <span style={{ color: "#00ff00", letterSpacing: 2 }}>{embeddedMode.title ?? "DRAWING FOR INSTRUMENT VISUAL"}</span>
           <div className="flex gap-2">
-            <button onClick={() => embeddedMode.onUse(exportCurrentDataUrl())} style={{ background: "#ffff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>USE THIS SPRITE</button>
+            <button onClick={() => embeddedMode.onUse(exportCurrentDataUrl())} style={{ background: "#00ff00", color: "#000", border: "1px solid #000", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>USE THIS SPRITE</button>
             <button onClick={() => embeddedMode.onCancel()} style={{ background: "#000", color: "#fff", border: "1px solid #fff", fontFamily: "monospace", fontSize: 10, padding: "1px 6px", cursor: "pointer" }}>CANCEL</button>
           </div>
         </div>
@@ -2264,9 +2264,9 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
       {!embeddedMode && handoff ? (
         <div
           className="flex items-center justify-between px-2 py-1 border-b-2 flex-shrink-0 flex-wrap gap-2"
-          style={{ borderColor: "#ffff00", backgroundColor: "#222200", minHeight: 22 }}
+          style={{ borderColor: "#00ff00", backgroundColor: "#222200", minHeight: 22 }}
         >
-          <span style={{ color: "#ffff00", letterSpacing: 1, fontSize: 10 }}>
+          <span style={{ color: "#00ff00", letterSpacing: 1, fontSize: 10 }}>
             ← {handoff.sourceApp.toUpperCase()} · {handoff.label}
             {handoff.mono ? " · MONO" : ""} · {handoff.width}×{handoff.height}
             {!handoffReady ? " · LOADING…" : ""}
@@ -2277,7 +2277,7 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
               onClick={() => void returnHandoff()}
               disabled={!handoffReady}
               style={{
-                background: "#ffff00",
+                background: "#00ff00",
                 color: "#000",
                 border: "1px solid #000",
                 fontFamily: "monospace",
@@ -2531,7 +2531,7 @@ function KoolDrawInner({ isFocused, embeddedMode, launchProjectId }: KoolDrawApp
                     style={{
                       width: 20,
                       height: 3,
-                      background: timelineHeight > 0 ? "#555" : "#ffff00",
+                      background: timelineHeight > 0 ? "#555" : "#00ff00",
                       borderRadius: 0,
                     }}
                   />
@@ -2961,7 +2961,7 @@ function DitherToneBar({
           right: 0,
           top: `${(1 - coverage) * 100}%`,
           height: 2,
-          background: "#ffff00",
+          background: "#00ff00",
           transform: "translateY(-1px)",
           pointerEvents: "none",
           boxShadow: "0 0 0 1px #000",
@@ -3012,7 +3012,7 @@ function DitherSwatchButton({
         flex: "1 1 0",
         minHeight: 0,
         padding: 0,
-        border: active ? "1px solid #ffff00" : "1px solid #333",
+        border: active ? "1px solid #00ff00" : "1px solid #333",
         background: "#000",
         cursor: "pointer",
         display: "flex",

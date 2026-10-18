@@ -5,17 +5,19 @@
  *  localStorage until PocketBase sync (Phase B). Core apps always "installed".
  */
 
+import { BRAND } from "@/lib/buildFlags";
 import {
   type AppId,
   type AppPackage,
   availableCatalog,
   getAppPackage,
   isCoreApp,
+  isDesktopApp,
   preinstallAppIds,
 } from "./catalog";
 import { awardInstallBadge } from "./badges";
 
-const STORAGE_KEY = "kos-app-installs-v1";
+const STORAGE_KEY = `kos-app-installs-v1-${BRAND}`;
 
 export interface InstallRecord {
   appId: AppId;
@@ -182,12 +184,16 @@ export function recordAppOpen(appId: AppId): void {
 export function desktopPackages(state?: InstallStoreState): AppPackage[] {
   const s = state ?? loadInstallState();
   return availableCatalog().filter((pkg) => {
+    if (!isDesktopApp(pkg)) return false;
     if (pkg.tier === "core") return true;
     return Boolean(s.installs[pkg.id]);
   });
 }
 
 export function canLaunchApp(appId: string, state?: InstallStoreState): boolean {
-  if (!getAppPackage(appId)) return false;
+  const pkg = getAppPackage(appId);
+  if (!pkg) return false;
+  if (!availableCatalog().some((a) => a.id === pkg.id)) return false;
+  if (pkg.desktop === false) return true;
   return isInstalled(appId, state);
 }

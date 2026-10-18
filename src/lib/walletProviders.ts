@@ -75,13 +75,42 @@ export async function getWalletConnectProvider() {
         chains: [1],
         showQrModal: true,
         metadata: {
-          name: "K-OS III",
-          description: "Sign in to K-OS III",
-          url: typeof window !== "undefined" ? window.location.origin : "https://2kool.tv",
+          name: "KOOLSKULL OS",
+          description: "Sign in to KOOLSKULL OS",
+          // Must match the page origin exactly (http vs https). Phantom rejects
+          // http://localhost when the request claims https://localhost.
+          url: typeof window !== "undefined" ? window.location.origin : "https://koolskull.com",
           icons: [],
         },
       });
     })();
   }
   return wcProviderPromise;
+}
+
+/** Injected wallet if present, otherwise WalletConnect QR. */
+export async function connectEthereumProvider(): Promise<{
+  address: string;
+  provider: Eip1193Provider;
+}> {
+  let provider: Eip1193Provider | undefined =
+    typeof window !== "undefined" ? window.ethereum : undefined;
+  if (!provider) {
+    const wc = await getWalletConnectProvider();
+    await wc.connect();
+    provider = wc;
+  }
+  const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+  const address = accounts?.[0];
+  if (!address) throw new Error("No account");
+  return { address, provider };
+}
+
+export async function ensureChain(provider: Eip1193Provider, chainId: number): Promise<void> {
+  const chainHex = (await provider.request({ method: "eth_chainId" })) as string;
+  if (parseInt(chainHex, 16) === chainId) return;
+  await provider.request({
+    method: "wallet_switchEthereumChain",
+    params: [{ chainId: "0x" + chainId.toString(16) }],
+  });
 }

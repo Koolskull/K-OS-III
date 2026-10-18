@@ -32,14 +32,14 @@ export const kosEditorTheme = EditorView.theme(
       minHeight: "0",
     },
     ".cm-content": {
-      caretColor: "#ffff00",
+      caretColor: "#00ff00",
       fontFamily: "var(--dm-font-primary), ui-monospace, monospace",
       padding: "12px 14px",
       lineHeight: "1.5",
       minHeight: "100%",
     },
     ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#ffff00",
+      borderLeftColor: "#00ff00",
       borderLeftWidth: "2px",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
@@ -50,7 +50,7 @@ export const kosEditorTheme = EditorView.theme(
     },
     ".cm-activeLineGutter": {
       backgroundColor: "#0a0a00",
-      color: "#ffff00",
+      color: "#00ff00",
     },
     ".cm-gutters": {
       backgroundColor: "#0a0a0a",
@@ -84,12 +84,12 @@ export const kosEditorTheme = EditorView.theme(
       padding: "2px 8px",
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
-      backgroundColor: "#ffff00",
+      backgroundColor: "#00ff00",
       color: "#000000",
     },
     ".cm-completionMatchedText": {
       textDecoration: "underline",
-      textDecorationColor: "#ffff00",
+      textDecorationColor: "#00ff00",
     },
     ".cm-diagnostic": {
       borderRadius: "0",
@@ -129,7 +129,7 @@ export const kosEditorTheme = EditorView.theme(
 );
 
 const kosHighlightStyle = HighlightStyle.define([
-  { tag: t.keyword, color: "#ffff00" },
+  { tag: t.keyword, color: "#00ff00" },
   { tag: t.operator, color: "#cccccc" },
   { tag: t.special(t.variableName), color: "#66ccff" },
   { tag: t.typeName, color: "#88aaff" },
@@ -141,10 +141,10 @@ const kosHighlightStyle = HighlightStyle.define([
   { tag: t.null, color: "#ffaa44" },
   { tag: t.comment, color: "#666666", fontStyle: "italic" },
   { tag: t.meta, color: "#888888" },
-  { tag: t.tagName, color: "#ffff00" },
+  { tag: t.tagName, color: "#00ff00" },
   { tag: t.attributeName, color: "#66ccff" },
   { tag: t.attributeValue, color: "#88ff88" },
-  { tag: t.heading, color: "#ffff00", fontWeight: "bold" },
+  { tag: t.heading, color: "#00ff00", fontWeight: "bold" },
   { tag: t.link, color: "#66aaff", textDecoration: "underline" },
   { tag: t.url, color: "#66aaff" },
   { tag: t.emphasis, fontStyle: "italic" },

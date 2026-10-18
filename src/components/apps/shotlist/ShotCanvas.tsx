@@ -632,7 +632,7 @@ export function ShotCanvas({
       >
         <span
           style={{
-            color: "#ffff00",
+            color: "#00ff00",
             letterSpacing: 1,
             fontSize: 10,
             overflow: "hidden",
@@ -792,7 +792,7 @@ export function ShotCanvas({
                       right: 0,
                       top: `${(1 - coverage) * 100}%`,
                       height: 2,
-                      background: "#ffff00",
+                      background: "#00ff00",
                       transform: "translateY(-1px)",
                       pointerEvents: "none",
                       boxShadow: "0 0 0 1px #000",
@@ -848,7 +848,7 @@ export function ShotCanvas({
                       pointerEvents: "none",
                     }}
                   >
-                    <polygon points="7,98 9,98 14,2 2,2" fill="#ffff00" opacity="0.35" />
+                    <polygon points="7,98 9,98 14,2 2,2" fill="#00ff00" opacity="0.35" />
                   </svg>
                   <div
                     style={{
@@ -862,7 +862,7 @@ export function ShotCanvas({
                         100
                       }%`,
                       height: 2,
-                      background: "#ffff00",
+                      background: "#00ff00",
                       transform: "translateY(-1px)",
                       pointerEvents: "none",
                       boxShadow: "0 0 0 1px #000",
@@ -923,7 +923,7 @@ export function ShotCanvas({
                         maxHeight: "12.5%",
                         padding: 0,
                         border:
-                          ditherPattern === p.id ? "1px solid #ffff00" : "1px solid #333",
+                          ditherPattern === p.id ? "1px solid #00ff00" : "1px solid #333",
                         background: "#000",
                         cursor: "pointer",
                         lineHeight: 0,
@@ -1325,9 +1325,9 @@ function PressureCurvePanel({
       const r = radiusFromPressure(p, maxSize, minSize, curve);
       const yn = maxSize <= minSize ? 0 : (r - minSize) / (maxSize - minSize);
       const pt = toPx(p, yn);
-      if (prev) line(prev.x, prev.y, pt.x, pt.y, "#ffff00");
+      if (prev) line(prev.x, prev.y, pt.x, pt.y, "#00ff00");
       // 2px body
-      rect(pt.x, pt.y, 2, 2, "#ffff00");
+      rect(pt.x, pt.y, 2, 2, "#00ff00");
       prev = pt;
     }
 
@@ -1339,15 +1339,15 @@ function PressureCurvePanel({
     // Draggable anchors (diamond via rects)
     const drawAnchor = (pt: { x: number; y: number }, label: string) => {
       const { x, y } = pt;
-      rect(x, y - 5, 1, 11, "#ffff00");
-      rect(x - 1, y - 4, 3, 9, "#ffff00");
-      rect(x - 2, y - 3, 5, 7, "#ffff00");
-      rect(x - 3, y - 2, 7, 5, "#ffff00");
-      rect(x - 4, y - 1, 9, 3, "#ffff00");
-      rect(x - 5, y, 11, 1, "#ffff00");
+      rect(x, y - 5, 1, 11, "#00ff00");
+      rect(x - 1, y - 4, 3, 9, "#00ff00");
+      rect(x - 2, y - 3, 5, 7, "#00ff00");
+      rect(x - 3, y - 2, 7, 5, "#00ff00");
+      rect(x - 4, y - 1, 9, 3, "#00ff00");
+      rect(x - 5, y, 11, 1, "#00ff00");
       // black core
       rect(x - 1, y - 1, 3, 3, "#000");
-      rect(x, y, 1, 1, "#ffff00");
+      rect(x, y, 1, 1, "#00ff00");
       ctx.fillStyle = "#aaa";
       ctx.font = "8px monospace";
       ctx.textAlign = "left";
@@ -1456,7 +1456,7 @@ function PressureCurvePanel({
           gap: 8,
         }}
       >
-        <span style={{ color: "#ffff00", fontSize: 9, letterSpacing: 1 }}>PRESSURE CURVE</span>
+        <span style={{ color: "#00ff00", fontSize: 9, letterSpacing: 1 }}>PRESSURE CURVE</span>
         <button type="button" style={{ ...miniBtn(), height: 22, padding: "2px 6px" }} onClick={onClose}>
           ✕
         </button>

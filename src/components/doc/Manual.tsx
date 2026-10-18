@@ -222,7 +222,7 @@ function ManualInner({
         style={{
           background: "transparent",
           border: "none",
-          color: slug === null ? "#ffff00" : "#aaaaaa",
+          color: slug === null ? "#00ff00" : "#aaaaaa",
           fontFamily: "inherit",
           fontSize: "inherit",
           letterSpacing: "inherit",
@@ -259,7 +259,7 @@ function ManualInner({
                     style={{
                       background: "transparent",
                       border: "none",
-                      color: a.slug === slug ? "#ffff00" : "#cccccc",
+                      color: a.slug === slug ? "#00ff00" : "#cccccc",
                       fontFamily: "inherit",
                       fontSize: "inherit",
                       letterSpacing: "inherit",
@@ -558,7 +558,7 @@ function Index({
                 fontFamily: "var(--dm-font-primary), monospace",
                 fontSize: 16,
                 letterSpacing: 2,
-                color: "#ffff00",
+                color: "#00ff00",
                 marginBottom: 6,
                 paddingBottom: 4,
                 borderBottom: "1px solid #444",
@@ -593,7 +593,7 @@ function Index({
         {ui.epistemicNote}{" "}
         <a
           href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md"
-          style={{ color: "#ffff00" }}
+          style={{ color: "#00ff00" }}
         >
           docs/EPISTEMIC_STANCE.md
         </a>
@@ -732,7 +732,7 @@ function ArticleView({
         {" · "}
         {CATEGORY_LABELS[lang][article.category]}
         {" · "}
-        <span style={{ color: "#ffff00" }}>{LANG_SHORT[lang]}</span>
+        <span style={{ color: "#00ff00" }}>{LANG_SHORT[lang]}</span>
       </SubtleNote>
       {Body ? <Body /> : <div style={{ color: "#ff5555" }}>{ui.notFound}</div>}
       {article.seeAlso && article.seeAlso.length > 0 ? (

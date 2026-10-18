@@ -50,7 +50,7 @@ export default function Welcome() {
       <Aside title="The manual is opinionated, like the rest of K-OS">
         On topics where serious people disagree (history, technology, theology,
         economics), this manual presents the debate rather than a verdict. See the
-        project's <a href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md" style={{ color: "#ffff00" }}>EPISTEMIC_STANCE.md</a>{" "}
+        project's <a href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md" style={{ color: "#00ff00" }}>EPISTEMIC_STANCE.md</a>{" "}
         for the full posture. The technical articles below stick to facts; we tell
         you when something is a project preference vs. an objective measurement.
       </Aside>

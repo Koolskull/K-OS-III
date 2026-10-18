@@ -198,7 +198,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
       ctx.rotate((rot * Math.PI) / 180);
       ctx.translate(-node.w / 2, -node.h / 2);
       drawHardRect(ctx, 0, 0, node.w, node.h, node.style.roundness, node.style.bg,
-        selected ? "#ffff00" : node.style.border,
+        selected ? "#00ff00" : node.style.border,
         selected ? Math.max(node.style.borderWidth, 2) + 1 : node.style.borderWidth);
       ctx.fillStyle = node.style.border; ctx.globalAlpha = 0.12;
       ctx.fillRect(1, 1, node.w - 2, 22); ctx.globalAlpha = 1;
@@ -211,7 +211,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
         wrapText(ctx, node.body, 10, 38, node.w - 20, 13, 4);
         ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = selected ? "#ffff00" : node.style.border;
+      ctx.fillStyle = selected ? "#00ff00" : node.style.border;
       ctx.fillRect(node.w / 2 - 3, -3, 6, 6);
       ctx.fillRect(node.w / 2 - 3, node.h - 3, 6, 6);
       ctx.restore();
@@ -444,7 +444,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
           pointerEvents: "auto", display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center",
           border: "1px solid #fff", background: "#0c0c0c", padding: "4px 6px",
         }}>
-          <span style={{ fontSize: 10, letterSpacing: 2, color: "#ffff00" }}>NODEMAP</span>
+          <span style={{ fontSize: 10, letterSpacing: 2, color: "#00ff00" }}>NODEMAP</span>
           <input value={project.name}
             onChange={(e) => updateProject((p) => ({ ...p, name: e.target.value, updatedAt: Date.now() }))}
             style={input} />
@@ -465,7 +465,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
       {/* Compact SHIFT lower-left */}
       <div style={{ position: "absolute", left: 10, bottom: 12, zIndex: 40, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
         {shiftOn && (
-          <div style={{ border: "1px solid #ffff00", background: "#0a0a0a", color: "#ffff00", fontSize: 8, letterSpacing: 1, padding: "2px 6px" }}>
+          <div style={{ border: "1px solid #00ff00", background: "#0a0a0a", color: "#00ff00", fontSize: 8, letterSpacing: 1, padding: "2px 6px" }}>
             SHIFT — EDIT
           </div>
         )}
@@ -473,8 +473,8 @@ export function NodeMapApp({ isFocused = true }: Props) {
           onClick={() => setShiftToggle((v) => !v)}
           style={{
             width: 56, height: 44,
-            border: "2px solid " + (shiftOn ? "#ffff00" : "#fff"),
-            background: shiftOn ? "#ffff00" : "#0c0c0c",
+            border: "2px solid " + (shiftOn ? "#00ff00" : "#fff"),
+            background: shiftOn ? "#00ff00" : "#0c0c0c",
             color: shiftOn ? "#000" : "#fff",
             fontFamily: "inherit", fontSize: 11, letterSpacing: 2, fontWeight: 700,
             cursor: "pointer", boxShadow: "2px 2px 0 #000",
@@ -498,7 +498,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
             onChange={(e) => updateProject((p) => ({
               ...p, wireRouting: Number(e.target.value) / 100, updatedAt: Date.now(),
             }))}
-            style={{ width: 90, accentColor: "#ffff00" }}
+            style={{ width: 90, accentColor: "#00ff00" }}
             aria-label="Wire routing straight to grid" />
           <span style={{ fontSize: 8, color: "#666" }}>GRID</span>
         </div>
@@ -517,7 +517,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
           display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "3px 3px 0 #000",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #fff", padding: "6px 8px" }}>
-            <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>{editNode ? "EDIT NODE" : "EDIT WIRE"}</span>
+            <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>{editNode ? "EDIT NODE" : "EDIT WIRE"}</span>
             <button type="button" style={btn} onClick={() => { setPanel("none"); setEditTarget(null); }}>X</button>
           </div>
           <div style={{ overflowY: "auto", padding: 10, flex: 1 }}>
@@ -585,7 +585,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
       {panel === "about" && (
         <aside style={{ position: "absolute", top: 48, right: 10, width: 300, zIndex: 30, border: "1px solid #fff", background: "#0a0a0a", boxShadow: "3px 3px 0 #000" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", borderBottom: "1px solid #fff" }}>
-            <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>ABOUT NODEMAP</span>
+            <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>ABOUT NODEMAP</span>
             <button type="button" style={btn} onClick={() => setPanel("none")}>X</button>
           </div>
           <div style={{ padding: 12, fontSize: 11, lineHeight: 1.5, color: "#bbb" }}>
@@ -599,7 +599,7 @@ export function NodeMapApp({ isFocused = true }: Props) {
       {panel === "help" && (
         <aside style={{ position: "absolute", top: 48, right: 10, width: 280, zIndex: 30, border: "1px solid #fff", background: "#0a0a0a" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", borderBottom: "1px solid #fff" }}>
-            <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>CONTROLS</span>
+            <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>CONTROLS</span>
             <button type="button" style={btn} onClick={() => setPanel("none")}>X</button>
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: "none", fontSize: 10 }}>

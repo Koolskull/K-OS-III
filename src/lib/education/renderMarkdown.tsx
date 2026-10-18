@@ -73,7 +73,7 @@ export function renderMarkdown(md: string): React.ReactNode[] {
           style={{
             fontSize: 20,
             letterSpacing: 2,
-            color: "#ffff00",
+            color: "#00ff00",
             margin: "0 0 12px",
             borderBottom: "1px solid #444",
             paddingBottom: 8,
@@ -92,7 +92,7 @@ export function renderMarkdown(md: string): React.ReactNode[] {
           style={{
             fontSize: 14,
             letterSpacing: 2,
-            color: "#ffff00",
+            color: "#00ff00",
             margin: "22px 0 10px",
             borderBottom: "1px solid #333",
             paddingBottom: 4,
@@ -136,7 +136,7 @@ export function renderMarkdown(md: string): React.ReactNode[] {
                       style={{
                         border: "1px solid #333",
                         padding: "4px 8px",
-                        color: ri === 0 ? "#ffff00" : "#ddd",
+                        color: ri === 0 ? "#00ff00" : "#ddd",
                         fontWeight: ri === 0 ? 600 : 400,
                       }}
                     >
@@ -188,7 +188,7 @@ export function renderMarkdown(md: string): React.ReactNode[] {
           style={{
             margin: "0 0 16px",
             padding: "10px 14px",
-            borderLeft: "3px solid #ffff00",
+            borderLeft: "3px solid #00ff00",
             background: "#0a0a00",
             color: "#ccccaa",
             fontSize: 13,

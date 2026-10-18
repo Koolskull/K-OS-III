@@ -222,8 +222,31 @@ npx serve out -l 3001
 | `koolskull.github.io/K-OS-III` | `master` | `/K-OS-III` | `pages.yml` |
 | `2kool.tv/k-os` | `2kool.tv` (synced from master) | `/k-os` | `sync-2kool-branch.yml` (sync+build); `deploy-2kool.yml` (manual) |
 | Local dev | any | _(empty)_ | `npm run dev` |
+| `koolskull.com` apex (2MHost FTP) | local `out/` | _(empty)_ | `npm run build:koolskull` then `./deploy/deploy-koolskull.sh` |
 
 One codebase, two deploy prefixes. EDUCATION lessons and MCQ progress work on both once the static export includes `public/education/**` (it does).
+
+---
+
+## Target 3 — koolskull.com apex (2MHost, additive FTP)
+
+koolskull.com is **not** DreamHost and **not** Vercel. It is 2MHost cPanel + LiteSpeed + PHP. The OS is a static export dropped **next to** existing files.
+
+**Never use `deploy/.env.ftp` or `deploy-2kooltv.sh` against this host.** Those credentials are 2kool.tv.
+
+**Never `mirror --delete`.** Live `/mp3`, `/art`, `/store`, `/biz`, `/miyamakermini`, WordPress (`/gallery`, `/howwell`, `/archive`) must stay.
+
+1. Copy `deploy/.env.ftp.koolskull.example` → `deploy/.env.ftp.koolskull` and fill **host, user, password**. Remote dir is usually `public_html`.
+2. Optional public build knobs: `deploy/.env.koolskull` (already defaults `NEXT_PUBLIC_BRAND=koolskull` and `NEXT_PUBLIC_MEDIA_ORIGIN=https://koolskull.com` so Discography/Webamp keep using live `/mp3`).
+3. Build + upload:
+
+```bash
+npm run build:koolskull          # or bun run build:koolskull
+./deploy/deploy-koolskull.sh --dry-run
+./deploy/deploy-koolskull.sh
+```
+
+Minting on this host does **not** need Alchemy, Postgres, Auth, or WalletConnect. The browser calls [Scatter's public API](https://docs.scatter.art/api/getting-started) (`GET /v1/collection/{slug}`, `GET .../eligible-invite-lists`, `POST /v1/mint`) and a CORS Ethereum RPC for Miyamaker Mini `totalSupply`. Optional PHP under `out/api/` is only a backup. Optional Alchemy in `deploy/koolskull-php/secrets.php` is only for full MY NFTS images; Mini images stay on `https://koolskull.com/miyamakermini/`.
 
 ---
 

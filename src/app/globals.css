@@ -776,3 +776,10 @@ body.dm-scale-4x {
   font-family: var(--dm-font-primary), monospace;
   letter-spacing: 1px;
 }
+
+@media (max-width: 800px) {
+  .nft-mint-hero-mint,
+  .nft-mint-hero-info {
+    flex: 1 1 100% !important;
+  }
+}

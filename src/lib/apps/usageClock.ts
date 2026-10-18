@@ -6,10 +6,11 @@
  *  when logged in. Privacy: public profile only if show_time_stats.
  */
 
+import { BRAND } from "@/lib/buildFlags";
 import type { AppId } from "./catalog";
 import { getAppPackage, isKnownAppId } from "./catalog";
 
-const USAGE_KEY = "kos-app-usage-v1";
+const USAGE_KEY = `kos-app-usage-v1-${BRAND}`;
 const TICK_MS = 5000;
 const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
 

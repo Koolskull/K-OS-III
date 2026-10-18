@@ -50,7 +50,7 @@ export default function Glossary() {
 function Term({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #222" }}>
-      <div style={{ fontFamily: "var(--dm-font-primary), monospace", fontSize: 13, letterSpacing: 1, color: "#ffff00", marginBottom: 4 }}>{name}</div>
+      <div style={{ fontFamily: "var(--dm-font-primary), monospace", fontSize: 13, letterSpacing: 1, color: "#00ff00", marginBottom: 4 }}>{name}</div>
       <div style={{ fontSize: 12, lineHeight: 1.5, color: "#dddddd" }}>{children}</div>
     </div>
   );

@@ -146,7 +146,7 @@ export function XSheetEditor({
           flexWrap: "wrap",
         }}
       >
-        <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>
+        <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>
           ☰ X-SHEET · {shot.title}
         </span>
         <span
@@ -216,7 +216,7 @@ export function XSheetEditor({
                 range.start === range.end ? `${range.start}` : `${range.start}–${range.end}`;
               return (
                 <tr key={row.id}>
-                  <td style={{ ...td, color: "#ffff00", fontSize: 10, letterSpacing: 1 }}>
+                  <td style={{ ...td, color: "#00ff00", fontSize: 10, letterSpacing: 1 }}>
                     {label}
                   </td>
                   <td style={td}>

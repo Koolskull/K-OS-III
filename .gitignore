@@ -67,3 +67,14 @@ next-env.d.ts
 
 # vercel local link
 .vercel/
+
+# local koolskull.com media (symlinks into the FTP dump)
+public/mp3
+public/album-thumbs
+public/album-large
+public/album-fullscreen
+public/webampskins
+public/art
+certificates/
+deploy/koolskull-php/secrets.php
+dist/

@@ -25,6 +25,7 @@ import {
   type Eip6963Detail,
 } from "@/lib/walletProviders";
 import { ProfileBlocksEditor } from "@/components/apps/account/ProfileBlocksEditor";
+import { HAS_BACKEND } from "@/lib/buildFlags";
 
 interface SessionUser {
   name?: string | null;
@@ -283,7 +284,7 @@ export function AccountApp() {
       const siweMessage = new SiweMessage({
         domain: window.location.host,
         address,
-        statement: "Sign in to K-OS III.",
+        statement: "Sign in to KOOLSKULL OS.",
         uri: window.location.origin,
         version: "1",
         chainId,
@@ -539,8 +540,84 @@ export function AccountApp() {
         ) : !user ? (
           <div>
             <span style={{ fontSize: 9, color: "#ddd", letterSpacing: 2 }}>SIGN IN</span>
+            <div style={{ fontSize: 7, color: "#888", letterSpacing: 1, marginTop: 8, lineHeight: 1.5 }}>
+              SAME ACCOUNT AS 2KOOL.TV — WALLET OR EMAIL YOU ALREADY USE THERE WORKS HERE.
+            </div>
 
-            {(availableProviders?.google || availableProviders?.twitter) && (
+            <button
+              type="button"
+              onClick={handleWalletConnectSignIn}
+              disabled={signingInWallet !== null}
+              style={{
+                ...primaryBtn,
+                marginTop: 14,
+                background: "#00ff00",
+                color: "#000",
+                border: "1px solid #00ff00",
+                height: 32,
+                fontSize: 9,
+                letterSpacing: 2,
+              }}
+            >
+              {signingInWallet === "walletconnect" ? "CHECK WALLET / QR…" : "WALLETCONNECT"}
+            </button>
+            <div style={{ fontSize: 7, color: "#666", letterSpacing: 1, marginTop: 6 }}>
+              PHANTOM, METAMASK, RAINBOW — SCAN QR OR TAP THE APP.
+            </div>
+            {walletError && (
+              <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
+                {walletError.toUpperCase()}
+              </div>
+            )}
+
+            {detectedWallets.length === 0 && typeof window !== "undefined" && window.ethereum && (
+              <button
+                type="button"
+                onClick={handleBrowserWalletSignIn}
+                disabled={signingInWallet !== null}
+                style={{
+                  ...primaryBtn,
+                  marginTop: 8,
+                  background: "#000",
+                  color: "#00ff00",
+                  border: "1px solid #00ff00",
+                }}
+              >
+                {signingInWallet === "browser" ? "CHECK YOUR WALLET…" : "BROWSER WALLET"}
+              </button>
+            )}
+
+            {detectedWallets.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
+                {detectedWallets.map((wallet) => (
+                  <button
+                    key={wallet.info.uuid}
+                    type="button"
+                    onClick={() => handleEip6963SignIn(wallet)}
+                    disabled={signingInWallet !== null}
+                    style={{
+                      ...primaryBtn,
+                      marginTop: 0,
+                      background: "#000",
+                      color: "#00ff00",
+                      border: "1px solid #00ff00",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
+                    {wallet.info.icon && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={wallet.info.icon} alt="" style={{ width: 14, height: 14 }} />
+                    )}
+                    {signingInWallet === wallet.info.uuid ? "CHECK YOUR WALLET…" : wallet.info.name.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {HAS_BACKEND && (availableProviders?.google || availableProviders?.twitter) && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
                 {availableProviders?.google && (
                   <button
@@ -565,7 +642,7 @@ export function AccountApp() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0" }}>
               <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
-              <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR</span>
+              <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR EMAIL (2KOOL.TV)</span>
               <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
             </div>
 
@@ -614,7 +691,7 @@ export function AccountApp() {
               onClick={() => setShowAdvanced((v) => !v)}
               style={{ ...secondaryBtn, width: "100%", marginTop: 16, background: "transparent" }}
             >
-              {showAdvanced ? "▾ HIDE MORE OPTIONS" : "▸ MORE SIGN-IN OPTIONS (MATRIX / WALLET)"}
+              {showAdvanced ? "▾ HIDE MORE OPTIONS" : "▸ MORE OPTIONS (MATRIX)"}
             </button>
 
             {showAdvanced && (
@@ -644,54 +721,6 @@ export function AccountApp() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0" }}>
-                  <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
-                  <span style={{ fontSize: 7, color: "#555", letterSpacing: 1 }}>OR</span>
-                  <div style={{ flex: 1, height: 1, backgroundColor: "#333" }} />
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {detectedWallets.map((wallet) => (
-                    <button
-                      key={wallet.info.uuid}
-                      type="button"
-                      onClick={() => handleEip6963SignIn(wallet)}
-                      disabled={signingInWallet !== null}
-                      style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                    >
-                      {wallet.info.icon && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={wallet.info.icon} alt="" style={{ width: 14, height: 14 }} />
-                      )}
-                      {signingInWallet === wallet.info.uuid ? "CHECK YOUR WALLET…" : `${wallet.info.name.toUpperCase()}`}
-                    </button>
-                  ))}
-
-                  {detectedWallets.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={handleBrowserWalletSignIn}
-                      disabled={signingInWallet !== null}
-                      style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
-                    >
-                      {signingInWallet === "browser" ? "CHECK YOUR WALLET…" : "BROWSER WALLET"}
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleWalletConnectSignIn}
-                    disabled={signingInWallet !== null}
-                    style={{ ...primaryBtn, marginTop: 0, background: "#000", color: "#fff", border: "1px solid #555" }}
-                  >
-                    {signingInWallet === "walletconnect" ? "CHECK YOUR WALLET…" : "WALLETCONNECT (MOBILE / QR)"}
-                  </button>
-                </div>
-                {walletError && (
-                  <div style={{ fontSize: 7, color: "#ff6666", marginTop: 8, letterSpacing: 0.5 }}>
-                    {walletError.toUpperCase()}
-                  </div>
-                )}
               </form>
             )}
           </div>

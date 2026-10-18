@@ -163,7 +163,7 @@ function EducationInner() {
                         onClick={() => openLesson(l.id)}
                         style={{
                           ...navBtn(active),
-                          color: active ? "#ffff00" : statusColor(st),
+                          color: active ? "#00ff00" : statusColor(st),
                           paddingLeft: 8,
                         }}
                       >
@@ -319,7 +319,7 @@ function HomeView({
         );
         return (
           <section key={track.slug} style={{ marginBottom: 28 }}>
-            <button type="button" onClick={() => onOpenTrack(track.slug)} style={{ ...plainBtn, color: "#ffff00", fontSize: 14, letterSpacing: 2, marginBottom: 8 }}>
+            <button type="button" onClick={() => onOpenTrack(track.slug)} style={{ ...plainBtn, color: "#00ff00", fontSize: 14, letterSpacing: 2, marginBottom: 8 }}>
               {track.title} — {stats.passed}/{stats.total} passed
             </button>
             <p style={{ fontSize: 12, color: "#aaa", marginBottom: 10, lineHeight: 1.5 }}>{track.summary}</p>
@@ -397,12 +397,12 @@ function ProfileTranscriptCard({ progress }: { progress: ProgressMap }) {
     <section
       style={{
         marginBottom: 28,
-        border: "2px solid #ffff00",
+        border: "2px solid #00ff00",
         background: "#0a0a00",
         padding: 14,
       }}
     >
-      <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 10 }}>
+      <div style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11, marginBottom: 10 }}>
         YOUR PROFILE · EDUCATION TRANSCRIPT
       </div>
       <p style={{ fontSize: 11, color: "#aaa", marginBottom: 12, lineHeight: 1.5 }}>
@@ -565,11 +565,11 @@ function LessonReadView({
           style={{
             marginTop: 32,
             padding: 16,
-            border: "2px solid #ffff00",
+            border: "2px solid #00ff00",
             background: "#0a0a00",
           }}
         >
-          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 12, marginBottom: 8 }}>CHECKOUT</div>
+          <div style={{ color: "#00ff00", letterSpacing: 2, fontSize: 12, marginBottom: 8 }}>CHECKOUT</div>
           <p style={{ fontSize: 12, color: "#ccc", marginBottom: 12, lineHeight: 1.5 }}>
             {quiz
               ? `Answer ${quiz.questions.length} multiple-choice questions on this lesson to mark it passed. Progress is saved to your local profile in this browser.`
@@ -580,7 +580,7 @@ function LessonReadView({
               type="button"
               onClick={onQuiz}
               style={{
-                background: "#ffff00",
+                background: "#00ff00",
                 color: "#000",
                 border: "none",
                 padding: "8px 14px",
@@ -658,13 +658,13 @@ function QuizView({
         const show = submitted;
         return (
           <div key={q.id} style={{ marginBottom: 22, border: "1px solid #333", padding: 12 }}>
-            <div style={{ fontSize: 12, color: "#ffff00", marginBottom: 10, letterSpacing: 1 }}>
+            <div style={{ fontSize: 12, color: "#00ff00", marginBottom: 10, letterSpacing: 1 }}>
               Q{qi + 1}. {q.prompt}
             </div>
             {q.choices.map((c) => {
               const isSel = chosen === c.id;
               const isCorrect = c.id === q.correctId;
-              let border = isSel ? "1px solid #ffff00" : "1px solid #333";
+              let border = isSel ? "1px solid #00ff00" : "1px solid #333";
               let bg = isSel ? "#1a1a00" : "transparent";
               let color = "#ddd";
               if (show) {
@@ -719,7 +719,7 @@ function QuizView({
           disabled={!allAnswered}
           onClick={submit}
           style={{
-            background: allAnswered ? "#ffff00" : "#333",
+            background: allAnswered ? "#00ff00" : "#333",
             color: allAnswered ? "#000" : "#666",
             border: "none",
             padding: "10px 16px",
@@ -775,7 +775,7 @@ function QuizView({
                   setAnswers({});
                 }}
                 style={{
-                  background: "#ffff00",
+                  background: "#00ff00",
                   border: "none",
                   color: "#000",
                   padding: "6px 10px",
@@ -808,7 +808,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const yellowBtn: React.CSSProperties = {
-  background: "#ffff00",
+  background: "#00ff00",
   color: "#000",
   border: "none",
   padding: "8px 12px",
@@ -821,8 +821,8 @@ const yellowBtn: React.CSSProperties = {
 
 const outlineBtn: React.CSSProperties = {
   background: "transparent",
-  color: "#ffff00",
-  border: "2px solid #ffff00",
+  color: "#00ff00",
+  border: "2px solid #00ff00",
   padding: "6px 12px",
   fontFamily: "inherit",
   fontSize: 10,
@@ -846,7 +846,7 @@ const plainBtn: React.CSSProperties = {
 function navBtn(active: boolean): React.CSSProperties {
   return {
     ...plainBtn,
-    color: active ? "#ffff00" : "#cccccc",
+    color: active ? "#00ff00" : "#cccccc",
     padding: "2px 4px",
     display: "block",
     width: "100%",
@@ -857,7 +857,7 @@ function navBtn(active: boolean): React.CSSProperties {
 const h1: React.CSSProperties = {
   fontSize: 20,
   letterSpacing: 2,
-  color: "#ffff00",
+  color: "#00ff00",
   margin: "0 0 12px",
   borderBottom: "1px solid #444",
   paddingBottom: 8,

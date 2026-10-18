@@ -335,7 +335,7 @@ const cellStyle: React.CSSProperties = {
 };
 
 const btnPrimary: React.CSSProperties = {
-  background: "#ffff00",
+  background: "#00ff00",
   color: "#000",
   border: "1px solid #000",
   fontFamily: "monospace",

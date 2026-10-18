@@ -225,7 +225,7 @@ function Term({ name, children }: { name: string; children: React.ReactNode }) {
           fontFamily: "var(--dm-font-primary), monospace",
           fontSize: 13,
           letterSpacing: 1,
-          color: "#ffff00",
+          color: "#00ff00",
           marginBottom: 4,
         }}
       >

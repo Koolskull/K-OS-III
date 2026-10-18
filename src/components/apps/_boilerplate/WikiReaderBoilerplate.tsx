@@ -263,7 +263,7 @@ function ArticlePage({
 }) {
   return (
     <>
-      <h1 style={{ fontSize: titleFont, letterSpacing: 2, color: "#ffff00", marginBottom: 6, borderBottom: "1px solid #444", paddingBottom: 8 }}>
+      <h1 style={{ fontSize: titleFont, letterSpacing: 2, color: "#00ff00", marginBottom: 6, borderBottom: "1px solid #444", paddingBottom: 8 }}>
         {entry.title}
       </h1>
       <div style={{ fontSize: 10, color: "#888", marginBottom: 20, letterSpacing: 1 }}>
@@ -289,7 +289,7 @@ function IndexPage({
 }) {
   return (
     <>
-      <h1 style={{ fontSize: titleFont, letterSpacing: 2, color: "#ffff00", marginBottom: 6, borderBottom: "1px solid #444", paddingBottom: 8 }}>
+      <h1 style={{ fontSize: titleFont, letterSpacing: 2, color: "#00ff00", marginBottom: 6, borderBottom: "1px solid #444", paddingBottom: 8 }}>
         Your Wiki Title
       </h1>
       <p style={{ fontSize: 11, color: "#888", marginBottom: 24, letterSpacing: 1 }}>
@@ -305,7 +305,7 @@ function IndexPage({
         if (list.length === 0) return null;
         return (
           <section key={cat} style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: 15, letterSpacing: 2, color: "#ffff00", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid #333" }}>
+            <h2 style={{ fontSize: 15, letterSpacing: 2, color: "#00ff00", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid #333" }}>
               {CATEGORY_LABELS[cat]}
             </h2>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -389,7 +389,7 @@ function navBtnStyle(active: boolean): React.CSSProperties {
   return {
     background: "transparent",
     border: "none",
-    color: active ? "#ffff00" : "#cccccc",
+    color: active ? "#00ff00" : "#cccccc",
     fontFamily: "inherit",
     fontSize: "inherit",
     letterSpacing: "inherit",

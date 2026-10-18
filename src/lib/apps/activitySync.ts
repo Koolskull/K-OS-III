@@ -6,6 +6,7 @@
  *  (gated by show_install_list / show_time_stats / show_badges).
  */
 
+import { HAS_ACCOUNT } from "@/lib/buildFlags";
 import { loadInstallState } from "./installStore";
 import { loadBadges } from "./badges";
 import { usageSnapshot } from "./usageClock";
@@ -43,6 +44,7 @@ export function buildActivityPayload(): ActivityPayload {
 
 /** Best-effort; no throw. Returns true if server accepted. */
 export async function syncActivityToAccount(): Promise<boolean> {
+  if (!HAS_ACCOUNT) return false;
   try {
     const res = await fetch("/api/apps/activity", {
       method: "POST",

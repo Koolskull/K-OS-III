@@ -54,7 +54,7 @@ export default function Welcome() {
         プロジェクトの全姿勢については{" "}
         <a
           href="https://github.com/Koolskull/K-OS-III/blob/master/docs/EPISTEMIC_STANCE.md"
-          style={{ color: "#ffff00" }}
+          style={{ color: "#00ff00" }}
         >
           EPISTEMIC_STANCE.md
         </a>{" "}

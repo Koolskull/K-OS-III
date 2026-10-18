@@ -20,7 +20,7 @@ export function Lead({ children }: { children: React.ReactNode }) {
         fontSize: 14,
         lineHeight: 1.55,
         marginBottom: 24,
-        borderLeft: "3px solid #ffff00",
+        borderLeft: "3px solid #00ff00",
         paddingLeft: 12,
         color: "#ffffff",
       }}
@@ -38,7 +38,7 @@ export function H2({ id, children }: { id?: string; children: React.ReactNode })
         fontFamily: "var(--dm-font-primary), monospace",
         fontSize: 16,
         letterSpacing: 2,
-        color: "#ffff00",
+        color: "#00ff00",
         marginTop: 32,
         marginBottom: 12,
         paddingBottom: 4,
@@ -318,7 +318,7 @@ export function Crossref({
         ctx.navigate(to);
       }}
       style={{
-        color: "#ffff00",
+        color: "#00ff00",
         textDecoration: "underline",
         cursor: "pointer",
       }}

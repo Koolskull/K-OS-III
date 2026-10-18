@@ -1,0 +1,24 @@
+# Never serve secret files from the web tree.
+<FilesMatch "(^secrets\.php$|\.example$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+RewriteEngine On
+RewriteBase /api/
+
+RewriteRule ^scatter/mint/?$ scatter-mint.php [L,QSA]
+RewriteRule ^scatter/([A-Za-z0-9-]+)/?$ scatter-collection.php?slug=$1 [L,QSA]
+RewriteRule ^miyamaker/status/?$ miyamaker-status.php [L,QSA]
+RewriteRule ^miyamaker/owned/?$ miyamaker-owned.php [L,QSA]
+
+RewriteRule ^secrets - [F,L]
+RewriteRule \.example$ - [F,L]
+
+# Account / profile / SIWE → 2kool.tv (same users). Mint shims above stay local.
+RewriteRule ^(auth|ethereum|profile|account|nfts|apps|users)(/.*)?$ proxy.php [L,QSA]

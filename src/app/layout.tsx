@@ -23,10 +23,15 @@ export const metadata: Metadata =
         title: "2KOOL.TV",
         description: "2KOOL.TV — create, watch, and collaborate. Maximalistic Minimalism for the blessed.",
       }
-    : {
-        title: "K-OS III",
-        description: "Maximalistic Minimalism - A tracker for the blessed.",
-      };
+    : BRAND === "koolskull"
+      ? {
+          title: "KOOLSKULL OS",
+          description: "KOOLSKULL OS — discography, shop, and a browser desktop. 2kool Productions.",
+        }
+      : {
+          title: "K-OS III",
+          description: "Maximalistic Minimalism - A tracker for the blessed.",
+        };
 
 export const viewport: Viewport = {
   width: "device-width",

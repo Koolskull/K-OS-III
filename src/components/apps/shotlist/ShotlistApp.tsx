@@ -853,7 +853,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
             lineHeight: 1.8,
           }}
         >
-          <div style={{ color: "#ffff00", marginBottom: 8 }}>NO SHOTS YET</div>
+          <div style={{ color: "#00ff00", marginBottom: 8 }}>NO SHOTS YET</div>
           <div>Tap + SHOT (or N) — defaults landscape + white; change if needed, then draw.</div>
           <div style={{ marginTop: 8, color: "#555", fontSize: 9 }}>
             Metadata fills in beside the plate (desktop) or below (mobile).
@@ -868,7 +868,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
               key={shot.id}
               style={{
                 marginBottom: 8,
-                border: isSelected ? "1px solid #ffff00" : "1px solid #333",
+                border: isSelected ? "1px solid #00ff00" : "1px solid #333",
                 background: isSelected ? "#111100" : "#0a0a0a",
               }}
             >
@@ -928,7 +928,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                   >
                     <span
                       style={{
-                        color: isSelected ? "#ffff00" : "#eee",
+                        color: isSelected ? "#00ff00" : "#eee",
                         letterSpacing: 1,
                         fontSize: 11,
                       }}
@@ -965,7 +965,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                     border: "none",
                     borderLeft: "1px solid #222",
                     background: "transparent",
-                    color: isExpanded ? "#ffff00" : "#555",
+                    color: isExpanded ? "#00ff00" : "#555",
                     cursor: "pointer",
                     fontFamily: "inherit",
                     fontSize: 14,
@@ -1104,7 +1104,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
 
   const helpPanel = (
     <div style={{ padding: 8, fontSize: 9, color: "#888", letterSpacing: 1, lineHeight: 1.7 }}>
-      <div style={{ color: "#ffff00", marginBottom: 6 }}>SHOTLIST</div>
+      <div style={{ color: "#00ff00", marginBottom: 6 }}>SHOTLIST</div>
       <div>N — new shot (orient + B/W → draw → meta)</div>
       <div>E — draw plate</div>
       <div>S — KoolDraw</div>
@@ -1154,7 +1154,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
             width: "100%",
           }}
         >
-          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 12 }}>
+          <div style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11, marginBottom: 12 }}>
             NEW SHOT · FRAME SETUP
           </div>
           <div style={{ color: "#888", fontSize: 9, letterSpacing: 1, marginBottom: 10 }}>
@@ -1171,7 +1171,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                 background: pickOrientation === "landscape" ? "#fff" : "#000",
                 color: pickOrientation === "landscape" ? "#000" : "#ccc",
                 border:
-                  pickOrientation === "landscape" ? "2px solid #ffff00" : "2px solid #fff",
+                  pickOrientation === "landscape" ? "2px solid #00ff00" : "2px solid #fff",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 1,
@@ -1192,7 +1192,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                 background: pickOrientation === "portrait" ? "#fff" : "#000",
                 color: pickOrientation === "portrait" ? "#000" : "#ccc",
                 border:
-                  pickOrientation === "portrait" ? "2px solid #ffff00" : "2px solid #fff",
+                  pickOrientation === "portrait" ? "2px solid #00ff00" : "2px solid #fff",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 1,
@@ -1218,7 +1218,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                 background: "#fff",
                 color: "#000",
                 border:
-                  pickBg === "white" ? "2px solid #ffff00" : "2px solid #555",
+                  pickBg === "white" ? "2px solid #00ff00" : "2px solid #555",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 2,
@@ -1237,7 +1237,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
                 background: "#000",
                 color: "#fff",
                 border:
-                  pickBg === "black" ? "2px solid #ffff00" : "2px solid #555",
+                  pickBg === "black" ? "2px solid #00ff00" : "2px solid #555",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 letterSpacing: 2,
@@ -1288,7 +1288,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
           onClick={(e) => e.stopPropagation()}
           style={{ border: "2px solid #fff", background: "#000", padding: 20, maxWidth: 400, width: "100%" }}
         >
-          <div style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11, marginBottom: 8 }}>
+          <div style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11, marginBottom: 8 }}>
             UPGRADE · {upgradeShot.title}
           </div>
           <div style={{ color: "#888", fontSize: 9, marginBottom: 12, lineHeight: 1.6 }}>
@@ -1643,7 +1643,7 @@ function ShotlistInner({ isFocused = true, launchSequenceId, onOpenKoolDrawProje
             minHeight: 32,
           }}
         >
-          <span style={{ color: "#ffff00", letterSpacing: 2, fontSize: 11 }}>☦ SHOTLIST</span>
+          <span style={{ color: "#00ff00", letterSpacing: 2, fontSize: 11 }}>☦ SHOTLIST</span>
           <span style={{ color: "#666", fontSize: 9, letterSpacing: 1, flex: 1, textAlign: "center" }}>
             {sequence.shots.length} SHOTS · {sequence.fps} FPS
           </span>

@@ -14,6 +14,14 @@
 # src/app/api.bak) is still picked up as a route and the export still fails.
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+export PATH="$ROOT/node_modules/.bin:$PATH"
+if [ ! -x "$ROOT/node_modules/.bin/next" ]; then
+  echo "next not found at $ROOT/node_modules/.bin/next — run npm install first." >&2
+  exit 1
+fi
+
 DYNAMIC_DIRS=("src/app/api" "src/app/render")
 BACKUP_ROOT=".build-static-backup"
 
@@ -41,4 +49,8 @@ trap restore EXIT
 K_OS_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true \
   NEXT_PUBLIC_BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-}" \
   NEXT_PUBLIC_BRAND="${NEXT_PUBLIC_BRAND:-kos3}" \
+  NEXT_PUBLIC_MEDIA_ORIGIN="${NEXT_PUBLIC_MEDIA_ORIGIN:-}" \
+  NEXT_PUBLIC_ETH_RPC_URL="${NEXT_PUBLIC_ETH_RPC_URL:-}" \
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}" \
+  NEXT_PUBLIC_HAS_ACCOUNT="${NEXT_PUBLIC_HAS_ACCOUNT:-}" \
   next build

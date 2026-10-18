@@ -17,6 +17,7 @@ import {
   subscribeInstalls,
   type InstallStoreState,
 } from "@/lib/apps/installStore";
+import { BRAND } from "@/lib/buildFlags";
 
 interface DesktopProps {
   onLaunchApp: (appId: string) => void;
@@ -67,21 +68,75 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
       onKeyDown={handleKeyDown}
     >
       <div
+        aria-hidden
         style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url(/gifs/screenglitch.gif)",
+          backgroundPosition: "50%",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+          opacity: 0.15,
+          pointerEvents: "none",
+          imageRendering: "pixelated",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          flexWrap: "wrap",
-          alignContent: "flex-start",
-          gap: "var(--dm-ui-gap, 4px)",
-          padding: "var(--dm-ui-pad, 4px)",
           height: "calc(100% - var(--dm-taskbar-h, 32px))",
+          padding: "0 10px 10px",
+          overflow: "auto",
         }}
       >
+        {BRAND === "koolskull" && (
+          <div
+            aria-hidden
+            style={{
+              alignSelf: "flex-start",
+              width: "min(555px, 92vw)",
+              height: 220,
+              padding: 20,
+              flexShrink: 0,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/koolskull-logo.png"
+              alt="KOOL SKULL"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                imageRendering: "pixelated",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        )}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            flexWrap: "wrap",
+            alignContent: "flex-start",
+            gap: "var(--dm-ui-gap, 4px)",
+            paddingTop: BRAND === "koolskull" ? 15 : "var(--dm-ui-pad, 4px)",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
         {icons.map((icon) => {
           const isSelected = selectedIcon === icon.id;
           return (
             <div
               key={icon.id}
+              data-app-id={icon.id}
               onClick={() => handleIconClick(icon.id)}
               style={{
                 width: "64px",
@@ -129,6 +184,7 @@ export function Desktop({ onLaunchApp }: DesktopProps) {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

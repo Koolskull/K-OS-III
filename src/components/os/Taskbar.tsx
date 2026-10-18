@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { signOut } from "next-auth/react";
-import { BRAND_NAME } from "@/lib/buildFlags";
+import { BRAND_NAME, HAS_ACCOUNT } from "@/lib/buildFlags";
 
 interface TaskbarWindow {
   id: string;
@@ -39,13 +39,23 @@ interface TaskbarProps {
   onWindowClick: (id: string) => void;
   onShowDesktop: () => void;
   onLaunchApp: (appId: string) => void;
+  webampOpen?: boolean;
+  onWebampClick?: () => void;
 }
 
 interface SessionUser {
   name?: string | null;
 }
 
-export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLaunchApp }: TaskbarProps) {
+export function Taskbar({
+  windows,
+  focusedId,
+  onWindowClick,
+  onShowDesktop,
+  onLaunchApp,
+  webampOpen,
+  onWebampClick,
+}: TaskbarProps) {
   const [time, setTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -65,6 +75,11 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
   }, []);
 
   const refreshSession = useCallback(async () => {
+    if (!HAS_ACCOUNT) {
+      setUser(null);
+      setLoadingUser(false);
+      return;
+    }
     setLoadingUser(true);
     try {
       const res = await fetch("/api/auth/session");
@@ -304,6 +319,28 @@ export function Taskbar({ windows, focusedId, onWindowClick, onShowDesktop, onLa
           );
         })}
       </div>
+
+      {onWebampClick && webampOpen && (
+        <button
+          type="button"
+          onClick={onWebampClick}
+          title="Hide Webamp"
+          style={{
+            height: "var(--dm-ui-btn-h, 22px)",
+            padding: "0 8px",
+            border: "1px solid #ffffff",
+            backgroundColor: "#1a1a1a",
+            color: "#00ff00",
+            fontFamily: "var(--dm-font-primary)",
+            fontSize: "var(--dm-ui-font-xs, 7px)",
+            letterSpacing: "1px",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          WEBAMP
+        </button>
+      )}
 
       {/* Show desktop — moved here from the start button, which now opens the start menu */}
       <button

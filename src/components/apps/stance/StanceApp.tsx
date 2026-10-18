@@ -41,7 +41,7 @@ export function StanceApp() {
             margin: "6px 0 4px",
             fontSize: 16,
             letterSpacing: 3,
-            color: "#ffff00",
+            color: "#00ff00",
             fontWeight: 700,
           }}
         >
@@ -107,7 +107,7 @@ export function StanceApp() {
                               href="https://dsmp.io"
                               target="_blank"
                               rel="noreferrer"
-                              style={{ color: "#ffff00" }}
+                              style={{ color: "#00ff00" }}
                             >
                               https://dsmp.io
                             </a>
@@ -126,7 +126,7 @@ export function StanceApp() {
 
           <section
             style={{
-              border: "2px solid #ffff00",
+              border: "2px solid #00ff00",
               background: "#0a0a00",
               padding: 14,
               marginBottom: 18,
@@ -137,7 +137,7 @@ export function StanceApp() {
                 margin: "0 0 8px",
                 fontSize: 11,
                 letterSpacing: 2,
-                color: "#ffff00",
+                color: "#00ff00",
                 textTransform: "uppercase",
               }}
             >
@@ -191,7 +191,7 @@ const linkBtn: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  background: "#ffff00",
+  background: "#00ff00",
   color: "#000",
   border: "none",
   padding: "8px 12px",

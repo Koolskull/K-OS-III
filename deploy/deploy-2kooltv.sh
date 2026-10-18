@@ -16,9 +16,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=""
-if [ "${1:-}" = "--dry-run" ]; then
-  DRY_RUN="--dry-run"
-fi
+SKIP_BUILD=""
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN="--dry-run" ;;
+    --skip-build) SKIP_BUILD="1" ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+  esac
+done
 
 ENV_FILE="deploy/.env.ftp"
 if [ ! -f "$ENV_FILE" ]; then
@@ -35,15 +40,32 @@ for var in FTP_HOST FTP_USER FTP_PASSWORD FTP_REMOTE_DIR; do
   fi
 done
 
-echo "==> Building static export (2KOOL.TV, root path)..."
-npm run build:2kooltv
+if [ -n "$SKIP_BUILD" ]; then
+  if [ ! -f out/index.html ]; then
+    echo "out/index.html missing — run without --skip-build." >&2
+    exit 1
+  fi
+  echo "==> Skipping rebuild, uploading existing out/"
+else
+  echo "==> Building static export (2KOOL.TV, root path)..."
+  npm run build:2kooltv
+fi
 
 echo "==> Mirroring out/ to ${FTP_HOST}:${FTP_REMOTE_DIR} (SFTP, no delete)${DRY_RUN:+ [DRY RUN]}..."
+echo "    Local media symlinks (mp3, art, albums, skins, Instruments) stay off this host."
 lftp -u "$FTP_USER,$FTP_PASSWORD" "sftp://$FTP_HOST" <<EOF
 set net:timeout 15
 set sftp:auto-confirm yes
-mirror -R --verbose --transfer-all --exclude Instruments/ $DRY_RUN out "$FTP_REMOTE_DIR"
+mirror -R --verbose --transfer-all \
+  --exclude Instruments/ \
+  --exclude mp3/ \
+  --exclude art/ \
+  --exclude album-large/ \
+  --exclude album-fullscreen/ \
+  --exclude album-thumbs/ \
+  --exclude webampskins/ \
+  $DRY_RUN out "$FTP_REMOTE_DIR"
 bye
 EOF
 
-echo "==> Done. Check https://2kool.tv/"
+echo "==> Done. Static files are on the DreamHost docroot (https://files.2kool.tv/). Apex https://2kool.tv/ is the Vercel app."

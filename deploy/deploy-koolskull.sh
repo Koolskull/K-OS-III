@@ -79,7 +79,7 @@ set net:timeout 20
 set sftp:auto-confirm yes
 $LFTP_SSL
 $PORT_LINE
-mirror -R --verbose --ignore-time --exclude-glob .DS_Store --exclude Instruments/ --exclude-glob secrets.php $DRY_RUN out "$FTP_REMOTE_DIR"
+mirror -R --verbose --transfer-all --ignore-time --exclude-glob .DS_Store --exclude Instruments/ --exclude-glob secrets.php $DRY_RUN out "$FTP_REMOTE_DIR"
 bye
 EOF
 

@@ -42,7 +42,7 @@ echo "==> Mirroring out/ to ${FTP_HOST}:${FTP_REMOTE_DIR} (SFTP, no delete)${DRY
 lftp -u "$FTP_USER,$FTP_PASSWORD" "sftp://$FTP_HOST" <<EOF
 set net:timeout 15
 set sftp:auto-confirm yes
-mirror -R --verbose $DRY_RUN out "$FTP_REMOTE_DIR"
+mirror -R --verbose --transfer-all --exclude Instruments/ $DRY_RUN out "$FTP_REMOTE_DIR"
 bye
 EOF
 

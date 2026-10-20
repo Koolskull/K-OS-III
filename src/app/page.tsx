@@ -26,7 +26,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { BootSequence } from "@/components/os/BootSequence";
 import { Desktop } from "@/components/os/Desktop";
@@ -60,8 +60,9 @@ import { MarketplaceApp } from "@/components/apps/marketplace/MarketplaceApp";
 import { NftMintApp } from "@/components/apps/nftmint/NftMintApp";
 import { CreativeWorkflowProvider } from "@/lib/creative";
 import { HAS_ACCOUNT, HAS_BACKEND } from "@/lib/buildFlags";
-import { APP_CATALOG, type AppId } from "@/lib/apps/catalog";
-import { canLaunchApp, recordAppOpen } from "@/lib/apps/installStore";
+import { APP_CATALOG, availableCatalog, isCoreApp, type AppId } from "@/lib/apps/catalog";
+import { canLaunchApp, installApp, isInstalled, recordAppOpen } from "@/lib/apps/installStore";
+import { appIdFromPathname } from "@/lib/apps/paths";
 import { getAlbum, webampTracks, type MusicAlbum } from "@/lib/discography";
 
 const WebampOverlay = dynamic(
@@ -279,6 +280,16 @@ export default function KoolskullOS() {
     );
     setFocusedWindowId(null);
   }, []);
+
+  const openedFolder = useRef(false);
+  useEffect(() => {
+    if (booting || openedFolder.current) return;
+    openedFolder.current = true;
+    const id = appIdFromPathname(window.location.pathname);
+    if (!id || !availableCatalog().some((app) => app.id === id)) return;
+    if (!isCoreApp(id) && !isInstalled(id)) installApp(id);
+    launchApp(id);
+  }, [booting, launchApp]);
 
   if (booting) {
     return <BootSequence onComplete={() => setBooting(false)} />;

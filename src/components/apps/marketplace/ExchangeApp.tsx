@@ -879,6 +879,7 @@ function Detail({
               ETHERSCAN
             </a>
           )}
+          <FileLink src={full || image} />
           {row.venue === "opensea" && order.seaport && order.nft && (
             <a href={`https://opensea.io/item/ethereum/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
               OPENSEA
@@ -904,6 +905,7 @@ function Quiet({ nft }: { nft: CatalogNft }) {
           <a href={`https://opensea.io/item/ethereum/${nft.contract}/${nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
             OPENSEA
           </a>
+          <FileLink src={nft.full || nft.image} />
         </div>
       </div>
     </div>
@@ -937,6 +939,16 @@ function Chip({ label, on: active, click, block }: { label: string; on: boolean;
     <button type="button" style={base} onClick={click}>
       {label}
     </button>
+  );
+}
+
+function FileLink({ src }: { src?: string | null }) {
+  const href = wideStill(src);
+  if (!href) return null;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" style={fileLink}>
+      FILE
+    </a>
   );
 }
 
@@ -999,17 +1011,14 @@ function NftTile({
       role={nft.animation ? "animation" : "still"}
       style={banner ? { width: "100%", maxWidth: "100%", minWidth: 0, ...(gridColumn ? { gridColumn } : {}) } : gridColumn ? { gridColumn } : undefined}
     >
-      <button
-        type="button"
-        style={{ ...tile, width: "100%", maxWidth: "100%", minWidth: 0, borderColor: selected ? "#00ff00" : "#333" }}
-        onClick={onOpen}
-      >
-        {picture ? <img src={picture} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
-        <div style={tileMeta}>
-          <span>{nft.name.toUpperCase()}</span>
+      <div style={{ ...tile, width: "100%", maxWidth: "100%", minWidth: 0, borderColor: selected ? "#00ff00" : "#333", cursor: "default" }}>
+        <button type="button" onClick={onOpen} style={tileHit}>
+          {picture ? <img src={picture} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
+          <span style={tileName}>{nft.name.toUpperCase()}</span>
           <span style={{ color: priceColor }}>{price}</span>
-        </div>
-      </button>
+        </button>
+        <FileLink src={largest} />
+      </div>
     </FullscreenButton>
   );
 }
@@ -1162,12 +1171,30 @@ const tile: React.CSSProperties = {
   textAlign: "left",
   cursor: "pointer",
 };
+const tileHit: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  width: "100%",
+  minWidth: 0,
+  padding: 0,
+  border: "none",
+  background: "transparent",
+  color: "inherit",
+  font: "inherit",
+  textAlign: "left",
+  cursor: "pointer",
+};
+const tileName: React.CSSProperties = { padding: "0 6px" };
 const tileImg: React.CSSProperties = {
   width: "100%",
+  maxHeight: "70dvh",
+  height: "auto",
   aspectRatio: "1",
-  objectFit: "cover",
+  objectFit: "contain",
   background: "#111",
   imageRendering: "pixelated",
+  display: "block",
 };
 const bannerImg: React.CSSProperties = {
   width: "100%",
@@ -1179,25 +1206,32 @@ const bannerImg: React.CSSProperties = {
   background: "#111",
   imageRendering: "pixelated",
 };
-const tileMeta: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
+const fileLink: React.CSSProperties = {
+  color: "#00ff00",
+  fontSize: 8,
+  letterSpacing: 1,
+  textDecoration: "none",
   padding: "0 6px 6px",
+  alignSelf: "flex-start",
 };
 const detail: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 8 };
 const shot: React.CSSProperties = {
-  width: "100%",
-  aspectRatio: "1",
+  display: "block",
+  width: "auto",
+  height: "auto",
+  maxWidth: "100%",
+  maxHeight: "70dvh",
   objectFit: "contain",
   background: "#000",
   imageRendering: "pixelated",
+  margin: "0 auto",
 };
 const bannerShot: React.CSSProperties = {
   width: "100%",
   height: "auto",
   minWidth: 0,
   maxWidth: "100%",
+  maxHeight: "70dvh",
   display: "block",
   objectFit: "contain",
   background: "#000",

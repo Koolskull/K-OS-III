@@ -586,6 +586,11 @@ export function MintHeroPage({
               {!icon && hero && hero.asset !== hero.name && hero.asset !== `#${hero.tokenId}` ? (
                 <span style={dim}> {hero.asset.toUpperCase()}</span>
               ) : null}
+              {(icon || hero?.images[0]) && (
+                <a href={icon || hero?.images[0] || ""} target="_blank" rel="noreferrer" style={{ color: "#fff", marginLeft: 8 }}>
+                  FILE
+                </a>
+              )}
             </div>
           </div>
         )}
@@ -1010,6 +1015,11 @@ const previewStack: React.CSSProperties = {
   aspectRatio: "1",
   flex: "0 1 auto",
   overflow: "hidden",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 0,
+  minHeight: 0,
 };
 const previewCol: React.CSSProperties = {
   minWidth: 0,
@@ -1023,12 +1033,13 @@ const previewCol: React.CSSProperties = {
   flex: 1,
 };
 const heroImg: React.CSSProperties = {
-  position: "absolute",
+  position: "relative",
   zIndex: 1,
-  left: "7%",
-  top: "7%",
-  width: "86%",
-  height: "86%",
+  display: "block",
+  width: "auto",
+  height: "auto",
+  maxWidth: "92%",
+  maxHeight: "92%",
   objectFit: "contain",
   imageRendering: "pixelated",
   background: "transparent",

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { mediaKind, mediaSrc, type MediaRole } from "@/lib/mediaKind";
+import { mediaKind, mediaSrc, wideStill, type MediaRole } from "@/lib/mediaKind";
 
 /** Fullscreen still, iframe NFT, audio, or video. Close is the button, Escape, or the black field. */
 export function MediaStage({
@@ -40,6 +40,11 @@ export function MediaStage({
       <div style={bar}>
         <span style={kindMark}>{label}</span>
         <span style={titleMark}>{title || ""}</span>
+        {still && (
+          <a href={wideStill(still) || still} target="_blank" rel="noreferrer" style={closeBtn}>
+            FILE
+          </a>
+        )}
         <button type="button" onClick={onClose} style={closeBtn} autoFocus>
           CLOSE
         </button>
@@ -129,6 +134,7 @@ const backdrop: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   fontFamily: "var(--dm-font-primary)",
+  zoom: "calc(1 / var(--dm-ui-zoom, 1))",
 };
 const bar: React.CSSProperties = {
   display: "flex",
@@ -163,12 +169,17 @@ const closeBtn: React.CSSProperties = {
 const stage: React.CSSProperties = {
   flex: 1,
   minHeight: 0,
+  minWidth: 0,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  overflow: "hidden",
   background: "#000",
 };
 const fit: React.CSSProperties = {
+  display: "block",
+  width: "auto",
+  height: "auto",
   maxWidth: "100%",
   maxHeight: "100%",
   objectFit: "contain",

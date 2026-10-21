@@ -1,5 +1,5 @@
 import { getAddress } from "ethers";
-import { wideStill } from "../mediaKind";
+import { stillPair } from "../mediaKind";
 import { priceLabel, unitRaw } from "./askPrice.mjs";
 import { type CurrencyId } from "@/data/market";
 import { type FloorListing, type KOrder } from "@/lib/market/orders";
@@ -43,8 +43,7 @@ export function askTile(col: AskCollection, ask: PublicAsk): SaleTile | null {
   } catch {
     return null;
   }
-  const wide = wideStill(ask.imageUrl);
-  const picture = col.wide ? wide || ask.imageUrl || col.localImage : col.localImage || ask.imageUrl || null;
+  const picture = stillPair(col.wide, col.localImage, ask.imageUrl, ask.imageUrl);
   const price = priceLabel(ask.unit, ask.symbol);
   const order: KOrder = {
     v: 1,
@@ -62,8 +61,8 @@ export function askTile(col: AskCollection, ask: PublicAsk): SaleTile | null {
     contract,
     tokenId: ask.tokenId,
     name: ask.name || `${col.name} #${ask.tokenId}`,
-    image: picture,
-    full: picture,
+    image: picture.image,
+    full: picture.full,
     animation: null,
   };
   const listing: FloorListing = {

@@ -54,7 +54,7 @@ import {
 import { shortAddr } from "@/lib/shop/merchant";
 import { visibleLayoutBox } from "@/lib/os/visibleBox";
 import { FullscreenButton } from "@/components/ui/MediaStage";
-import { wideStill } from "@/lib/mediaKind";
+import { fileStill, wideStill } from "@/lib/mediaKind";
 
 type Pane = "floor" | "mint" | "sell" | "bag" | "art";
 
@@ -954,7 +954,7 @@ function Detail({
               ETHERSCAN
             </a>
           )}
-          <FileLink src={full || image} />
+          <FileLink src={full} alt={image} />
           {row.venue === "opensea" && order.seaport && order.nft && (
             <a href={`https://opensea.io/item/ethereum/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
               OPENSEA
@@ -980,7 +980,7 @@ function Quiet({ nft }: { nft: CatalogNft }) {
           <a href={`https://opensea.io/item/ethereum/${nft.contract}/${nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
             OPENSEA
           </a>
-          <FileLink src={nft.full || nft.image} />
+          <FileLink src={nft.full} alt={nft.image} />
         </div>
       </div>
     </div>
@@ -1047,8 +1047,8 @@ function Drop({
   );
 }
 
-function FileLink({ src }: { src?: string | null }) {
-  const href = wideStill(src);
+function FileLink({ src, alt }: { src?: string | null; alt?: string | null }) {
+  const href = fileStill(src) || fileStill(alt) || wideStill(src) || wideStill(alt);
   if (!href) return null;
   return (
     <a href={href} target="_blank" rel="noreferrer" style={fileLink}>
@@ -1071,14 +1071,15 @@ function PieceShot({
   wide?: boolean;
 }) {
   const frame = wide ? bannerShot : shot;
-  const shown = wide ? wideStill(src) || src : src;
-  const stage = animation || (wide ? wideStill(full || src) || full || src : full || src);
+  const file = fileStill(full) || fileStill(src) || full || src;
+  const shown = wide ? fileStill(src) || fileStill(full) || src : (fileStill(src) ? src : null) || file;
+  const stage = animation || file;
   const picture = shown ? <img src={shown} alt={title || ""} style={frame} /> : <div style={frame} />;
   if (!stage) return picture;
   return (
     <FullscreenButton
       title={title}
-      image={full || src}
+      image={file}
       src={stage}
       role={animation ? "animation" : "still"}
       openOnClick
@@ -1105,8 +1106,10 @@ function NftTile({
   gridColumn?: string;
   onOpen: () => void;
 }) {
-  const picture = banner ? wideStill(nft.image) || nft.image : nft.image;
-  const largest = banner ? wideStill(nft.full || nft.image) || nft.full || nft.image : nft.full || nft.image;
+  const picture = banner
+    ? fileStill(nft.full) || fileStill(nft.image) || nft.image
+    : (fileStill(nft.image) ? nft.image : null) || fileStill(nft.full) || nft.image;
+  const largest = fileStill(nft.full) || fileStill(nft.image) || nft.full || nft.image;
   const stage = nft.animation || largest;
   return (
     <FullscreenButton
@@ -1122,7 +1125,7 @@ function NftTile({
           <span style={tileName}>{nft.name.toUpperCase()}</span>
           <span style={{ color: priceColor }}>{price}</span>
         </button>
-        <FileLink src={largest} />
+        <FileLink src={nft.full} alt={nft.image} />
       </div>
     </FullscreenButton>
   );

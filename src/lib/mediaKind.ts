@@ -18,9 +18,12 @@ export function mediaSrc(src: string | null | undefined): string | null {
 }
 
 const SEADN = /(^|\.)seadn\.io$/i;
+/** stardrain.app answers with a connection reset, so a FILE link must not open it. */
+const DEAD_HOST = /(^|\.)stardrain\.app$/i;
 
 /** OpenSea's bare seadn link is a square crop. A width-only request is the
  * original ratio. Thrash Bannerz are 1555×555, and w=1600 returns that file.
+ * A square Mialien at w=1600 is the original 1444×1444 file, not the 500 crop.
  */
 export function wideStill(src: string | null | undefined): string | null {
   const text = mediaSrc(src);
@@ -38,6 +41,51 @@ export function wideStill(src: string | null | undefined): string | null {
   url.searchParams.delete("fit");
   url.searchParams.set("w", "1600");
   return url.toString();
+}
+
+/** A still that can be opened. stardrain.app is skipped. seadn.io is the full file. */
+export function fileStill(src: string | null | undefined): string | null {
+  const text = wideStill(src);
+  if (!text) return null;
+  try {
+    if (DEAD_HOST.test(new URL(text).hostname)) return null;
+  } catch {
+    return text;
+  }
+  return text;
+}
+
+function firstStill(...srcs: (string | null | undefined)[]): string | null {
+  for (const src of srcs) {
+    const file = fileStill(src);
+    if (file) return file;
+  }
+  return null;
+}
+
+function rawStill(src: string | null | undefined): string | null {
+  if (!fileStill(src)) return null;
+  return mediaSrc(src);
+}
+
+/** Tile picture and the file the FILE button opens.
+ * A reachable original on our own host wins. The dead stardrain host does not.
+ */
+export function stillPair(
+  wide: boolean,
+  local: string | null | undefined,
+  display: string | null | undefined,
+  original: string | null | undefined,
+): { image: string | null; full: string | null } {
+  const own = fileStill(local);
+  if (wide) {
+    const full = firstStill(original, display, local);
+    return { image: full, full };
+  }
+  const shown = rawStill(display) || rawStill(original);
+  const full = own || firstStill(original, display) || shown;
+  const image = own || shown || full;
+  return { image, full };
 }
 
 export function mediaKind(src: string | null | undefined, role: MediaRole = "still"): MediaKind {

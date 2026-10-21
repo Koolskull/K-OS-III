@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Interface } from "ethers";
 import { ALL_MINTS, getScatterMint, isMiyamakerMint } from "@/data/scatter-mints";
 import { MIYAMAKER_MINI, getSanctioned } from "@/data/sanctioned-nfts";
+import { fileStill } from "@/lib/mediaKind";
 import { visibleLayoutBox } from "@/lib/os/visibleBox";
 import { chainInfo, listCap, priceLabel, shortContract, type ScatterCollection } from "@/lib/scatter";
 import { loadMintCollection, requestScatterMintPrepared } from "@/lib/mintClient";
@@ -300,6 +301,8 @@ export function MintHeroPage({
   const contract = col?.address || page?.address || "";
   const hero = preview[0];
   const icon = slug === "mialien-eth" && !revealed ? page?.avatarUrl || null : null;
+  const listedStill = useListedStill(col ? getSanctioned(col.address)?.openseaSlug ?? null : null, hero?.tokenId ?? null);
+  const pieceFile = fileStill(icon) || fileStill(listedStill) || hero?.images.find((src) => fileStill(src)) || icon || hero?.images[0] || "";
   const shown = sortPieces(gallery === "wallet" ? wallet : recent, sort);
   const tab = stacked && stage === "gallery" ? (gallery === "wallet" ? "WALLET" : "RECENT") : (def?.shortName || "MINT");
 
@@ -575,6 +578,9 @@ export function MintHeroPage({
             {icon ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={icon} alt="" draggable={false} style={heroImg} />
+            ) : fileStill(listedStill) && !(hero && hero.images.some((src) => fileStill(src))) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fileStill(listedStill) || ""} alt="" draggable={false} style={heroImg} />
             ) : hero ? (
               <PieceImg piece={hero} style={heroImg} />
             ) : (
@@ -586,8 +592,8 @@ export function MintHeroPage({
               {!icon && hero && hero.asset !== hero.name && hero.asset !== `#${hero.tokenId}` ? (
                 <span style={dim}> {hero.asset.toUpperCase()}</span>
               ) : null}
-              {(icon || hero?.images[0]) && (
-                <a href={icon || hero?.images[0] || ""} target="_blank" rel="noreferrer" style={{ color: "#fff", marginLeft: 8 }}>
+              {pieceFile && (
+                <a href={pieceFile} target="_blank" rel="noreferrer" style={{ color: "#fff", marginLeft: 8 }}>
                   FILE
                 </a>
               )}
@@ -784,6 +790,47 @@ function mergeQuotes(current: MintPiece[], quoted: MintPiece[]): MintPiece[] {
       name: next.name || row.name,
     };
   });
+}
+
+const floorImages = new Map<string, Promise<Map<string, string>>>();
+
+function loadFloorImages(slug: string): Promise<Map<string, string>> {
+  const have = floorImages.get(slug);
+  if (have) return have;
+  const next = fetch(`/floor/${encodeURIComponent(slug)}.json`, { headers: { Accept: "application/json" } })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((body: unknown) => {
+      const map = new Map<string, string>();
+      const items = body && typeof body === "object" && Array.isArray((body as { items?: unknown }).items) ? (body as { items: unknown[] }).items : [];
+      for (const row of items) {
+        if (!row || typeof row !== "object") continue;
+        const rec = row as { tokenId?: unknown; imageUrl?: unknown };
+        if (typeof rec.tokenId === "string" && typeof rec.imageUrl === "string") map.set(rec.tokenId, rec.imageUrl);
+      }
+      return map;
+    })
+    .catch(() => new Map<string, string>());
+  floorImages.set(slug, next);
+  return next;
+}
+
+/** Listing image for a token whose own file host does not answer. */
+function useListedStill(slug: string | null, tokenId: string | null): string | null {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!slug || !tokenId) {
+      setSrc(null);
+      return;
+    }
+    let stop = false;
+    void loadFloorImages(slug).then((map) => {
+      if (!stop) setSrc(map.get(tokenId) || null);
+    });
+    return () => {
+      stop = true;
+    };
+  }, [slug, tokenId]);
+  return src;
 }
 
 function PieceImg({ piece, style }: { piece: MintPiece; style: React.CSSProperties }) {

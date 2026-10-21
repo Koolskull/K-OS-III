@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mediaKind, mediaSrc, nftMedia, wideStill } from "./mediaKind.ts";
+import { fileStill, mediaKind, mediaSrc, nftMedia, stillPair, wideStill } from "./mediaKind.ts";
 
 test("stills, pages, audio, and video each open as their own kind", () => {
   assert.equal(mediaKind("https://cdn.example/art.png"), "image");
@@ -31,4 +31,28 @@ test("a seadn square crop becomes the wide original", () => {
   assert.equal(wideStill("https://i2c.seadn.io/ethereum/0xabc/banner.png"), "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=1600");
   assert.equal(wideStill("https://koolskull.com/miyamakermini/metadata/images/4.png"), "https://koolskull.com/miyamakermini/metadata/images/4.png");
   assert.equal(wideStill("javascript:alert(1)"), null);
+});
+
+test("a dead stardrain file is not the one FILE opens", () => {
+  const dead = "https://stardrain.app/mialien/metadata/images/1313.jpg";
+  const display = "https://i2c.seadn.io/ethereum/0xabc/1313.jpeg?w=500";
+  assert.equal(fileStill(dead), null);
+  const pair = stillPair(false, dead, display, dead);
+  assert.equal(pair.image, display);
+  assert.equal(pair.full, "https://i2c.seadn.io/ethereum/0xabc/1313.jpeg?w=1600");
+});
+
+test("a hosted original stays ahead of the seadn copy", () => {
+  const png = "https://koolskull.com/miyamakermini/metadata/images/4.png";
+  const sea = "https://i2c.seadn.io/ethereum/0xabc/4.png";
+  const pair = stillPair(false, png, sea, sea);
+  assert.equal(pair.image, png);
+  assert.equal(pair.full, png);
+});
+
+test("wide art opens the uncropped seadn file", () => {
+  const sea = "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=500&h=500";
+  const pair = stillPair(true, null, sea, sea);
+  assert.equal(pair.image, "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=1600");
+  assert.equal(pair.full, pair.image);
 });

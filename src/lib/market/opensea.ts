@@ -2,7 +2,7 @@ import { formatUnits, getAddress } from "ethers";
 import { fallbackTokenImage, floorCollections, getSanctioned, isWideArt, type SanctionedCollection } from "@/data/sanctioned-nfts";
 import { CULT_ADDRESS, SEAPORT_16, USDC_ADDRESS, type CurrencyId } from "@/data/market";
 import { formatPrice } from "@/lib/market/money";
-import { nftMedia, wideStill } from "@/lib/mediaKind";
+import { fileStill, nftMedia, stillPair, wideStill } from "@/lib/mediaKind";
 import { publicSaleTiles } from "@/lib/market/publicFloor";
 import { type ConsiderationItem, type FloorListing, type KOrder, type OfferItem, type OrderComponents } from "@/lib/market/orders";
 
@@ -250,7 +250,7 @@ function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | nul
   }
   const named = typeof row.name === "string" ? row.name.trim() : "";
   const media = nftMedia(row);
-  const fallback = fallbackTokenImage(contract, tokenId);
+  const pair = stillPair(isWideArt(col.id), fallbackTokenImage(contract, tokenId), media.image, media.full);
   return {
     id: `${contract.toLowerCase()}:${tokenId}`,
     collectionId: col.id,
@@ -259,8 +259,8 @@ function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | nul
     contract,
     tokenId,
     name: named || `${col.name} #${tokenId}`,
-    image: isWideArt(col.id) ? wideStill(media.full || media.image) || media.image || fallback : media.image || fallback,
-    full: isWideArt(col.id) ? wideStill(media.full || media.image) || media.full || media.image || null : fallback || media.full || media.image || null,
+    image: pair.image,
+    full: pair.full,
     animation: media.animation || null,
   };
 }
@@ -321,6 +321,7 @@ function saleTileFromListing(listing: FloorListing, col: SanctionedCollection): 
   const token = listing.order.nft;
   if (!token || !col.openseaSlug) return null;
   const tokenId = plainId(token.tokenId);
+  const pair = stillPair(isWideArt(col.id), fallbackTokenImage(token.contract, tokenId), null, null);
   return {
     listing,
     nft: {
@@ -331,8 +332,8 @@ function saleTileFromListing(listing: FloorListing, col: SanctionedCollection): 
       contract: token.contract,
       tokenId,
       name: `${col.name} #${tokenId}`,
-      image: fallbackTokenImage(token.contract, tokenId),
-      full: fallbackTokenImage(token.contract, tokenId),
+      image: pair.image,
+      full: pair.full,
       animation: null,
     },
   };
@@ -371,7 +372,7 @@ export function saleTileFromBook(row: FloorListing): SaleTile | null {
 }
 
 async function fillSaleImages(tiles: SaleTile[]): Promise<void> {
-  const missing = tiles.filter((tile) => !tile.nft.image);
+  const missing = tiles.filter((tile) => !fileStill(tile.nft.image) || !fileStill(tile.nft.full));
   if (!missing.length) return;
   const key = await readKey();
   for (let i = 0; i < missing.length; i += 40) {
@@ -396,8 +397,9 @@ async function fillSaleImages(tiles: SaleTile[]): Promise<void> {
     for (const tile of chunk) {
       const hit = found.get(`${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}`);
       if (!hit) continue;
-      if (!tile.nft.image && hit.image) tile.nft.image = hit.image;
-      if (!tile.nft.full) tile.nft.full = hit.full || hit.image || tile.nft.image;
+      const pair = stillPair(isWideArt(tile.nft.collectionId), null, hit.image, hit.full);
+      if (!fileStill(tile.nft.image) && pair.image) tile.nft.image = pair.image;
+      if (!fileStill(tile.nft.full) && pair.full) tile.nft.full = pair.full;
       if (hit.animation) tile.nft.animation = hit.animation;
       if (hit.name) tile.nft.name = hit.name;
     }
@@ -473,6 +475,28 @@ async function readRestSales(
   return { tiles: mergeSaleTiles([], tiles), next };
 }
 
+/** Copy a reachable picture from the public list onto a signed ask that only had the dead host. */
+function paintListedImages(tiles: SaleTile[], pictures: SaleTile[]): SaleTile[] {
+  const pics = new Map<string, CatalogNft>();
+  for (const tile of pictures) {
+    if (!fileStill(tile.nft.image) && !fileStill(tile.nft.full)) continue;
+    pics.set(`${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}`, tile.nft);
+  }
+  return tiles.map((tile) => {
+    if (fileStill(tile.nft.full) || fileStill(tile.nft.image)) return tile;
+    const pic = pics.get(`${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}`);
+    if (!pic) return tile;
+    return {
+      ...tile,
+      nft: {
+        ...tile.nft,
+        image: pic.image || tile.nft.image,
+        full: pic.full || pic.image || tile.nft.full,
+      },
+    };
+  });
+}
+
 /** Active asks. The signed OpenSea book is preferred. When that read key is
  * refused, the public price list still fills the floor.
  */
@@ -483,7 +507,17 @@ export async function openSeaSales(
   const listed = cursors ? null : publicSaleTiles(collectionId);
   try {
     const page = await readRestSales(collectionId, cursors);
-    if (page.tiles.length) return page;
+    if (page.tiles.length) {
+      let tiles = page.tiles;
+      if (listed) {
+        try {
+          tiles = paintListedImages(tiles, await listed);
+        } catch {
+          /* a public picture is optional when the signed book already loaded */
+        }
+      }
+      return { tiles, next: page.next };
+    }
   } catch {
     /* a refused read key must not hide asks that are on the public floor */
   }

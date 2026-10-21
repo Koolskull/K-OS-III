@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { mediaKind, mediaSrc, wideStill, type MediaRole } from "@/lib/mediaKind";
+import { fileStill, mediaKind, mediaSrc, wideStill, type MediaRole } from "@/lib/mediaKind";
 
 /** Fullscreen still, iframe NFT, audio, or video. Close is the button, Escape, or the black field. */
 export function MediaStage({
@@ -41,7 +41,7 @@ export function MediaStage({
         <span style={kindMark}>{label}</span>
         <span style={titleMark}>{title || ""}</span>
         {still && (
-          <a href={wideStill(still) || still} target="_blank" rel="noreferrer" style={closeBtn}>
+          <a href={fileStill(still) || fileStill(file) || wideStill(still) || still} target="_blank" rel="noreferrer" style={closeBtn}>
             FILE
           </a>
         )}

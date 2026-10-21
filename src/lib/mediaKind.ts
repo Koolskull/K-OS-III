@@ -17,6 +17,29 @@ export function mediaSrc(src: string | null | undefined): string | null {
   return text;
 }
 
+const SEADN = /(^|\.)seadn\.io$/i;
+
+/** OpenSea's bare seadn link is a square crop. A width-only request is the
+ * original ratio. Thrash Bannerz are 1555×555, and w=1600 returns that file.
+ */
+export function wideStill(src: string | null | undefined): string | null {
+  const text = mediaSrc(src);
+  if (!text) return null;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return text;
+  }
+  if (!SEADN.test(url.hostname)) return text;
+  url.searchParams.delete("h");
+  url.searchParams.delete("height");
+  url.searchParams.delete("crop");
+  url.searchParams.delete("fit");
+  url.searchParams.set("w", "1600");
+  return url.toString();
+}
+
 export function mediaKind(src: string | null | undefined, role: MediaRole = "still"): MediaKind {
   const text = mediaSrc(src);
   if (!text) return "empty";

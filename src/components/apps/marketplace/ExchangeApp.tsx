@@ -54,6 +54,7 @@ import {
 import { shortAddr } from "@/lib/shop/merchant";
 import { visibleLayoutBox } from "@/lib/os/visibleBox";
 import { FullscreenButton } from "@/components/ui/MediaStage";
+import { wideStill } from "@/lib/mediaKind";
 
 type Pane = "floor" | "mint" | "sell" | "bag" | "art";
 
@@ -946,8 +947,9 @@ function PieceShot({
   wide?: boolean;
 }) {
   const frame = wide ? bannerShot : shot;
-  const stage = animation || full || src;
-  const picture = src ? <img src={src} alt={title || ""} style={frame} /> : <div style={frame} />;
+  const shown = wide ? wideStill(src) || src : src;
+  const stage = animation || (wide ? wideStill(full || src) || full || src : full || src);
+  const picture = shown ? <img src={shown} alt={title || ""} style={frame} /> : <div style={frame} />;
   if (!stage) return picture;
   return (
     <FullscreenButton
@@ -979,11 +981,13 @@ function NftTile({
   gridColumn?: string;
   onOpen: () => void;
 }) {
-  const stage = nft.animation || nft.full || nft.image;
+  const picture = banner ? wideStill(nft.image) || nft.image : nft.image;
+  const largest = banner ? wideStill(nft.full || nft.image) || nft.full || nft.image : nft.full || nft.image;
+  const stage = nft.animation || largest;
   return (
     <FullscreenButton
       title={nft.name}
-      image={nft.full || nft.image}
+      image={largest}
       src={stage}
       role={nft.animation ? "animation" : "still"}
       style={gridColumn ? { gridColumn } : undefined}
@@ -993,7 +997,7 @@ function NftTile({
         style={{ ...tile, width: "100%", borderColor: selected ? "#00ff00" : "#333" }}
         onClick={onOpen}
       >
-        {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
+        {picture ? <img src={picture} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
         <div style={tileMeta}>
           <span>{nft.name.toUpperCase()}</span>
           <span style={{ color: priceColor }}>{price}</span>
@@ -1161,7 +1165,8 @@ const tileImg: React.CSSProperties = {
 const bannerImg: React.CSSProperties = {
   width: "100%",
   height: "auto",
-  minHeight: 48,
+  maxWidth: "100%",
+  flexShrink: 0,
   display: "block",
   objectFit: "contain",
   background: "#111",
@@ -1184,6 +1189,8 @@ const shot: React.CSSProperties = {
 const bannerShot: React.CSSProperties = {
   width: "100%",
   height: "auto",
+  maxWidth: "100%",
+  flexShrink: 0,
   display: "block",
   objectFit: "contain",
   background: "#000",

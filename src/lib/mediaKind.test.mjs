@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mediaKind, mediaSrc, nftMedia } from "./mediaKind.ts";
+import { mediaKind, mediaSrc, nftMedia, wideStill } from "./mediaKind.ts";
 
 test("stills, pages, audio, and video each open as their own kind", () => {
   assert.equal(mediaKind("https://cdn.example/art.png"), "image");
@@ -22,4 +22,13 @@ test("the fullscreen still is the original file, and the animation is kept", () 
   assert.equal(media.image, "https://cdn.example/small.png");
   assert.equal(media.full, "https://cdn.example/original.png");
   assert.equal(media.animation, "https://cdn.example/player.html");
+});
+
+test("a seadn square crop becomes the wide original", () => {
+  const square = "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=500&h=500";
+  const wide = wideStill(square);
+  assert.equal(wide, "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=1600");
+  assert.equal(wideStill("https://i2c.seadn.io/ethereum/0xabc/banner.png"), "https://i2c.seadn.io/ethereum/0xabc/banner.png?w=1600");
+  assert.equal(wideStill("https://koolskull.com/miyamakermini/metadata/images/4.png"), "https://koolskull.com/miyamakermini/metadata/images/4.png");
+  assert.equal(wideStill("javascript:alert(1)"), null);
 });

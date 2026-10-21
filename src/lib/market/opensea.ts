@@ -2,6 +2,7 @@ import { formatUnits, getAddress } from "ethers";
 import { fallbackTokenImage, floorCollections, getSanctioned, type SanctionedCollection } from "@/data/sanctioned-nfts";
 import { CULT_ADDRESS, SEAPORT_16, USDC_ADDRESS, type CurrencyId } from "@/data/market";
 import { formatPrice } from "@/lib/market/money";
+import { nftMedia } from "@/lib/mediaKind";
 import { type ConsiderationItem, type FloorListing, type KOrder, type OfferItem, type OrderComponents } from "@/lib/market/orders";
 
 const API = "https://api.opensea.io/api/v2";
@@ -21,6 +22,10 @@ export interface CatalogNft {
   tokenId: string;
   name: string;
   image: string | null;
+  /** Largest still. The gallery tile keeps `image`. */
+  full?: string | null;
+  /** HTML, audio, or video file when the token has one. */
+  animation?: string | null;
 }
 
 interface SavedKey {
@@ -242,9 +247,9 @@ function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | nul
   } catch {
     return null;
   }
-  const display = typeof row.display_image_url === "string" ? row.display_image_url : "";
-  const rawImage = typeof row.image_url === "string" ? row.image_url : "";
   const named = typeof row.name === "string" ? row.name.trim() : "";
+  const media = nftMedia(row);
+  const fallback = fallbackTokenImage(contract, tokenId);
   return {
     id: `${contract.toLowerCase()}:${tokenId}`,
     collectionId: col.id,
@@ -253,7 +258,9 @@ function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | nul
     contract,
     tokenId,
     name: named || `${col.name} #${tokenId}`,
-    image: display || rawImage || fallbackTokenImage(contract, tokenId),
+    image: media.image || fallback,
+    full: fallback || media.full || media.image || null,
+    animation: media.animation || null,
   };
 }
 
@@ -324,6 +331,8 @@ function saleTileFromListing(listing: FloorListing, col: SanctionedCollection): 
       tokenId,
       name: `${col.name} #${tokenId}`,
       image: fallbackTokenImage(token.contract, tokenId),
+      full: fallbackTokenImage(token.contract, tokenId),
+      animation: null,
     },
   };
 }
@@ -373,22 +382,22 @@ async function fillSaleImages(tiles: SaleTile[]): Promise<void> {
         token_id: tile.nft.tokenId,
       })),
     })) as { nfts?: unknown[] } | null;
-    const found = new Map<string, { name: string; image: string | null }>();
+    const found = new Map<string, { name: string; image: string; full: string; animation: string }>();
     for (const row of body?.nfts ?? []) {
       if (!row || typeof row !== "object") continue;
       const rec = row as Record<string, unknown>;
       const contract = typeof rec.contract === "string" ? rec.contract.toLowerCase() : "";
       const tokenId = plainId(digits(rec.identifier));
       if (!contract || !tokenId) continue;
-      const display = typeof rec.display_image_url === "string" ? rec.display_image_url : "";
-      const rawImage = typeof rec.image_url === "string" ? rec.image_url : "";
       const named = typeof rec.name === "string" ? rec.name.trim() : "";
-      found.set(`${contract}:${tokenId}`, { name: named, image: display || rawImage || null });
+      found.set(`${contract}:${tokenId}`, { name: named, ...nftMedia(rec) });
     }
     for (const tile of chunk) {
       const hit = found.get(`${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}`);
       if (!hit) continue;
-      if (hit.image) tile.nft.image = hit.image;
+      if (!tile.nft.image && hit.image) tile.nft.image = hit.image;
+      if (!tile.nft.full) tile.nft.full = hit.full || hit.image || tile.nft.image;
+      if (hit.animation) tile.nft.animation = hit.animation;
       if (hit.name) tile.nft.name = hit.name;
     }
   }

@@ -53,6 +53,7 @@ import {
 } from "@/lib/walletProviders";
 import { shortAddr } from "@/lib/shop/merchant";
 import { visibleLayoutBox } from "@/lib/os/visibleBox";
+import { FullscreenButton } from "@/components/ui/MediaStage";
 
 type Pane = "floor" | "mint" | "sell" | "bag" | "art";
 
@@ -360,6 +361,9 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                   <Detail
                     row={viewAsk}
                     image={view.image}
+                    full={view.full}
+                    animation={view.animation}
+                    title={view.name}
                     wide={isWideArt(view.collectionId)}
                     mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
                     busy={busy}
@@ -386,18 +390,15 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                       const nft = ask.nft;
                       const selected = viewAsk?.id === ask.listing.id;
                       return (
-                        <button
+                        <NftTile
                           key={ask.listing.id}
-                          type="button"
-                          style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }}
-                          onClick={() => { setView(nft); setViewAsk(ask.listing); setViewBusy(false); }}
-                        >
-                          {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
-                          <div style={tileMeta}>
-                            <span>{nft.name.toUpperCase()}</span>
-                            <span style={{ color: "#00ff00" }}>{ask.listing.price}</span>
-                          </div>
-                        </button>
+                          nft={nft}
+                          banner={banner}
+                          selected={selected}
+                          price={ask.listing.price}
+                          priceColor="#00ff00"
+                          onOpen={() => { setView(nft); setViewAsk(ask.listing); setViewBusy(false); }}
+                        />
                       );
                     })}
                   </div>
@@ -413,18 +414,16 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                   const banner = isWideArt(nft.collectionId);
                   const selected = view?.id === nft.id;
                   return (
-                    <button
+                    <NftTile
                       key={nft.id}
-                      type="button"
-                      style={{ ...tile, gridColumn: banner && colFilter !== "bannerz-by-koolskull" ? "1 / -1" : undefined, borderColor: selected ? "#00ff00" : "#333" }}
-                      onClick={() => void openItem(nft)}
-                    >
-                      {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
-                      <div style={tileMeta}>
-                        <span>{nft.name.toUpperCase()}</span>
-                        <span style={{ color: ask ? "#00ff00" : "#888" }}>{ask ? ask.price : "NOT LISTED"}</span>
-                      </div>
-                    </button>
+                      nft={nft}
+                      banner={banner}
+                      selected={selected}
+                      price={ask ? ask.price : "NOT LISTED"}
+                      priceColor={ask ? "#00ff00" : "#888"}
+                      gridColumn={banner && colFilter !== "bannerz-by-koolskull" ? "1 / -1" : undefined}
+                      onOpen={() => void openItem(nft)}
+                    />
                   );
                 })}
               </div>
@@ -458,6 +457,9 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                 <Detail
                   row={viewAsk}
                   image={view.image}
+                  full={view.full}
+                  animation={view.animation}
+                  title={view.name}
                   wide={isWideArt(view.collectionId)}
                   mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
                   busy={busy}
@@ -795,6 +797,9 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
 function Detail({
   row,
   image,
+  full,
+  animation,
+  title,
   wide,
   mine,
   busy,
@@ -806,6 +811,9 @@ function Detail({
 }: {
   row: FloorListing;
   image: string | null;
+  full?: string | null;
+  animation?: string | null;
+  title?: string;
   wide?: boolean;
   mine: boolean;
   busy: boolean;
@@ -819,7 +827,7 @@ function Detail({
   const direct = order.kind === "invoice";
   return (
     <div style={detail}>
-      <PieceShot src={image} wide={wide} />
+      <PieceShot src={image} full={full} animation={animation} title={title} wide={wide} />
       <div>
         <div style={{ color: "#00ff00" }}>{row.collectionName.toUpperCase()} {order.nft ? `#${order.nft.tokenId}` : order.art?.title}</div>
         <div style={dim}>{order.offerer}</div>
@@ -877,7 +885,7 @@ function Detail({
 function Quiet({ nft }: { nft: CatalogNft }) {
   return (
     <div style={detail}>
-      <PieceShot src={nft.image} wide={isWideArt(nft.collectionId)} />
+      <PieceShot src={nft.image} full={nft.full} animation={nft.animation} title={nft.name} wide={isWideArt(nft.collectionId)} />
       <div>
         <div style={{ color: "#00ff00" }}>{nft.name.toUpperCase()}</div>
         <div style={dim}>{nft.collectionName.toUpperCase()} · NOT LISTED</div>
@@ -924,10 +932,75 @@ function Chip({ label, on: active, click, block }: { label: string; on: boolean;
   );
 }
 
-function PieceShot({ src, wide }: { src?: string | null; wide?: boolean }) {
+function PieceShot({
+  src,
+  full,
+  animation,
+  title,
+  wide,
+}: {
+  src?: string | null;
+  full?: string | null;
+  animation?: string | null;
+  title?: string;
+  wide?: boolean;
+}) {
   const frame = wide ? bannerShot : shot;
-  if (!src) return <div style={frame} />;
-  return <img src={src} alt="" style={frame} />;
+  const stage = animation || full || src;
+  const picture = src ? <img src={src} alt={title || ""} style={frame} /> : <div style={frame} />;
+  if (!stage) return picture;
+  return (
+    <FullscreenButton
+      title={title}
+      image={full || src}
+      src={stage}
+      role={animation ? "animation" : "still"}
+      openOnClick
+    >
+      {picture}
+    </FullscreenButton>
+  );
+}
+
+function NftTile({
+  nft,
+  banner,
+  selected,
+  price,
+  priceColor,
+  gridColumn,
+  onOpen,
+}: {
+  nft: CatalogNft;
+  banner: boolean;
+  selected: boolean;
+  price: string;
+  priceColor: string;
+  gridColumn?: string;
+  onOpen: () => void;
+}) {
+  const stage = nft.animation || nft.full || nft.image;
+  return (
+    <FullscreenButton
+      title={nft.name}
+      image={nft.full || nft.image}
+      src={stage}
+      role={nft.animation ? "animation" : "still"}
+      style={gridColumn ? { gridColumn } : undefined}
+    >
+      <button
+        type="button"
+        style={{ ...tile, width: "100%", borderColor: selected ? "#00ff00" : "#333" }}
+        onClick={onOpen}
+      >
+        {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
+        <div style={tileMeta}>
+          <span>{nft.name.toUpperCase()}</span>
+          <span style={{ color: priceColor }}>{price}</span>
+        </div>
+      </button>
+    </FullscreenButton>
+  );
 }
 
 const root: React.CSSProperties = {

@@ -92,6 +92,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [buyer, setBuyer] = useState("");
   const [wide, setWide] = useState(false);
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
+  const [menu, setMenu] = useState<null | "page" | "set" | "wallet">(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -308,6 +309,22 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     </div>
   );
 
+  const pageLabel = pane.toUpperCase();
+  const activeSet = floorCollections().find((c) =>
+    pane === "sell" ? c.address.toLowerCase() === sellCol.toLowerCase() : c.id === colFilter,
+  );
+  const setLabel = pane === "sell"
+    ? railName(activeSet?.id ?? "", activeSet?.name ?? "SET")
+    : colFilter === "all"
+      ? "ALL"
+      : railName(activeSet?.id ?? "", activeSet?.name ?? "ALL");
+  const showSet = pane === "floor" || pane === "sell";
+
+  function failConnect(e: unknown) {
+    setBad(true);
+    setMsg(e instanceof Error ? e.message : "Connect failed");
+  }
+
   return (
     <div
       ref={rootRef}
@@ -317,25 +334,95 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
         ...(frame?.h ? { height: frame.h } : null),
       }}
     >
-      <div style={{ ...header, flexWrap: wide ? "nowrap" : "wrap", overflowX: wide ? "auto" : "visible" }}>
-        {(["floor", "mint", "sell", "bag", "art"] as Pane[]).map((id) => (
-          <button key={id} type="button" style={pane === id ? on : btn} onClick={() => setPane(id)}>
-            {id.toUpperCase()}
-          </button>
-        ))}
-        <button type="button" style={btn} onClick={onOpenShop}>SHOP</button>
+      {menu && <div onClick={() => setMenu(null)} style={menuShade} />}
+      <div style={headerBar}>
+        <Drop
+          open={menu === "page"}
+          label={pageLabel}
+          hot
+          onToggle={() => setMenu(menu === "page" ? null : "page")}
+        >
+          {(["floor", "mint", "sell", "bag", "art"] as Pane[]).map((id) => (
+            <button
+              key={id}
+              type="button"
+              style={pane === id ? menuOn : menuItem}
+              onClick={() => { setMenu(null); setPane(id); }}
+            >
+              {id.toUpperCase()}
+            </button>
+          ))}
+          <button type="button" style={menuItem} onClick={() => { setMenu(null); onOpenShop(); }}>SHOP</button>
+        </Drop>
+        {showSet && (
+          <Drop
+            open={menu === "set"}
+            label={setLabel}
+            hot
+            onToggle={() => setMenu(menu === "set" ? null : "set")}
+          >
+            {pane === "floor" && (
+              <button
+                type="button"
+                style={colFilter === "all" ? menuOn : menuItem}
+                onClick={() => { setMenu(null); setColFilter("all"); setStock("sale"); setView(null); }}
+              >
+                ALL
+              </button>
+            )}
+            {floorCollections().map((c) => {
+              const picked = pane === "sell"
+                ? sellCol.toLowerCase() === c.address.toLowerCase()
+                : colFilter === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  style={picked ? menuOn : menuItem}
+                  onClick={() => {
+                    setMenu(null);
+                    if (pane === "sell") setSellCol(c.address);
+                    else { setColFilter(c.id); setStock("sale"); setView(null); }
+                  }}
+                >
+                  {railName(c.id, c.name)}
+                </button>
+              );
+            })}
+          </Drop>
+        )}
+        {pane === "floor" && (
+          <button type="button" style={btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
+        )}
         <span style={{ flex: 1 }} />
-        {!acct && wallets.map((w) => (
-          <button key={w.info.uuid} type="button" style={btn} onClick={() => void connect(w.provider).catch((e) => { setBad(true); setMsg(e instanceof Error ? e.message : "Connect failed"); })}>
-            {w.info.name.toUpperCase()}
-          </button>
-        ))}
+        {!acct && wallets.length > 0 && (
+          <Drop
+            open={menu === "wallet"}
+            label="WALLET"
+            align="right"
+            onToggle={() => setMenu(menu === "wallet" ? null : "wallet")}
+          >
+            {wallets.map((w) => (
+              <button
+                key={w.info.uuid}
+                type="button"
+                style={menuItem}
+                onClick={() => {
+                  setMenu(null);
+                  void connect(w.provider).catch(failConnect);
+                }}
+              >
+                {w.info.name.toUpperCase()}
+              </button>
+            ))}
+          </Drop>
+        )}
         {acct ? (
           <button type="button" style={btn} onClick={() => { setAcct(null); setProvider(null); }}>
             {shortAddr(acct)}
           </button>
         ) : (
-          <button type="button" style={yellow} onClick={() => void connect().catch((e) => { setBad(true); setMsg(e instanceof Error ? e.message : "Connect failed"); })}>
+          <button type="button" style={yellow} onClick={() => void connect().catch(failConnect)}>
             CONNECT
           </button>
         )}
@@ -343,14 +430,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       {msg && <div style={bad ? error : status}>{msg}</div>}
 
       {pane === "floor" && (
-        <div style={wide ? columns : scroll}>
-          <div style={wide ? rail : chipRow}>
-            <Chip block={wide} on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setStock("sale"); setView(null); }} />
-            {floorCollections().map((c) => (
-              <Chip block={wide} key={c.id} on={colFilter === c.id} label={railName(c.id, c.name)} click={() => { setColFilter(c.id); setStock("sale"); setView(null); }} />
-            ))}
-            <button type="button" style={wide ? railBtn : btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
-          </div>
+        <div style={wide ? floorColumns : scroll}>
           <div style={wide ? galleryPane : undefined}>
             {!wide && view && (
               <div>
@@ -485,12 +565,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       )}
 
       {pane === "sell" && (
-        <div style={wide ? columns : pad}>
-          <div style={wide ? rail : chipRow}>
-            {floorCollections().map((c) => (
-              <Chip block={wide} key={c.id} on={sellCol.toLowerCase() === c.address.toLowerCase()} label={railName(c.id, c.name)} click={() => setSellCol(c.address)} />
-            ))}
-          </div>
+        <div style={wide ? pair : pad}>
           <div style={wide ? formPane : undefined}>
             {!wide && (
               <div style={dim}>
@@ -933,12 +1008,42 @@ function railName(id: string, name: string): string {
   return name.toUpperCase();
 }
 
-function Chip({ label, on: active, click, block }: { label: string; on: boolean; click: () => void; block?: boolean }) {
-  const base = block ? (active ? railOn : railBtn) : active ? on : btn;
+function Chip({ label, on: active, click }: { label: string; on: boolean; click: () => void }) {
   return (
-    <button type="button" style={base} onClick={click}>
+    <button type="button" style={active ? on : btn} onClick={click}>
       {label}
     </button>
+  );
+}
+
+function Drop({
+  open,
+  label,
+  hot,
+  align = "left",
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  label: string;
+  hot?: boolean;
+  align?: "left" | "right";
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        aria-expanded={open}
+        style={{ ...(hot ? on : btn), display: "inline-flex", alignItems: "center", gap: 6 }}
+        onClick={onToggle}
+      >
+        {label}
+        <span style={open ? caretUp : caretDown} />
+      </button>
+      {open && <div style={align === "right" ? menuPopRight : menuPop}>{children}</div>}
+    </div>
   );
 }
 
@@ -1025,6 +1130,7 @@ function NftTile({
 
 const root: React.CSSProperties = {
   height: "100%",
+  position: "relative",
   display: "flex",
   flexDirection: "column",
   background: "#000",
@@ -1041,15 +1147,54 @@ const header: React.CSSProperties = {
   padding: 8,
   borderBottom: "1px solid #333",
   flexWrap: "nowrap",
-  overflowX: "auto",
   flexShrink: 0,
 };
-const columns: React.CSSProperties = {
+const headerBar: React.CSSProperties = {
+  ...header,
+  position: "relative",
+  zIndex: 22,
+  overflow: "visible",
+};
+const floorColumns: React.CSSProperties = {
   flex: 1,
   minHeight: 0,
   display: "grid",
-  gridTemplateColumns: "132px minmax(0, 1fr) minmax(200px, 260px)",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(200px, 260px)",
 };
+const menuShade: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  zIndex: 20,
+};
+const caretDown: React.CSSProperties = {
+  width: 0,
+  height: 0,
+  borderLeft: "3px solid transparent",
+  borderRight: "3px solid transparent",
+  borderTop: "4px solid currentColor",
+};
+const caretUp: React.CSSProperties = {
+  width: 0,
+  height: 0,
+  borderLeft: "3px solid transparent",
+  borderRight: "3px solid transparent",
+  borderBottom: "4px solid currentColor",
+};
+const menuPop: React.CSSProperties = {
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  zIndex: 30,
+  marginTop: 4,
+  minWidth: "100%",
+  background: "#000",
+  border: "1px solid #00ff00",
+  display: "flex",
+  flexDirection: "column",
+  padding: 4,
+  gap: 4,
+};
+const menuPopRight: React.CSSProperties = { ...menuPop, left: "auto", right: 0 };
 const pair: React.CSSProperties = {
   flex: 1,
   minHeight: 0,
@@ -1061,15 +1206,6 @@ const bagColumns: React.CSSProperties = {
   minHeight: 0,
   display: "grid",
   gridTemplateColumns: "minmax(200px, 300px) minmax(0, 1fr)",
-};
-const rail: React.CSSProperties = {
-  minHeight: 0,
-  overflow: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: 6,
-  padding: 8,
-  borderRight: "1px solid #222",
 };
 const side: React.CSSProperties = {
   minHeight: 0,
@@ -1106,15 +1242,13 @@ const btn: React.CSSProperties = {
   cursor: "pointer",
 };
 const on: React.CSSProperties = { ...btn, border: "1px solid #00ff00", color: "#00ff00" };
-const railBtn: React.CSSProperties = {
+const menuItem: React.CSSProperties = {
   ...btn,
   width: "100%",
-  height: "auto",
-  minHeight: 22,
   textAlign: "left",
-  whiteSpace: "normal",
+  whiteSpace: "nowrap",
 };
-const railOn: React.CSSProperties = { ...railBtn, border: "1px solid #00ff00", color: "#00ff00" };
+const menuOn: React.CSSProperties = { ...menuItem, border: "1px solid #00ff00", color: "#00ff00" };
 const yellow: React.CSSProperties = { ...btn, border: "1px solid #00ff00", background: "#00ff00", color: "#000" };
 const input: React.CSSProperties = {
   height: 22,

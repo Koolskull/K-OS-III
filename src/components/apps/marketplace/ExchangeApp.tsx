@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Interface, getAddress } from "ethers";
+import { getAddress } from "ethers";
 import { floorCollections } from "@/data/sanctioned-nfts";
 import { CURRENCIES, SEAPORT_16, type CurrencyId, atomicCurrency, currencyById } from "@/data/market";
-import { ALL_MINTS } from "@/data/scatter-mints";
-import { MIYAMAKER_MINI } from "@/data/sanctioned-nfts";
-import { loadMintCollection, requestScatterMintPrepared } from "@/lib/mintClient";
-import { type ScatterCollection, priceLabel, scatterImage } from "@/lib/scatter";
-import { listSettlement, openPayableLists, parsePrice, payAddressOk, scaleListPrice } from "@/lib/market/money";
+import { parsePrice, payAddressOk } from "@/lib/market/money";
+import { MintHeroPage } from "@/components/apps/nftmint/MintHeroPage";
 import { cachedListings, dropListing, forgetPending, rememberPending, syncBook } from "@/lib/market/book";
 import {
   approveCollectionTx,
@@ -47,8 +44,6 @@ import { shortAddr } from "@/lib/shop/merchant";
 
 type Pane = "floor" | "mint" | "sell" | "bag" | "art";
 
-const MIYA_MINT = new Interface(["function mint(uint256 _mintAmount)"]);
-
 export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [pane, setPane] = useState<Pane>("floor");
   const [acct, setAcct] = useState<string | null>(null);
@@ -68,11 +63,6 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [bad, setBad] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paste, setPaste] = useState("");
-
-  const [mintSlug, setMintSlug] = useState(ALL_MINTS[0]?.slug ?? "mialien-eth");
-  const [mintCol, setMintCol] = useState<ScatterCollection | null>(null);
-  const [mintList, setMintList] = useState<string | null>(null);
-  const [qty, setQty] = useState(1);
 
   const [sellCol, setSellCol] = useState(floorCollections().find((c) => c.id === "mialien-eth")?.address ?? floorCollections()[0].address);
   const [tokenId, setTokenId] = useState("");
@@ -195,22 +185,6 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     setBusy(false);
   }
 
-  const payable = mintCol ? openPayableLists(mintCol.lists) : [];
-  const list = payable.find((L) => L.id === mintList) ?? payable[0];
-
-  useEffect(() => {
-    let stop = false;
-    setMintCol(null);
-    void loadMintCollection(mintSlug, acct ?? undefined).then((col) => {
-      if (!stop) setMintCol(col);
-    }).catch(() => {
-      if (!stop) setMintCol(null);
-    });
-    return () => {
-      stop = true;
-    };
-  }, [mintSlug, acct]);
-
   return (
     <div style={root}>
       <div style={header}>
@@ -317,40 +291,8 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       )}
 
       {pane === "mint" && (
-        <div style={scroll}>
-          <div style={chipRow}>
-            {ALL_MINTS.map((c) => (
-              <Chip key={c.slug} on={mintSlug === c.slug} label={c.shortName} click={() => { setMintSlug(c.slug); setMintList(null); }} />
-            ))}
-          </div>
-          <div style={pad}>
-            {mintCol?.banner && <img src={scatterImage(mintCol.banner, "800x280") || ""} alt="" style={banner} />}
-            <div style={{ marginTop: 8 }}>{mintCol ? `${mintCol.minted} / ${mintCol.max} MINTED` : "LOADING MINT…"}</div>
-            <div style={chipRow}>
-              {payable.map((L) => (
-                <Chip key={L.id} on={list?.id === L.id} label={`${L.name.toUpperCase()} ${priceLabel(L)}`} click={() => setMintList(L.id)} />
-              ))}
-            </div>
-            {mintCol && payable.length === 0 && <div style={dim}>NO ETH, USDC, OR CULT LIST OPEN.</div>}
-            {list && listSettlement(list) && (
-              <Fee
-                lines={[
-                  ["PRICE", `${scaleListPrice(list, qty)} ${listSettlement(list)}`],
-                  ["K-OS FEE", "0"],
-                  ["SCATTER", "TAKEN INSIDE THE LIST PRICE"],
-                  ["NETWORK", "ETH GAS IN THE WALLET"],
-                ]}
-              />
-            )}
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button type="button" style={btn} onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
-              <span style={{ color: "#00ff00" }}>{qty}</span>
-              <button type="button" style={btn} onClick={() => setQty((q) => Math.min(10, q + 1))}>+</button>
-              <button type="button" style={yellow} disabled={busy || !list} onClick={() => void run(mint)}>
-                {busy ? "CHECK WALLET…" : `MINT ${list ? listSettlement(list) : ""}`}
-              </button>
-            </div>
-          </div>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <MintHeroPage slug="mialien-eth" />
         </div>
       )}
 
@@ -426,39 +368,6 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       )}
     </div>
   );
-
-  async function mint() {
-    if (!list || !mintCol) throw new Error("Mint list is still loading.");
-    const { eth, address } = await need();
-    const amount = Math.max(1, Math.min(10, qty));
-    if (mintSlug === "miyamaker-mini") {
-      const value = BigInt(MIYAMAKER_MINI.mintPriceWei) * BigInt(amount);
-      const hash = await sendTx(eth, address, {
-        to: MIYAMAKER_MINI.address,
-        data: MIYA_MINT.encodeFunctionData("mint", [amount]),
-        value,
-      });
-      setMsg(`Mint submitted ${hash.slice(0, 10)}…`);
-      return;
-    }
-    const prepared = await requestScatterMintPrepared({
-      slug: mintSlug,
-      collectionAddress: mintCol.address,
-      chainId: mintCol.chainId,
-      minterAddress: address,
-      listId: list.id,
-      quantity: amount,
-    });
-    for (const token of prepared.erc20s) {
-      await ensureErc20Allowance(eth, address, token.address, mintCol.address, BigInt(token.amount));
-    }
-    const hash = await sendTx(eth, address, {
-      to: prepared.tx.to,
-      data: prepared.tx.data,
-      value: BigInt(prepared.tx.value || "0"),
-    });
-    setMsg(`Mint submitted ${hash.slice(0, 10)}…`);
-  }
 
   async function post(order: KOrder, recipient: string) {
     const { eth, address } = await need();
@@ -858,5 +767,4 @@ const thumb: React.CSSProperties = {
   flexShrink: 0,
 };
 const detail: React.CSSProperties = { display: "flex", gap: 10, padding: 12, borderTop: "1px solid #00ff00" };
-const banner: React.CSSProperties = { width: "100%", maxHeight: 140, objectFit: "cover", imageRendering: "pixelated" };
 const link: React.CSSProperties = { color: "#888", fontSize: 8, letterSpacing: 1, alignSelf: "center" };

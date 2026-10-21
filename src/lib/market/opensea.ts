@@ -303,3 +303,115 @@ export async function openSeaFloor(): Promise<FloorListing[]> {
   });
   return rows;
 }
+
+export interface TokenQuote {
+  amount: number;
+  symbol: string;
+  label: string;
+}
+
+export interface SeaHeld {
+  tokenId: string;
+  name: string;
+  image: string | null;
+  contract: string;
+  traits: { type: string; value: string }[];
+}
+
+function trimAmount(amount: number): string {
+  return amount.toFixed(6).replace(/\.?0+$/, "");
+}
+
+/** Best offer price. Null when the token has no active offer. */
+export async function openSeaBestOffer(slug: string, tokenId: string): Promise<TokenQuote | null> {
+  if (!/^\d+$/.test(tokenId)) return null;
+  const key = await readKey();
+  const body = await osGet(`/offers/collection/${encodeURIComponent(slug)}/nfts/${tokenId}/best`, key);
+  return quoteFrom(body);
+}
+
+/** Trait value counts for a collection. Keys are lowercased. Empty when OpenSea has no table. */
+export async function openSeaTraitCounts(slug: string): Promise<Record<string, Record<string, number>>> {
+  const key = await readKey();
+  const body = await osGet(`/traits/${encodeURIComponent(slug)}`, key);
+  return traitTable(body);
+}
+
+/** NFTs in a wallet. Pass a slug to ask OpenSea to narrow the page; still filter by contract. */
+export async function openSeaHeld(address: string, slug: string | null): Promise<SeaHeld[]> {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return [];
+  const key = await readKey();
+  const query = new URLSearchParams({ limit: "50" });
+  if (slug) query.set("collection", slug);
+  const body = (await osGet(`/chain/ethereum/account/${address}/nfts?${query}`, key)) as { nfts?: unknown[] } | null;
+  return (body?.nfts ?? []).map(heldFromApi).filter((row): row is SeaHeld => Boolean(row));
+}
+
+function quoteFrom(body: unknown): TokenQuote | null {
+  if (Array.isArray(body)) return quoteFrom(body[0]);
+  if (!body || typeof body !== "object") return null;
+  const row = body as Record<string, unknown>;
+  if (row.status && row.status !== "ACTIVE") return null;
+  const price = row.price as { current?: { currency?: string; decimals?: number; value?: string } } | undefined;
+  const current = price?.current;
+  if (!current || !/^\d+$/.test(String(current.value || ""))) return null;
+  const decimals = Number(current.decimals ?? 18);
+  const symbol = String(current.currency || "ETH").toUpperCase();
+  const amount = Number(formatUnits(String(current.value), Number.isFinite(decimals) ? decimals : 18));
+  if (!Number.isFinite(amount)) return null;
+  return { amount, symbol, label: `${trimAmount(amount)} ${symbol}` };
+}
+
+function traitTable(body: unknown): Record<string, Record<string, number>> {
+  const out: Record<string, Record<string, number>> = {};
+  if (!body || typeof body !== "object") return out;
+  const root = body as Record<string, unknown>;
+  const src = (root.counts && typeof root.counts === "object" ? root.counts : root.categories) as unknown;
+  if (!src || typeof src !== "object" || Array.isArray(src)) return out;
+  for (const [trait, values] of Object.entries(src as Record<string, unknown>)) {
+    if (!values || typeof values !== "object" || Array.isArray(values)) continue;
+    const bucket: Record<string, number> = {};
+    for (const [value, count] of Object.entries(values as Record<string, unknown>)) {
+      const n = typeof count === "number" ? count : Number(count);
+      if (Number.isFinite(n) && n > 0) bucket[value.toLowerCase()] = n;
+    }
+    if (Object.keys(bucket).length) out[trait.toLowerCase()] = bucket;
+  }
+  return out;
+}
+
+function heldTraits(value: unknown): { type: string; value: string }[] {
+  if (!Array.isArray(value)) return [];
+  const out: { type: string; value: string }[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const type = o.trait_type ?? o.traitType;
+    if (typeof type !== "string" || o.value == null) continue;
+    out.push({ type, value: String(o.value) });
+  }
+  return out;
+}
+
+function heldFromApi(value: unknown): SeaHeld | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const tokenId = digits(row.identifier);
+  if (!tokenId) return null;
+  let contract = "";
+  try {
+    contract = getAddress(String(row.contract));
+  } catch {
+    return null;
+  }
+  const display = typeof row.display_image_url === "string" ? row.display_image_url : "";
+  const rawImage = typeof row.image_url === "string" ? row.image_url : "";
+  const named = typeof row.name === "string" ? row.name.trim() : "";
+  return {
+    tokenId,
+    contract,
+    name: named || `#${tokenId}`,
+    image: display || rawImage || fallbackTokenImage(contract, tokenId),
+    traits: heldTraits(row.traits),
+  };
+}

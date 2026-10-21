@@ -299,6 +299,7 @@ export function MintHeroPage({
   const chain = chainInfo(col?.chainId ?? page?.chainId ?? 1);
   const contract = col?.address || page?.address || "";
   const hero = preview[0];
+  const icon = slug === "mialien-eth" && !revealed ? page?.avatarUrl || null : null;
   const shown = sortPieces(gallery === "wallet" ? wallet : recent, sort);
   const tab = stacked && stage === "gallery" ? (gallery === "wallet" ? "WALLET" : "RECENT") : (def?.shortName || "MINT");
 
@@ -391,7 +392,7 @@ export function MintHeroPage({
     setRevealed(true);
     setPreview(pieces);
     setStage("piece");
-    setBurst((n) => n + 1);
+    if (slug === "mialien-eth") setBurst((n) => n + 1);
     holdRef.current = window.setTimeout(() => {
       revealedRef.current = false;
       setRevealed(false);
@@ -407,7 +408,6 @@ export function MintHeroPage({
       return;
     }
     setBusy(true);
-    setBurst((n) => n + 1);
     try {
       const { address: minter, provider: eth } = await connectEthereumProvider();
       await ensureChain(eth, chain.chainId);
@@ -436,6 +436,7 @@ export function MintHeroPage({
         value = "0x" + BigInt(prepared.tx.value || "0").toString(16);
       }
       const hash = await sendTx(eth, minter, { to, data, value: BigInt(value) });
+      if (slug === "mialien-eth") setBurst((n) => n + 1);
       setMsg(hash.slice(0, 10));
       const receipt = await waitReceipt(hash);
       const ids = mintedIds(receipt.logs, col.address, minter);
@@ -467,7 +468,7 @@ export function MintHeroPage({
   }
 
   const explorer = chain.explorer && contract ? `${chain.explorer}/address/${contract}` : null;
-  const caption = revealed ? "YOURS" : soldOut ? "LAST" : "NEXT";
+  const caption = revealed ? "YOURS" : icon ? page?.shortName || "MIALIEN" : soldOut ? "LAST" : "NEXT";
   const showPiece = !stacked || stage === "piece";
   const showGallery = !stacked || stage === "gallery";
   const mainGroups = stacked
@@ -570,16 +571,19 @@ export function MintHeroPage({
       <div style={showPiece && showGallery && !stacked ? (wide ? gridWide : gridMid) : { ...stackCol, justifyContent: "center" }}>
         {showPiece && (
           <div style={stacked ? previewStack : previewCol}>
-            <PixelFireworks burst={burst} />
-            {hero ? (
+            {slug === "mialien-eth" && <PixelFireworks burst={burst} />}
+            {icon ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={icon} alt="" draggable={false} style={heroImg} />
+            ) : hero ? (
               <PieceImg piece={hero} style={heroImg} />
             ) : (
               <div style={{ ...heroImg, background: "#050505" }} />
             )}
             <div style={captionBar}>
               <span style={{ color: "#00ff00" }}>{caption}</span>
-              {hero ? <span> #{hero.tokenId}</span> : null}
-              {hero && hero.asset !== hero.name && hero.asset !== `#${hero.tokenId}` ? (
+              {!icon && hero ? <span> #{hero.tokenId}</span> : null}
+              {!icon && hero && hero.asset !== hero.name && hero.asset !== `#${hero.tokenId}` ? (
                 <span style={dim}> {hero.asset.toUpperCase()}</span>
               ) : null}
             </div>

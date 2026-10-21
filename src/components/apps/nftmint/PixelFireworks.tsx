@@ -13,7 +13,7 @@ type Shard = { x: number; y: number; vx: number; vy: number; life: number; max: 
 
 /**
  * Ordered-dither pixel fireworks. Drawn in the rim around the piece
- * so the art stays readable. `burst` increments on the mint event.
+ * so the art stays readable. A burst plays only when `burst` changes.
  */
 export function PixelFireworks({ burst }: { burst: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -30,10 +30,8 @@ export function PixelFireworks({ burst }: { burst: number }) {
     canvas.height = H;
     ctx.imageSmoothingEnabled = false;
     const shards: Shard[] = [];
-    let frame = 0;
     let seen = burstRef.current;
     let stop = false;
-    boom(28);
 
     function rim(): { x: number; y: number } {
       const edge = Math.floor(Math.random() * 4);
@@ -87,12 +85,9 @@ export function PixelFireworks({ burst }: { burst: number }) {
 
     function tick() {
       if (stop) return;
-      frame += 1;
       if (burstRef.current !== seen) {
         seen = burstRef.current;
         for (let i = 0; i < 8; i++) boom(22);
-      } else if (frame % 42 === 0) {
-        boom(20);
       }
       if (shards.length > 900) shards.splice(0, shards.length - 900);
       const img = ctx!.createImageData(W, H);

@@ -379,7 +379,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
               </div>
             )}
             {stock === "sale" && !saleReady && <div style={pad}>READING LISTINGS…</div>}
-            {stock === "sale" && saleReady && sale.length === 0 && <div style={pad}>NOTHING LISTED IN THIS WINDOW.</div>}
+            {stock === "sale" && saleReady && sale.length === 0 && !bad && <div style={pad}>NOTHING LISTED IN THIS WINDOW.</div>}
             {stock === "sale" && saleReady && saleGroups.map((group) => {
               const col = floorCollections().find((item) => item.id === group.collectionId);
               const banner = isWideArt(group.collectionId);
@@ -712,6 +712,9 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     const { eth, address } = await need();
     const order = row.order;
     if (order.kind === "seaport" && order.nft) {
+      if (row.venue === "opensea" && !order.seaport) {
+        throw new Error("OpenSea did not hand over the signed order. Use the OPENSEA link.");
+      }
       const owner = await ownerOf(order.nft.contract, order.nft.tokenId);
       if (!owner || owner.toLowerCase() !== order.offerer.toLowerCase()) {
         dropListing(row.id);
@@ -862,17 +865,21 @@ function Detail({
               <button type="button" style={btn} disabled={busy} onClick={onCancel}>CANCEL</button>
               {direct && order.nft && <button type="button" style={yellow} disabled={busy} onClick={onSend}>SEND NFT</button>}
             </>
-          ) : (
+          ) : order.seaport || order.kind !== "seaport" ? (
             <button type="button" style={yellow} disabled={busy} onClick={onBuy}>
               {direct && !atomicCurrency(order.currency) ? "COPY ADDRESS" : "BUY"}
             </button>
-          )}
+          ) : order.nft ? (
+            <a href={`https://opensea.io/item/ethereum/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={{ ...yellow, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+              OPENSEA
+            </a>
+          ) : null}
           {order.nft && (
             <a href={`https://etherscan.io/nft/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
               ETHERSCAN
             </a>
           )}
-          {row.venue === "opensea" && order.nft && (
+          {row.venue === "opensea" && order.seaport && order.nft && (
             <a href={`https://opensea.io/item/ethereum/${order.nft.contract}/${order.nft.tokenId}`} target="_blank" rel="noreferrer" style={link}>
               OPENSEA
             </a>
@@ -990,11 +997,11 @@ function NftTile({
       image={largest}
       src={stage}
       role={nft.animation ? "animation" : "still"}
-      style={gridColumn ? { gridColumn } : undefined}
+      style={banner ? { width: "100%", maxWidth: "100%", minWidth: 0, ...(gridColumn ? { gridColumn } : {}) } : gridColumn ? { gridColumn } : undefined}
     >
       <button
         type="button"
-        style={{ ...tile, width: "100%", borderColor: selected ? "#00ff00" : "#333" }}
+        style={{ ...tile, width: "100%", maxWidth: "100%", minWidth: 0, borderColor: selected ? "#00ff00" : "#333" }}
         onClick={onOpen}
       >
         {picture ? <img src={picture} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
@@ -1165,8 +1172,8 @@ const tileImg: React.CSSProperties = {
 const bannerImg: React.CSSProperties = {
   width: "100%",
   height: "auto",
+  minWidth: 0,
   maxWidth: "100%",
-  flexShrink: 0,
   display: "block",
   objectFit: "contain",
   background: "#111",
@@ -1189,8 +1196,8 @@ const shot: React.CSSProperties = {
 const bannerShot: React.CSSProperties = {
   width: "100%",
   height: "auto",
+  minWidth: 0,
   maxWidth: "100%",
-  flexShrink: 0,
   display: "block",
   objectFit: "contain",
   background: "#000",

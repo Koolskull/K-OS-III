@@ -1,8 +1,9 @@
 import { formatUnits, getAddress } from "ethers";
-import { fallbackTokenImage, floorCollections, getSanctioned, type SanctionedCollection } from "@/data/sanctioned-nfts";
+import { fallbackTokenImage, floorCollections, getSanctioned, isWideArt, type SanctionedCollection } from "@/data/sanctioned-nfts";
 import { CULT_ADDRESS, SEAPORT_16, USDC_ADDRESS, type CurrencyId } from "@/data/market";
 import { formatPrice } from "@/lib/market/money";
-import { nftMedia } from "@/lib/mediaKind";
+import { nftMedia, wideStill } from "@/lib/mediaKind";
+import { publicSaleTiles } from "@/lib/market/publicFloor";
 import { type ConsiderationItem, type FloorListing, type KOrder, type OfferItem, type OrderComponents } from "@/lib/market/orders";
 
 const API = "https://api.opensea.io/api/v2";
@@ -258,8 +259,8 @@ function nftFromApi(value: unknown, col: SanctionedCollection): CatalogNft | nul
     contract,
     tokenId,
     name: named || `${col.name} #${tokenId}`,
-    image: media.image || fallback,
-    full: fallback || media.full || media.image || null,
+    image: isWideArt(col.id) ? wideStill(media.full || media.image) || media.image || fallback : media.image || fallback,
+    full: isWideArt(col.id) ? wideStill(media.full || media.image) || media.full || media.image || null : fallback || media.full || media.image || null,
     animation: media.animation || null,
   };
 }
@@ -411,6 +412,13 @@ export async function withSaleImages(tiles: SaleTile[]): Promise<SaleTile[]> {
   } catch {
     /* a missing picture does not hide the price */
   }
+  for (const tile of next) {
+    if (!isWideArt(tile.nft.collectionId)) continue;
+    const wide = wideStill(tile.nft.full || tile.nft.image);
+    if (!wide) continue;
+    tile.nft.image = wide;
+    tile.nft.full = wide;
+  }
   return next;
 }
 
@@ -419,7 +427,7 @@ export async function withSaleImages(tiles: SaleTile[]): Promise<SaleTile[]> {
  * Pass cursors to read the next page of collections that still have one.
  * `null` reads the first page. "all" keeps each collection's own page.
  */
-export async function openSeaSales(
+async function readRestSales(
   collectionId: string,
   cursors: Record<string, string | null> | null,
 ): Promise<{ tiles: SaleTile[]; next: Record<string, string | null> }> {
@@ -463,6 +471,25 @@ export async function openSeaSales(
     next[col.id] = page.next;
   }
   return { tiles: mergeSaleTiles([], tiles), next };
+}
+
+/** Active asks. The signed OpenSea book is preferred. When that read key is
+ * refused, the public price list still fills the floor.
+ */
+export async function openSeaSales(
+  collectionId: string,
+  cursors: Record<string, string | null> | null,
+): Promise<{ tiles: SaleTile[]; next: Record<string, string | null> }> {
+  const listed = cursors ? null : publicSaleTiles(collectionId);
+  try {
+    const page = await readRestSales(collectionId, cursors);
+    if (page.tiles.length) return page;
+  } catch {
+    /* a refused read key must not hide asks that are on the public floor */
+  }
+  if (!listed) return { tiles: [], next: {} };
+  const tiles = await listed;
+  return { tiles: mergeSaleTiles([], tiles), next: {} };
 }
 
 /** Cheapest active OpenSea asks for the koolskull collections on the floor. */

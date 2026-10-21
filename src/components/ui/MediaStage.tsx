@@ -82,7 +82,7 @@ function keep(event: React.MouseEvent) {
   event.stopPropagation();
 }
 
-/** FULL sits on the image. The picture underneath keeps its own click. */
+/** Clicking the picture opens it large. No badge sits on the tile. */
 export function FullscreenButton({
   title,
   image,
@@ -109,18 +109,6 @@ export function FullscreenButton({
       onClick={openOnClick ? () => setOpen(true) : undefined}
     >
       {children}
-      <button
-        type="button"
-        aria-label={title ? `Fullscreen ${title}` : "Fullscreen"}
-        style={fullBtn}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        FULL
-      </button>
       <MediaStage
         open={open}
         title={title}
@@ -208,18 +196,3 @@ const audioArt: React.CSSProperties = {
 const audioEl: React.CSSProperties = { width: "min(480px, 100%)" };
 const empty: React.CSSProperties = { color: "#888", letterSpacing: 1, fontSize: 12 };
 const wrap: React.CSSProperties = { position: "relative", minWidth: 0 };
-const fullBtn: React.CSSProperties = {
-  position: "absolute",
-  top: 4,
-  right: 4,
-  zIndex: 2,
-  height: 16,
-  padding: "0 4px",
-  border: "1px solid #fff",
-  background: "#000",
-  color: "#fff",
-  fontFamily: "var(--dm-font-primary)",
-  fontSize: 8,
-  letterSpacing: 1,
-  cursor: "pointer",
-};

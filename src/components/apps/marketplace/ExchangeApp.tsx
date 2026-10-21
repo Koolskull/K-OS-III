@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getAddress } from "ethers";
 import { floorCollections } from "@/data/sanctioned-nfts";
 import { CURRENCIES, SEAPORT_16, type CurrencyId, atomicCurrency, currencyById } from "@/data/market";
@@ -41,6 +41,7 @@ import {
   type Eip6963Detail,
 } from "@/lib/walletProviders";
 import { shortAddr } from "@/lib/shop/merchant";
+import { visibleLayoutBox } from "@/lib/os/visibleBox";
 
 type Pane = "floor" | "mint" | "sell" | "bag" | "art";
 
@@ -72,6 +73,39 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [artTitle, setArtTitle] = useState("");
   const [artUrl, setArtUrl] = useState("");
   const [buyer, setBuyer] = useState("");
+  const [wide, setWide] = useState(false);
+  const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const apply = () => {
+      const box = visibleLayoutBox(el);
+      const next = {
+        w: box.w >= 160 && box.w < box.parentW - 4 ? box.w : 0,
+        h: box.h >= 160 && box.h < box.parentH - 4 ? box.h : 0,
+      };
+      setFrame((prev) => {
+        if (prev && Math.abs(prev.w - next.w) <= 1 && Math.abs(prev.h - next.h) <= 1) return prev;
+        return next;
+      });
+      const fitted = next.w || box.parentW;
+      setWide((v) => {
+        const nextWide = fitted >= 640;
+        return v === nextWide ? v : nextWide;
+      });
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    if (el.parentElement) ro.observe(el.parentElement);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
 
   useEffect(() => discoverEip6963Wallets((w) => {
     setWallets((prev) => (prev.some((x) => x.info.uuid === w.info.uuid) ? prev : [...prev, w]));
@@ -185,9 +219,24 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     setBusy(false);
   }
 
+  const pasteForm = (
+    <div>
+      <div style={dim}>PASTE A SIGNED ORDER</div>
+      <textarea value={paste} onChange={(e) => setPaste(e.target.value)} style={area} />
+      <button type="button" style={btn} onClick={addOrder}>ADD ORDER</button>
+    </div>
+  );
+
   return (
-    <div style={root}>
-      <div style={header}>
+    <div
+      ref={rootRef}
+      style={{
+        ...root,
+        ...(frame?.w ? { width: frame.w } : null),
+        ...(frame?.h ? { height: frame.h } : null),
+      }}
+    >
+      <div style={{ ...header, flexWrap: wide ? "nowrap" : "wrap", overflowX: wide ? "auto" : "visible" }}>
         {(["floor", "mint", "sell", "bag", "art"] as Pane[]).map((id) => (
           <button key={id} type="button" style={pane === id ? on : btn} onClick={() => setPane(id)}>
             {id.toUpperCase()}
@@ -195,6 +244,11 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
         ))}
         <button type="button" style={btn} onClick={onOpenShop}>SHOP</button>
         <span style={{ flex: 1 }} />
+        {!acct && wallets.map((w) => (
+          <button key={w.info.uuid} type="button" style={btn} onClick={() => void connect(w.provider).catch((e) => { setBad(true); setMsg(e instanceof Error ? e.message : "Connect failed"); })}>
+            {w.info.name.toUpperCase()}
+          </button>
+        ))}
         {acct ? (
           <button type="button" style={btn} onClick={() => { setAcct(null); setProvider(null); }}>
             {shortAddr(acct)}
@@ -205,33 +259,74 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
           </button>
         )}
       </div>
-      {!acct && wallets.length > 0 && (
-        <div style={chipRow}>
-          {wallets.map((w) => (
-            <button key={w.info.uuid} type="button" style={btn} onClick={() => void connect(w.provider).catch((e) => { setBad(true); setMsg(e instanceof Error ? e.message : "Connect failed"); })}>
-              {w.info.name.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      )}
       {msg && <div style={bad ? error : status}>{msg}</div>}
 
       {pane === "floor" && (
-        <div style={scroll}>
-          <div style={chipRow}>
-            <Chip on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setView(null); }} />
+        <div style={wide ? columns : scroll}>
+          <div style={wide ? rail : chipRow}>
+            <Chip block={wide} on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setView(null); }} />
             {floorCollections().map((c) => (
-              <Chip key={c.id} on={colFilter === c.id} label={c.name.toUpperCase()} click={() => { setColFilter(c.id); setView(null); }} />
+              <Chip block={wide} key={c.id} on={colFilter === c.id} label={railName(c.id, c.name)} click={() => { setColFilter(c.id); setView(null); }} />
             ))}
-            <button type="button" style={btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
+            <button type="button" style={wide ? railBtn : btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
           </div>
-          {view && (
-            <div>
-              <div style={{ padding: "0 12px" }}>
-                <button type="button" style={btn} onClick={() => { setView(null); setViewAsk(null); }}>BACK</button>
+          <div style={wide ? galleryPane : undefined}>
+            {!wide && view && (
+              <div>
+                <div style={{ padding: "0 12px" }}>
+                  <button type="button" style={btn} onClick={() => { setView(null); setViewAsk(null); }}>BACK</button>
+                </div>
+                {viewBusy && <div style={pad}>READING LISTING…</div>}
+                {!viewBusy && viewAsk && (
+                  <Detail
+                    row={viewAsk}
+                    image={view.image}
+                    mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
+                    busy={busy}
+                    buyer={buyer}
+                    setBuyer={setBuyer}
+                    onBuy={() => void run(() => buy(viewAsk))}
+                    onCancel={() => void run(() => cancel(viewAsk))}
+                    onSend={() => void run(() => sendNft(viewAsk))}
+                  />
+                )}
+                {!viewBusy && !viewAsk && <Quiet nft={view} />}
               </div>
-              {viewBusy && <div style={pad}>READING LISTING…</div>}
-              {!viewBusy && viewAsk && (
+            )}
+            {!galleryReady && <div style={pad}>READING COLLECTION…</div>}
+            {galleryReady && gallery.length === 0 && <div style={pad}>NO TOKENS IN THIS WINDOW.</div>}
+            <div style={grid}>
+              {gallery.map((nft) => {
+                const ask = matchListing(nft);
+                const selected = view?.id === nft.id;
+                return (
+                  <button key={nft.id} type="button" style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }} onClick={() => void openItem(nft)}>
+                    {nft.image ? <img src={nft.image} alt="" style={tileImg} /> : <div style={tileImg} />}
+                    <div style={tileMeta}>
+                      <span>{nft.name.toUpperCase()}</span>
+                      <span style={{ color: "#00ff00" }}>{ask ? ask.price : "—"}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {colFilter !== "all" && galleryNext && (
+              <div style={pad}>
+                <button type="button" style={btn} disabled={busy} onClick={() => void more()}>MORE</button>
+              </div>
+            )}
+            {!wide && <div style={pad}>{pasteForm}</div>}
+          </div>
+          {wide && (
+            <div style={side}>
+              {!view && <div style={dim}>SELECT A PIECE</div>}
+              {view && (
+                <button type="button" style={{ ...btn, alignSelf: "flex-start" }} onClick={() => { setView(null); setViewAsk(null); }}>
+                  BACK
+                </button>
+              )}
+              {view && viewBusy && <div style={dim}>READING LISTING…</div>}
+              {view && !viewBusy && viewAsk && (
                 <Detail
                   row={viewAsk}
                   image={view.image}
@@ -244,49 +339,10 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                   onSend={() => void run(() => sendNft(viewAsk))}
                 />
               )}
-              {!viewBusy && !viewAsk && <Quiet nft={view} />}
+              {view && !viewBusy && !viewAsk && <Quiet nft={view} />}
+              {pasteForm}
             </div>
           )}
-          {!galleryReady && <div style={pad}>READING COLLECTION…</div>}
-          {galleryReady && gallery.length === 0 && <div style={pad}>NO TOKENS IN THIS WINDOW.</div>}
-          <div style={grid}>
-            {gallery.map((nft) => {
-              const ask = matchListing(nft);
-              const selected = view?.id === nft.id;
-              return (
-                <button key={nft.id} type="button" style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }} onClick={() => void openItem(nft)}>
-                  {nft.image ? <img src={nft.image} alt="" style={tileImg} /> : <div style={tileImg} />}
-                  <div style={tileMeta}>
-                    <span>{nft.name.toUpperCase()}</span>
-                    <span style={{ color: "#00ff00" }}>{ask ? ask.price : "—"}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          {colFilter !== "all" && galleryNext && (
-            <div style={pad}>
-              <button type="button" style={btn} disabled={busy} onClick={() => void more()}>MORE</button>
-            </div>
-          )}
-          <div style={pad}>
-            <div style={dim}>PASTE A SIGNED ORDER</div>
-            <textarea value={paste} onChange={(e) => setPaste(e.target.value)} style={area} />
-            <button type="button" style={btn} onClick={() => {
-              try {
-                const order = parseKOrder(JSON.parse(paste));
-                if (!order) throw new Error("Order rejected.");
-                rememberPending(order);
-                setRows(cachedListings());
-                setPaste("");
-                setBad(false);
-                setMsg("Order added on this machine.");
-              } catch (e) {
-                setBad(true);
-                setMsg(e instanceof Error ? e.message : "Paste rejected");
-              }
-            }}>ADD ORDER</button>
-          </div>
         </div>
       )}
 
@@ -297,77 +353,133 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       )}
 
       {pane === "sell" && (
-        <div style={pad}>
-          <div style={dim}>
-            LIST A TOKEN YOU HOLD. ETH, USDC, AND CULT USE SEAPORT. BTC AND XMR STAY IN YOUR WALLET UNTIL YOU TRANSFER THE NFT.
-            THE WALLET APPROVES SEAPORT FOR THIS WHOLE COLLECTION, THEN SIGNS THE ORDER, THEN POSTS IT. EACH STEP IS ITS OWN CONFIRM.
-          </div>
-          <div style={chipRow}>
+        <div style={wide ? columns : pad}>
+          <div style={wide ? rail : chipRow}>
             {floorCollections().map((c) => (
-              <Chip key={c.id} on={sellCol.toLowerCase() === c.address.toLowerCase()} label={c.name.toUpperCase()} click={() => setSellCol(c.address)} />
+              <Chip block={wide} key={c.id} on={sellCol.toLowerCase() === c.address.toLowerCase()} label={railName(c.id, c.name)} click={() => setSellCol(c.address)} />
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input value={tokenId} onChange={(e) => setTokenId(e.target.value.replace(/\D/g, ""))} placeholder="TOKEN ID" style={input} />
-            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="PRICE" style={input} />
+          <div style={wide ? formPane : undefined}>
+            {!wide && (
+              <div style={dim}>
+                LIST A TOKEN YOU HOLD. ETH, USDC, AND CULT USE SEAPORT. BTC AND XMR STAY IN YOUR WALLET UNTIL YOU TRANSFER THE NFT.
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input value={tokenId} onChange={(e) => setTokenId(e.target.value.replace(/\D/g, ""))} placeholder="TOKEN ID" style={input} />
+              <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="PRICE" style={input} />
+            </div>
+            <div style={chipRow}>
+              {CURRENCIES.map((c) => (
+                <Chip key={c.id} on={currency === c.id} label={c.id} click={() => setCurrency(c.id)} />
+              ))}
+            </div>
+            {(currency === "BTC" || currency === "XMR") && (
+              <input value={payTo} onChange={(e) => setPayTo(e.target.value.trim())} placeholder={`${currency} ADDRESS`} style={{ ...input, width: "100%", marginTop: 8 }} />
+            )}
+            {!wide && (
+              <Fee
+                lines={[
+                  ["K-OS FEE", "0"],
+                  ["PROTOCOL FEE", "0"],
+                  ["SELLER RECEIVES", "THE FULL PRICE"],
+                  ["LISTING", "30 DAYS · GAS IS ETH"],
+                ]}
+              />
+            )}
+            <button type="button" style={{ ...yellow, marginTop: 8 }} disabled={busy} onClick={() => void run(() => listToken(false))}>
+              {busy ? "CHECK WALLET…" : "LIST"}
+            </button>
           </div>
-          <div style={chipRow}>
-            {CURRENCIES.map((c) => (
-              <Chip key={c.id} on={currency === c.id} label={c.id} click={() => setCurrency(c.id)} />
-            ))}
-          </div>
-          {(currency === "BTC" || currency === "XMR") && (
-            <input value={payTo} onChange={(e) => setPayTo(e.target.value.trim())} placeholder={`${currency} ADDRESS`} style={{ ...input, width: "100%", marginTop: 8 }} />
+          {wide && (
+            <div style={side}>
+              <div style={dim}>
+                ETH, USDC, AND CULT USE SEAPORT. BTC AND XMR STAY IN YOUR WALLET UNTIL YOU TRANSFER THE NFT. EACH STEP IS ITS OWN CONFIRM.
+              </div>
+              <Fee
+                lines={[
+                  ["K-OS FEE", "0"],
+                  ["PROTOCOL FEE", "0"],
+                  ["SELLER RECEIVES", "THE FULL PRICE"],
+                  ["LISTING", "30 DAYS · GAS IS ETH"],
+                ]}
+              />
+            </div>
           )}
-          <Fee
-            lines={[
-              ["K-OS FEE", "0"],
-              ["PROTOCOL FEE", "0"],
-              ["SELLER RECEIVES", "THE FULL PRICE"],
-              ["LISTING", "30 DAYS · GAS IS ETH"],
-            ]}
-          />
-          <button type="button" style={{ ...yellow, marginTop: 8 }} disabled={busy} onClick={() => void run(() => listToken(false))}>
-            {busy ? "CHECK WALLET…" : "LIST"}
-          </button>
         </div>
       )}
 
       {pane === "art" && (
-        <div style={pad}>
-          <div style={dim}>ART PAYMENTS GO STRAIGHT TO THE SELLER. THE FILE STAYS AT THE HTTPS OR IPFS URL.</div>
-          <input value={artTitle} onChange={(e) => setArtTitle(e.target.value)} placeholder="TITLE" style={{ ...input, width: "100%", marginTop: 8 }} />
-          <input value={artUrl} onChange={(e) => setArtUrl(e.target.value)} placeholder="HTTPS OR IPFS URL" style={{ ...input, width: "100%", marginTop: 8 }} />
-          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="PRICE" style={{ ...input, marginTop: 8 }} />
-          <div style={chipRow}>
-            {CURRENCIES.map((c) => (
-              <Chip key={c.id} on={currency === c.id} label={c.id} click={() => setCurrency(c.id)} />
-            ))}
+        <div style={wide ? pair : pad}>
+          <div style={wide ? formPane : undefined}>
+            <input value={artTitle} onChange={(e) => setArtTitle(e.target.value)} placeholder="TITLE" style={{ ...input, width: "100%" }} />
+            <input value={artUrl} onChange={(e) => setArtUrl(e.target.value)} placeholder="HTTPS OR IPFS URL" style={{ ...input, width: "100%", marginTop: 8 }} />
+            {!wide && <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="PRICE" style={{ ...input, marginTop: 8 }} />}
+            {!wide && (
+              <div style={chipRow}>
+                {CURRENCIES.map((c) => (
+                  <Chip key={c.id} on={currency === c.id} label={c.id} click={() => setCurrency(c.id)} />
+                ))}
+              </div>
+            )}
           </div>
-          {(currency === "BTC" || currency === "XMR") && (
-            <input value={payTo} onChange={(e) => setPayTo(e.target.value.trim())} placeholder={`${currency} ADDRESS`} style={{ ...input, width: "100%" }} />
-          )}
-          <button type="button" style={{ ...yellow, marginTop: 8 }} disabled={busy} onClick={() => void run(() => listToken(true))}>
-            {busy ? "CHECK WALLET…" : "LIST ART"}
-          </button>
+          <div style={wide ? side : undefined}>
+            {wide && <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="PRICE" style={input} />}
+            {wide && (
+              <div style={{ ...chipRow, flexDirection: "column", alignItems: "stretch" }}>
+                {CURRENCIES.map((c) => (
+                  <Chip key={c.id} on={currency === c.id} label={c.id} click={() => setCurrency(c.id)} />
+                ))}
+              </div>
+            )}
+            {(currency === "BTC" || currency === "XMR") && (
+              <input value={payTo} onChange={(e) => setPayTo(e.target.value.trim())} placeholder={`${currency} ADDRESS`} style={{ ...input, width: "100%" }} />
+            )}
+            <div style={dim}>ART PAYMENTS GO STRAIGHT TO THE SELLER. THE FILE STAYS AT THE HTTPS OR IPFS URL.</div>
+            <button type="button" style={{ ...yellow, marginTop: 8 }} disabled={busy} onClick={() => void run(() => listToken(true))}>
+              {busy ? "CHECK WALLET…" : "LIST ART"}
+            </button>
+          </div>
         </div>
       )}
 
       {pane === "bag" && (
-        <div style={pad}>
-          <div style={dim}>YOUR OPEN LISTINGS ON THIS MACHINE AND IN THE BOOK.</div>
-          {rows.filter((row) => acct && row.order.offerer.toLowerCase() === acct.toLowerCase()).map((row) => (
-            <div key={row.id} style={rowBtn}>
-              <div style={{ flex: 1 }}>{row.collectionName.toUpperCase()} · {row.price}</div>
-              <button type="button" style={btn} disabled={busy} onClick={() => void run(() => cancel(row))}>CANCEL</button>
+        <div style={wide ? bagColumns : pad}>
+          <div style={wide ? galleryPane : undefined}>
+            {rows.filter((row) => acct && row.order.offerer.toLowerCase() === acct.toLowerCase()).map((row) => (
+              <div key={row.id} style={rowBtn}>
+                <div style={{ flex: 1 }}>{row.collectionName.toUpperCase()} · {row.price}</div>
+                <button type="button" style={btn} disabled={busy} onClick={() => void run(() => cancel(row))}>CANCEL</button>
+              </div>
+            ))}
+            {acct && rows.every((row) => row.order.offerer.toLowerCase() !== acct.toLowerCase()) && <div style={{ ...dim, padding: 12 }}>NONE YET.</div>}
+            {!acct && <div style={{ ...dim, padding: 12 }}>CONNECT A WALLET.</div>}
+          </div>
+          {wide && (
+            <div style={side}>
+              <div style={dim}>YOUR OPEN LISTINGS ON THIS MACHINE AND IN THE BOOK.</div>
             </div>
-          ))}
-          {acct && rows.every((row) => row.order.offerer.toLowerCase() !== acct.toLowerCase()) && <div style={dim}>NONE YET.</div>}
-          {!acct && <div style={dim}>CONNECT A WALLET.</div>}
+          )}
+          {!wide && <div style={dim}>YOUR OPEN LISTINGS ON THIS MACHINE AND IN THE BOOK.</div>}
         </div>
       )}
     </div>
   );
+
+  function addOrder() {
+    try {
+      const order = parseKOrder(JSON.parse(paste));
+      if (!order) throw new Error("Order rejected.");
+      rememberPending(order);
+      setRows(cachedListings());
+      setPaste("");
+      setBad(false);
+      setMsg("Order added on this machine.");
+    } catch (e) {
+      setBad(true);
+      setMsg(e instanceof Error ? e.message : "Paste rejected");
+    }
+  }
 
   async function post(order: KOrder, recipient: string) {
     const { eth, address } = await need();
@@ -563,8 +675,8 @@ function Detail({
   const direct = order.kind === "invoice";
   return (
     <div style={detail}>
-      <Thumb src={image} big />
-      <div style={{ flex: 1 }}>
+      <PieceShot src={image} />
+      <div>
         <div style={{ color: "#00ff00" }}>{row.collectionName.toUpperCase()} {order.nft ? `#${order.nft.tokenId}` : order.art?.title}</div>
         <div style={dim}>{order.offerer}</div>
         <Fee
@@ -621,8 +733,8 @@ function Detail({
 function Quiet({ nft }: { nft: CatalogNft }) {
   return (
     <div style={detail}>
-      <Thumb src={nft.image} big />
-      <div style={{ flex: 1 }}>
+      <PieceShot src={nft.image} />
+      <div>
         <div style={{ color: "#00ff00" }}>{nft.name.toUpperCase()}</div>
         <div style={dim}>{nft.collectionName.toUpperCase()} · NOT LISTED</div>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -651,18 +763,26 @@ function Fee({ lines }: { lines: [string, string][] }) {
   );
 }
 
-function Chip({ label, on: active, click }: { label: string; on: boolean; click: () => void }) {
+function railName(id: string, name: string): string {
+  if (id === "miyamaker-mini") return "MIYAMAKER";
+  if (id === "mialien-eth") return "MIALIEN";
+  if (id === "kool-skull-s-halloween-special") return "HALLOWEEN";
+  if (id === "bannerz-by-koolskull") return "BANNERZ";
+  return name.toUpperCase();
+}
+
+function Chip({ label, on: active, click, block }: { label: string; on: boolean; click: () => void; block?: boolean }) {
+  const base = block ? (active ? railOn : railBtn) : active ? on : btn;
   return (
-    <button type="button" style={active ? on : btn} onClick={click}>
+    <button type="button" style={base} onClick={click}>
       {label}
     </button>
   );
 }
 
-function Thumb({ src, big }: { src?: string | null; big?: boolean }) {
-  const size = big ? 96 : 42;
-  if (!src) return <div style={{ ...thumb, width: size, height: size }} />;
-  return <img src={src} alt="" style={{ ...thumb, width: size, height: size }} />;
+function PieceShot({ src }: { src?: string | null }) {
+  if (!src) return <div style={shot} />;
+  return <img src={src} alt="" style={shot} />;
 }
 
 const root: React.CSSProperties = {
@@ -682,7 +802,54 @@ const header: React.CSSProperties = {
   alignItems: "center",
   padding: 8,
   borderBottom: "1px solid #333",
-  flexWrap: "wrap",
+  flexWrap: "nowrap",
+  overflowX: "auto",
+  flexShrink: 0,
+};
+const columns: React.CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: "grid",
+  gridTemplateColumns: "132px minmax(0, 1fr) minmax(200px, 260px)",
+};
+const pair: React.CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(168px, 220px)",
+};
+const bagColumns: React.CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: "grid",
+  gridTemplateColumns: "minmax(200px, 300px) minmax(0, 1fr)",
+};
+const rail: React.CSSProperties = {
+  minHeight: 0,
+  overflow: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  padding: 8,
+  borderRight: "1px solid #222",
+};
+const side: React.CSSProperties = {
+  minHeight: 0,
+  overflow: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  padding: 10,
+  borderLeft: "1px solid #222",
+};
+const galleryPane: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "auto" };
+const formPane: React.CSSProperties = {
+  minHeight: 0,
+  overflow: "auto",
+  padding: 12,
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
 };
 const scroll: React.CSSProperties = { flex: 1, overflow: "auto", minHeight: 0 };
 const pad: React.CSSProperties = { padding: 12 };
@@ -701,6 +868,15 @@ const btn: React.CSSProperties = {
   cursor: "pointer",
 };
 const on: React.CSSProperties = { ...btn, border: "1px solid #00ff00", color: "#00ff00" };
+const railBtn: React.CSSProperties = {
+  ...btn,
+  width: "100%",
+  height: "auto",
+  minHeight: 22,
+  textAlign: "left",
+  whiteSpace: "normal",
+};
+const railOn: React.CSSProperties = { ...railBtn, border: "1px solid #00ff00", color: "#00ff00" };
 const yellow: React.CSSProperties = { ...btn, border: "1px solid #00ff00", background: "#00ff00", color: "#000" };
 const input: React.CSSProperties = {
   height: 22,
@@ -758,13 +934,12 @@ const tileMeta: React.CSSProperties = {
   gap: 2,
   padding: "0 6px 6px",
 };
-const thumb: React.CSSProperties = {
-  width: 42,
-  height: 42,
-  objectFit: "cover",
-  background: "#111",
+const detail: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 8 };
+const shot: React.CSSProperties = {
+  width: "100%",
+  aspectRatio: "1",
+  objectFit: "contain",
+  background: "#000",
   imageRendering: "pixelated",
-  flexShrink: 0,
 };
-const detail: React.CSSProperties = { display: "flex", gap: 10, padding: 12, borderTop: "1px solid #00ff00" };
 const link: React.CSSProperties = { color: "#888", fontSize: 8, letterSpacing: 1, alignSelf: "center" };

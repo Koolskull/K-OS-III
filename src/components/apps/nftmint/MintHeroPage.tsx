@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Interface } from "ethers";
 import { ALL_MINTS, getScatterMint, isMiyamakerMint } from "@/data/scatter-mints";
 import { MIYAMAKER_MINI, getSanctioned } from "@/data/sanctioned-nfts";
+import { visibleLayoutBox } from "@/lib/os/visibleBox";
 import { chainInfo, listCap, priceLabel, shortContract, type ScatterCollection } from "@/lib/scatter";
 import { loadMintCollection, requestScatterMintPrepared } from "@/lib/mintClient";
 import { listSettlement, openPayableLists, scaleListPrice } from "@/lib/market/money";
@@ -137,8 +138,9 @@ export function MintHeroPage({
         if (prev && Math.abs(prev.w - next.w) <= 1 && Math.abs(prev.h - next.h) <= 1) return prev;
         return next;
       });
-      const nextWide = (next.w || box.parentW) >= 640;
-      const nextMid = !nextWide && (next.w || box.parentW) >= 460;
+      const fitted = next.w || box.parentW;
+      const nextWide = fitted >= 760;
+      const nextMid = !nextWide && fitted >= 520;
       setWide((v) => (v === nextWide ? v : nextWide));
       setMid((v) => (v === nextMid ? v : nextMid));
     };
@@ -692,7 +694,7 @@ export function MintHeroPage({
         )}
 
         {showGallery && (
-          <div style={{ ...galleryCol, gridColumn: !stacked && !wide ? "1 / -1" : undefined }}>
+          <div style={galleryCol}>
             {!stacked && (
               <div style={galleryHead}>
                 <span style={menuAnchor} onMouseDown={(e) => e.stopPropagation()}>
@@ -923,35 +925,6 @@ function EditBox({
   );
 }
 
-function zoomOf(el: Element): number {
-  const raw = parseFloat(getComputedStyle(el).zoom || "1");
-  return Number.isFinite(raw) && raw > 0 ? raw : 1;
-}
-
-/** Layout size of `el`'s parent that is actually on screen.
- * html and body both set zoom, and Chrome multiplies them, so a 1400px
- * desktop paints near 2× and clips. Wide/narrow follows that visible box.
- */
-function visibleLayoutBox(el: HTMLElement): { w: number; h: number; parentW: number; parentH: number } {
-  const base = el.parentElement ?? el;
-  const parentW = base.clientWidth || window.innerWidth;
-  const parentH = base.clientHeight || window.innerHeight;
-  const rect = base.getBoundingClientRect();
-  const rectScale = parentW > 8 ? rect.width / parentW : 1;
-  const scale = zoomOf(document.documentElement) * zoomOf(document.body);
-  const paint = rectScale > 1.08 ? rectScale : scale > 1.08 ? scale : 1;
-  const left = rectScale > 1.08 ? rect.left / rectScale : rect.left;
-  const top = rectScale > 1.08 ? rect.top / rectScale : rect.top;
-  const viewW = window.innerWidth / paint;
-  const viewH = window.innerHeight / paint;
-  return {
-    w: Math.floor(Math.min(parentW, Math.max(0, viewW - Math.max(0, left)))),
-    h: Math.floor(Math.min(parentH, Math.max(0, viewH - Math.max(0, top)))),
-    parentW,
-    parentH,
-  };
-}
-
 function homeHref(): string {
   const base = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
   return `${base}/`;
@@ -1023,8 +996,7 @@ const gridMid: React.CSSProperties = {
   flex: 1,
   minHeight: 0,
   display: "grid",
-  gridTemplateColumns: "minmax(0,1.2fr) minmax(180px,0.8fr)",
-  gridTemplateRows: "minmax(0,1.15fr) minmax(140px,0.8fr)",
+  gridTemplateColumns: "minmax(0,1.15fr) minmax(112px,0.62fr) minmax(0,0.9fr)",
 };
 const stackCol: React.CSSProperties = { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" };
 const previewStack: React.CSSProperties = {

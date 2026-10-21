@@ -5,8 +5,11 @@ export interface SanctionedCollection {
   name: string;
   address: string;
   chainId: number;
-  /** If set, token images can be built as `${imageBase}${tokenId}.png` */
+  /** If set, token images can be built as `${imageBase}${tokenId}.${imageExt || "png"}` */
   imageBase?: string;
+  imageExt?: "png" | "jpg";
+  /** Wide art. The floor shows the whole image at its own ratio. */
+  wideArt?: boolean;
   openseaSlug?: string;
 }
 
@@ -39,6 +42,8 @@ export const SANCTIONED_NFTS: SanctionedCollection[] = [
     name: "Mialien Maker ETH",
     address: "0xC5759Dd58057808568C698fFDc4Ad5548D17e75a",
     chainId: 1,
+    imageBase: "https://stardrain.app/mialien/metadata/images/",
+    imageExt: "jpg",
     openseaSlug: "mialien",
   },
   {
@@ -53,6 +58,7 @@ export const SANCTIONED_NFTS: SanctionedCollection[] = [
     name: "THRASH BANNERZ BY KOOLSKULL",
     address: "0x19f053F02c676248fAEf8dabd88F119f942dc1aB",
     chainId: 1,
+    wideArt: true,
     openseaSlug: "thrashbannerz",
   },
   {
@@ -113,9 +119,13 @@ export function isEthAddress(value: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(value);
 }
 
+export function isWideArt(collectionId: string): boolean {
+  return SANCTIONED_NFTS.some((col) => col.id === collectionId && col.wideArt);
+}
+
 export function fallbackTokenImage(contract: string, tokenId: string): string | null {
   const col = getSanctioned(contract);
   if (!col?.imageBase) return null;
   const id = tokenId.startsWith("0x") ? String(parseInt(tokenId, 16)) : tokenId.replace(/^0+/, "") || "0";
-  return `${col.imageBase}${id}.png`;
+  return `${col.imageBase}${id}.${col.imageExt || "png"}`;
 }

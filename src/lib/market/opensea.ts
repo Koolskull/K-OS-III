@@ -1,5 +1,5 @@
 import { formatUnits, getAddress } from "ethers";
-import { fallbackTokenImage, floorCollections, type SanctionedCollection } from "@/data/sanctioned-nfts";
+import { fallbackTokenImage, floorCollections, getSanctioned, type SanctionedCollection } from "@/data/sanctioned-nfts";
 import { CULT_ADDRESS, SEAPORT_16, USDC_ADDRESS, type CurrencyId } from "@/data/market";
 import { formatPrice } from "@/lib/market/money";
 import { type ConsiderationItem, type FloorListing, type KOrder, type OfferItem, type OrderComponents } from "@/lib/market/orders";
@@ -10,6 +10,7 @@ const KEY_STORE = "kos-opensea-key-v1";
 const OPENSEA_FEE = "0x0000a26b00c1f0df003000390027140000faa719";
 const PAGE = 20;
 const NFT_PAGE = 48;
+const SALE_PAGE = 50;
 
 export interface CatalogNft {
   id: string;
@@ -59,6 +60,16 @@ async function mintKey(): Promise<string> {
   return body.api_key;
 }
 
+async function readBody(res: Response): Promise<unknown> {
+  const text = await res.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("OpenSea listings are unavailable.");
+  }
+}
+
 async function osGet(path: string, key: string): Promise<unknown> {
   const res = await fetch(`${API}${path}`, {
     headers: { Accept: "application/json", "x-api-key": key },
@@ -69,7 +80,26 @@ async function osGet(path: string, key: string): Promise<unknown> {
     throw new Error("OpenSea refused the read key.");
   }
   if (!res.ok) throw new Error("OpenSea floor is unavailable.");
-  return res.json();
+  return readBody(res);
+}
+
+async function osPost(path: string, key: string, body: unknown): Promise<unknown> {
+  const res = await fetch(`${API}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "x-api-key": key,
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 404) return null;
+  if (res.status === 401) {
+    localStorage.removeItem(KEY_STORE);
+    throw new Error("OpenSea refused the read key.");
+  }
+  if (!res.ok) throw new Error("OpenSea listings are unavailable.");
+  return readBody(res);
 }
 
 function digits(value: unknown): string {
@@ -267,6 +297,163 @@ export async function openSeaAsk(slug: string, tokenId: string, collectionName: 
   const key = await readKey();
   const body = await osGet(`/listings/collection/${encodeURIComponent(slug)}/nfts/${tokenId}/best`, key);
   return listingFromApi(body, collectionName);
+}
+
+export interface SaleTile {
+  listing: FloorListing;
+  nft: CatalogNft;
+}
+
+function plainId(tokenId: string): string {
+  if (/^\d+$/.test(tokenId)) return tokenId.replace(/^0+/, "") || "0";
+  return tokenId;
+}
+
+function saleTileFromListing(listing: FloorListing, col: SanctionedCollection): SaleTile | null {
+  const token = listing.order.nft;
+  if (!token || !col.openseaSlug) return null;
+  const tokenId = plainId(token.tokenId);
+  return {
+    listing,
+    nft: {
+      id: `${token.contract.toLowerCase()}:${tokenId}`,
+      collectionId: col.id,
+      collectionName: col.name,
+      slug: col.openseaSlug,
+      contract: token.contract,
+      tokenId,
+      name: `${col.name} #${tokenId}`,
+      image: fallbackTokenImage(token.contract, tokenId),
+    },
+  };
+}
+
+function saleKey(tile: SaleTile): string {
+  const cur = tile.listing.paySymbol || tile.listing.order.currency;
+  return `${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}:${cur}`;
+}
+
+/** One ask per token and currency. The smaller raw amount stays. */
+export function mergeSaleTiles(prev: SaleTile[], extra: SaleTile[]): SaleTile[] {
+  const map = new Map<string, SaleTile>();
+  for (const tile of [...prev, ...extra]) {
+    const key = saleKey(tile);
+    const have = map.get(key);
+    if (!have) {
+      map.set(key, tile);
+      continue;
+    }
+    try {
+      if (BigInt(tile.listing.order.raw) < BigInt(have.listing.order.raw)) map.set(key, tile);
+    } catch {
+      /* keep the ask already stored */
+    }
+  }
+  return [...map.values()];
+}
+
+export function saleTileFromBook(row: FloorListing): SaleTile | null {
+  const token = row.order.nft;
+  if (!token) return null;
+  const col = getSanctioned(token.contract);
+  if (!col?.openseaSlug || !floorCollections().some((item) => item.id === col.id)) return null;
+  return saleTileFromListing(row, col);
+}
+
+async function fillSaleImages(tiles: SaleTile[]): Promise<void> {
+  const missing = tiles.filter((tile) => !tile.nft.image);
+  if (!missing.length) return;
+  const key = await readKey();
+  for (let i = 0; i < missing.length; i += 40) {
+    const chunk = missing.slice(i, i + 40);
+    const body = (await osPost("/nfts/batch", key, {
+      identifiers: chunk.map((tile) => ({
+        chain: "ethereum",
+        contract_address: tile.nft.contract,
+        token_id: tile.nft.tokenId,
+      })),
+    })) as { nfts?: unknown[] } | null;
+    const found = new Map<string, { name: string; image: string | null }>();
+    for (const row of body?.nfts ?? []) {
+      if (!row || typeof row !== "object") continue;
+      const rec = row as Record<string, unknown>;
+      const contract = typeof rec.contract === "string" ? rec.contract.toLowerCase() : "";
+      const tokenId = plainId(digits(rec.identifier));
+      if (!contract || !tokenId) continue;
+      const display = typeof rec.display_image_url === "string" ? rec.display_image_url : "";
+      const rawImage = typeof rec.image_url === "string" ? rec.image_url : "";
+      const named = typeof rec.name === "string" ? rec.name.trim() : "";
+      found.set(`${contract}:${tokenId}`, { name: named, image: display || rawImage || null });
+    }
+    for (const tile of chunk) {
+      const hit = found.get(`${tile.nft.contract.toLowerCase()}:${plainId(tile.nft.tokenId)}`);
+      if (!hit) continue;
+      if (hit.image) tile.nft.image = hit.image;
+      if (hit.name) tile.nft.name = hit.name;
+    }
+  }
+}
+
+/** Art can lag. The ask is already on the tile. */
+export async function withSaleImages(tiles: SaleTile[]): Promise<SaleTile[]> {
+  const next = tiles.map((tile) => ({ ...tile, nft: { ...tile.nft } }));
+  try {
+    await fillSaleImages(next);
+  } catch {
+    /* a missing picture does not hide the price */
+  }
+  return next;
+}
+
+/**
+ * Active asks, cheapest first within each collection.
+ * Pass cursors to read the next page of collections that still have one.
+ * `null` reads the first page. "all" keeps each collection's own page.
+ */
+export async function openSeaSales(
+  collectionId: string,
+  cursors: Record<string, string | null> | null,
+): Promise<{ tiles: SaleTile[]; next: Record<string, string | null> }> {
+  const cols = (collectionId === "all" ? floorCollections() : floorCollections().filter((col) => col.id === collectionId)).filter(
+    (col) => col.openseaSlug,
+  );
+  const targets = cursors ? cols.filter((col) => Boolean(cursors[col.id])) : cols;
+  if (!targets.length) return { tiles: [], next: {} };
+  const key = await readKey();
+  const settled = await Promise.allSettled(
+    targets.map(async (col) => {
+      const query = new URLSearchParams({ limit: String(SALE_PAGE) });
+      const cursor = cursors?.[col.id];
+      if (cursor) query.set("next", cursor);
+      const body = (await osGet(`/listings/collection/${col.openseaSlug}/best?${query}`, key)) as {
+        listings?: unknown[];
+        next?: unknown;
+      } | null;
+      const tiles = (body?.listings ?? [])
+        .map((row) => {
+          const listing = listingFromApi(row, col.name);
+          return listing ? saleTileFromListing(listing, col) : null;
+        })
+        .filter((row): row is SaleTile => Boolean(row));
+      const next = typeof body?.next === "string" && body.next ? body.next : null;
+      return { id: col.id, tiles, next };
+    }),
+  );
+  const ok = settled.flatMap((row) => (row.status === "fulfilled" ? [row.value] : []));
+  if (!ok.length) {
+    const fail = settled.find((row) => row.status === "rejected");
+    throw fail && fail.status === "rejected" ? fail.reason : new Error("OpenSea listings are unavailable.");
+  }
+  const byId = new Map(ok.map((row) => [row.id, row]));
+  const tiles: SaleTile[] = [];
+  const next: Record<string, string | null> = {};
+  for (const col of targets) {
+    const page = byId.get(col.id);
+    if (!page) continue;
+    tiles.push(...page.tiles);
+    next[col.id] = page.next;
+  }
+  return { tiles: mergeSaleTiles([], tiles), next };
 }
 
 /** Cheapest active OpenSea asks for the koolskull collections on the floor. */

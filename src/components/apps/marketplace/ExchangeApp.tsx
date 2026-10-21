@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { getAddress } from "ethers";
-import { floorCollections } from "@/data/sanctioned-nfts";
+import { floorCollections, isWideArt } from "@/data/sanctioned-nfts";
 import { CURRENCIES, SEAPORT_16, type CurrencyId, atomicCurrency, currencyById } from "@/data/market";
 import { parsePrice, payAddressOk } from "@/lib/market/money";
 import { MintHeroPage } from "@/components/apps/nftmint/MintHeroPage";
@@ -32,7 +32,18 @@ import {
   waitReceipt,
 } from "@/lib/market/chain";
 import { type FloorListing, type KOrder, parseKOrder } from "@/lib/market/orders";
-import { openSeaAsk, openSeaFloor, openSeaGallery, openSeaNfts, type CatalogNft } from "@/lib/market/opensea";
+import { compareAsks, groupByCollection } from "@/lib/market/saleOrder";
+import {
+  openSeaAsk,
+  openSeaGallery,
+  openSeaNfts,
+  mergeSaleTiles,
+  openSeaSales,
+  saleTileFromBook,
+  withSaleImages,
+  type CatalogNft,
+  type SaleTile,
+} from "@/lib/market/opensea";
 import {
   connectEthereumProvider,
   discoverEip6963Wallets,
@@ -54,7 +65,11 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   const [sea, setSea] = useState<FloorListing[]>([]);
   const [gallery, setGallery] = useState<CatalogNft[]>([]);
   const [galleryNext, setGalleryNext] = useState<string | null>(null);
-  const [galleryReady, setGalleryReady] = useState(false);
+  const [sale, setSale] = useState<SaleTile[]>([]);
+  const [saleNext, setSaleNext] = useState<Record<string, string | null>>({});
+  const [saleReady, setSaleReady] = useState(false);
+  const [stock, setStock] = useState<"sale" | "browse">("sale");
+  const [browseReady, setBrowseReady] = useState(false);
   const [reload, setReload] = useState(0);
   const [colFilter, setColFilter] = useState("all");
   const [view, setView] = useState<CatalogNft | null>(null);
@@ -113,29 +128,60 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
 
   useEffect(() => {
     let stop = false;
-    setGalleryReady(false);
+    setSaleReady(false);
     setRows(cachedListings());
     void (async () => {
-      const book = syncBook();
-      const asks = openSeaFloor();
-      const page = openSeaGallery(colFilter, null);
-      const [bookResult, askResult, pageResult] = await Promise.allSettled([book, asks, page]);
+      const [bookResult, saleResult] = await Promise.allSettled([syncBook(), openSeaSales(colFilter, null)]);
       if (stop) return;
-      if (bookResult.status === "fulfilled") setRows(bookResult.value);
-      if (askResult.status === "fulfilled") setSea(askResult.value);
-      if (pageResult.status === "fulfilled") {
-        setGallery(pageResult.value.nfts);
-        setGalleryNext(pageResult.value.next);
+      const bookRows = bookResult.status === "fulfilled" ? bookResult.value : cachedListings();
+      if (bookResult.status === "fulfilled") setRows(bookRows);
+      if (saleResult.status === "fulfilled") {
+        const local = bookRows.map(saleTileFromBook).filter((row): row is SaleTile => Boolean(row));
+        const merged = mergeShown(saleResult.value.tiles, local, colFilter);
+        const pictured = await withSaleImages(merged);
+        if (stop) return;
+        setSale(pictured);
+        setSea(merged.map((tile) => tile.listing));
+        setSaleNext(saleResult.value.next);
       } else {
+        setSale([]);
+        setSaleNext({});
         setBad(true);
-        setMsg(pageResult.reason instanceof Error ? pageResult.reason.message : "Collection unavailable");
+        setMsg(saleResult.reason instanceof Error ? saleResult.reason.message : "Listings unavailable");
       }
-      setGalleryReady(true);
+      setSaleReady(true);
     })();
     return () => {
       stop = true;
     };
   }, [colFilter, reload]);
+
+  useEffect(() => {
+    if (stock !== "browse") return;
+    let stop = false;
+    setBrowseReady(false);
+    void (async () => {
+      try {
+        const page = await openSeaGallery(colFilter, null);
+        if (stop) return;
+        setGallery(page.nfts);
+        setGalleryNext(page.next);
+      } catch (e) {
+        if (stop) return;
+        setBad(true);
+        setMsg(e instanceof Error ? e.message : "Collection unavailable");
+      }
+      if (!stop) setBrowseReady(true);
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [colFilter, reload, stock]);
+
+  function mergeShown(prev: SaleTile[], extra: SaleTile[], filter: string): SaleTile[] {
+    const picked = extra.filter((tile) => filter === "all" || tile.nft.collectionId === filter);
+    return mergeSaleTiles(prev, picked);
+  }
 
   function matchListing(nft: CatalogNft): FloorListing | null {
     return [...sea, ...rows].find((row) => {
@@ -183,6 +229,26 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     setBusy(false);
   }
 
+  async function moreSales() {
+    if (!Object.values(saleNext).some(Boolean)) return;
+    setBusy(true);
+    setBad(false);
+    try {
+      const page = await openSeaSales(colFilter, saleNext);
+      const shown = await withSaleImages(page.tiles);
+      setSale((prev) => mergeShown(prev, shown, colFilter));
+      setSea((prev) => {
+        const seen = new Set(prev.map((row) => row.id));
+        return [...prev, ...shown.map((tile) => tile.listing).filter((row) => !seen.has(row.id))];
+      });
+      setSaleNext((prev) => ({ ...prev, ...page.next }));
+    } catch (e) {
+      setBad(true);
+      setMsg(e instanceof Error ? e.message : "Listings unavailable");
+    }
+    setBusy(false);
+  }
+
   async function connect(p?: Eip1193Provider) {
     setMsg(null);
     const linked = p ? { provider: p, address: "" } : await connectEthereumProvider();
@@ -218,6 +284,19 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
     }
     setBusy(false);
   }
+
+  const floorOrder = floorCollections().map((c) => c.id);
+  const saleGroups = groupByCollection(
+    sale.map((tile) => ({
+      tile,
+      collectionId: tile.nft.collectionId,
+      currency: tile.listing.paySymbol || tile.listing.order.currency,
+      raw: tile.listing.order.raw,
+    })),
+    floorOrder,
+    compareAsks,
+  );
+  const saleHasMore = Object.values(saleNext).some(Boolean);
 
   const pasteForm = (
     <div>
@@ -264,9 +343,9 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
       {pane === "floor" && (
         <div style={wide ? columns : scroll}>
           <div style={wide ? rail : chipRow}>
-            <Chip block={wide} on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setView(null); }} />
+            <Chip block={wide} on={colFilter === "all"} label="ALL" click={() => { setColFilter("all"); setStock("sale"); setView(null); }} />
             {floorCollections().map((c) => (
-              <Chip block={wide} key={c.id} on={colFilter === c.id} label={railName(c.id, c.name)} click={() => { setColFilter(c.id); setView(null); }} />
+              <Chip block={wide} key={c.id} on={colFilter === c.id} label={railName(c.id, c.name)} click={() => { setColFilter(c.id); setStock("sale"); setView(null); }} />
             ))}
             <button type="button" style={wide ? railBtn : btn} disabled={busy} onClick={() => setReload((n) => n + 1)}>REFRESH</button>
           </div>
@@ -281,6 +360,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                   <Detail
                     row={viewAsk}
                     image={view.image}
+                    wide={isWideArt(view.collectionId)}
                     mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
                     busy={busy}
                     buyer={buyer}
@@ -293,28 +373,76 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                 {!viewBusy && !viewAsk && <Quiet nft={view} />}
               </div>
             )}
-            {!galleryReady && <div style={pad}>READING COLLECTION…</div>}
-            {galleryReady && gallery.length === 0 && <div style={pad}>NO TOKENS IN THIS WINDOW.</div>}
-            <div style={grid}>
-              {gallery.map((nft) => {
-                const ask = matchListing(nft);
-                const selected = view?.id === nft.id;
-                return (
-                  <button key={nft.id} type="button" style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }} onClick={() => void openItem(nft)}>
-                    {nft.image ? <img src={nft.image} alt="" style={tileImg} /> : <div style={tileImg} />}
-                    <div style={tileMeta}>
-                      <span>{nft.name.toUpperCase()}</span>
-                      <span style={{ color: "#00ff00" }}>{ask ? ask.price : "—"}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {colFilter !== "all" && galleryNext && (
-              <div style={pad}>
-                <button type="button" style={btn} disabled={busy} onClick={() => void more()}>MORE</button>
+            {stock === "sale" && !saleReady && <div style={pad}>READING LISTINGS…</div>}
+            {stock === "sale" && saleReady && sale.length === 0 && <div style={pad}>NOTHING LISTED IN THIS WINDOW.</div>}
+            {stock === "sale" && saleReady && saleGroups.map((group) => {
+              const col = floorCollections().find((item) => item.id === group.collectionId);
+              const banner = isWideArt(group.collectionId);
+              return (
+                <div key={group.collectionId || "other"}>
+                  {colFilter === "all" && col && <div style={section}>{railName(col.id, col.name)}</div>}
+                  <div style={banner ? bannerGrid : grid}>
+                    {group.tiles.map(({ tile: ask }) => {
+                      const nft = ask.nft;
+                      const selected = viewAsk?.id === ask.listing.id;
+                      return (
+                        <button
+                          key={ask.listing.id}
+                          type="button"
+                          style={{ ...tile, borderColor: selected ? "#00ff00" : "#333" }}
+                          onClick={() => { setView(nft); setViewAsk(ask.listing); setViewBusy(false); }}
+                        >
+                          {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
+                          <div style={tileMeta}>
+                            <span>{nft.name.toUpperCase()}</span>
+                            <span style={{ color: "#00ff00" }}>{ask.listing.price}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {stock === "browse" && !browseReady && <div style={pad}>READING COLLECTION…</div>}
+            {stock === "browse" && browseReady && gallery.length === 0 && <div style={pad}>NO TOKENS IN THIS WINDOW.</div>}
+            {stock === "browse" && (
+              <div style={colFilter === "bannerz-by-koolskull" ? bannerGrid : grid}>
+                {gallery.map((nft) => {
+                  const ask = matchListing(nft);
+                  const banner = isWideArt(nft.collectionId);
+                  const selected = view?.id === nft.id;
+                  return (
+                    <button
+                      key={nft.id}
+                      type="button"
+                      style={{ ...tile, gridColumn: banner && colFilter !== "bannerz-by-koolskull" ? "1 / -1" : undefined, borderColor: selected ? "#00ff00" : "#333" }}
+                      onClick={() => void openItem(nft)}
+                    >
+                      {nft.image ? <img src={nft.image} alt="" style={banner ? bannerImg : tileImg} /> : <div style={banner ? bannerImg : tileImg} />}
+                      <div style={tileMeta}>
+                        <span>{nft.name.toUpperCase()}</span>
+                        <span style={{ color: ask ? "#00ff00" : "#888" }}>{ask ? ask.price : "NOT LISTED"}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
+            <div style={{ ...pad, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {stock === "sale" && saleHasMore && (
+                <button type="button" style={btn} disabled={busy} onClick={() => void moreSales()}>MORE</button>
+              )}
+              {stock === "browse" && colFilter !== "all" && galleryNext && (
+                <button type="button" style={btn} disabled={busy} onClick={() => void more()}>MORE</button>
+              )}
+              {stock === "sale" && (
+                <button type="button" style={btn} onClick={() => setStock("browse")}>BROWSE</button>
+              )}
+              {stock === "browse" && (
+                <button type="button" style={btn} onClick={() => setStock("sale")}>FOR SALE</button>
+              )}
+            </div>
             {!wide && <div style={pad}>{pasteForm}</div>}
           </div>
           {wide && (
@@ -330,6 +458,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
                 <Detail
                   row={viewAsk}
                   image={view.image}
+                  wide={isWideArt(view.collectionId)}
                   mine={acct?.toLowerCase() === viewAsk.order.offerer.toLowerCase()}
                   busy={busy}
                   buyer={buyer}
@@ -467,18 +596,31 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
   );
 
   function addOrder() {
-    try {
-      const order = parseKOrder(JSON.parse(paste));
-      if (!order) throw new Error("Order rejected.");
-      rememberPending(order);
-      setRows(cachedListings());
-      setPaste("");
-      setBad(false);
-      setMsg("Order added on this machine.");
-    } catch (e) {
+    const text = paste.trim();
+    if (!text) {
       setBad(true);
-      setMsg(e instanceof Error ? e.message : "Paste rejected");
+      setMsg("Paste a signed order first.");
+      return;
     }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      setBad(true);
+      setMsg("That paste is not a signed order.");
+      return;
+    }
+    const order = parseKOrder(parsed);
+    if (!order) {
+      setBad(true);
+      setMsg("Order rejected.");
+      return;
+    }
+    rememberPending(order);
+    setRows(cachedListings());
+    setPaste("");
+    setBad(false);
+    setMsg("Order added on this machine.");
   }
 
   async function post(order: KOrder, recipient: string) {
@@ -653,6 +795,7 @@ export function ExchangeApp({ onOpenShop }: { onOpenShop: () => void }) {
 function Detail({
   row,
   image,
+  wide,
   mine,
   busy,
   buyer,
@@ -663,6 +806,7 @@ function Detail({
 }: {
   row: FloorListing;
   image: string | null;
+  wide?: boolean;
   mine: boolean;
   busy: boolean;
   buyer: string;
@@ -675,7 +819,7 @@ function Detail({
   const direct = order.kind === "invoice";
   return (
     <div style={detail}>
-      <PieceShot src={image} />
+      <PieceShot src={image} wide={wide} />
       <div>
         <div style={{ color: "#00ff00" }}>{row.collectionName.toUpperCase()} {order.nft ? `#${order.nft.tokenId}` : order.art?.title}</div>
         <div style={dim}>{order.offerer}</div>
@@ -733,7 +877,7 @@ function Detail({
 function Quiet({ nft }: { nft: CatalogNft }) {
   return (
     <div style={detail}>
-      <PieceShot src={nft.image} />
+      <PieceShot src={nft.image} wide={isWideArt(nft.collectionId)} />
       <div>
         <div style={{ color: "#00ff00" }}>{nft.name.toUpperCase()}</div>
         <div style={dim}>{nft.collectionName.toUpperCase()} · NOT LISTED</div>
@@ -780,9 +924,10 @@ function Chip({ label, on: active, click, block }: { label: string; on: boolean;
   );
 }
 
-function PieceShot({ src }: { src?: string | null }) {
-  if (!src) return <div style={shot} />;
-  return <img src={src} alt="" style={shot} />;
+function PieceShot({ src, wide }: { src?: string | null; wide?: boolean }) {
+  const frame = wide ? bannerShot : shot;
+  if (!src) return <div style={frame} />;
+  return <img src={src} alt="" style={frame} />;
 }
 
 const root: React.CSSProperties = {
@@ -902,9 +1047,21 @@ const rowBtn: React.CSSProperties = {
   fontSize: 10,
   cursor: "pointer",
 };
+const section: React.CSSProperties = {
+  padding: "10px 12px 0",
+  color: "#00ff00",
+  fontSize: 8,
+  letterSpacing: 1,
+};
 const grid: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))",
+  gap: 8,
+  padding: 12,
+};
+const bannerGrid: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr)",
   gap: 8,
   padding: 12,
 };
@@ -928,6 +1085,15 @@ const tileImg: React.CSSProperties = {
   background: "#111",
   imageRendering: "pixelated",
 };
+const bannerImg: React.CSSProperties = {
+  width: "100%",
+  height: "auto",
+  minHeight: 48,
+  display: "block",
+  objectFit: "contain",
+  background: "#111",
+  imageRendering: "pixelated",
+};
 const tileMeta: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -938,6 +1104,14 @@ const detail: React.CSSProperties = { display: "flex", flexDirection: "column", 
 const shot: React.CSSProperties = {
   width: "100%",
   aspectRatio: "1",
+  objectFit: "contain",
+  background: "#000",
+  imageRendering: "pixelated",
+};
+const bannerShot: React.CSSProperties = {
+  width: "100%",
+  height: "auto",
+  display: "block",
   objectFit: "contain",
   background: "#000",
   imageRendering: "pixelated",

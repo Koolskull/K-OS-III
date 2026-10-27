@@ -1,7 +1,7 @@
 /*
  * Stardrain Wiki — lore entries
  * Simple data source for the in-OS Stardrain Wiki app.
- * Updated with Garbagina Hypertrash, Alluminumb, Mr Handsome, Blaster Beasts, and expansions.
+ * Updated with Garbagina Hypertrash, Alluminumb, Mr Handsome (expanded), Mr. Wormwood, Blaster Beasts, and expansions.
  */
 
 export interface LoreEntry {
@@ -46,13 +46,13 @@ export const LORE_ENTRIES: LoreEntry[] = [
     id: "smiley-teeth-records",
     title: "Smiley Teeth Records",
     category: "systems",
-    body: "An extremely powerful record label operating in the dimension of darkness. It owns large portions of colonized planets' governments and corporate structures in the lower hologram reality (Star Trek-like black space with planets and stars). Because it exists in darkness, it constantly requires sacrifices to operate and maintain power.\n\nMr Handsome entered the label after the breakup of Alluminumb and now operates from within Mediocricity. The label fabricates public narratives—such as artist signings—to conceal the true fate of the originals.",
+    body: "An extremely powerful record label operating in the dimension of darkness. It owns large portions of colonized planets' governments and corporate structures in the lower hologram reality (Star Trek-like black space with planets and stars). Because it exists in darkness, it constantly requires sacrifices to operate and maintain power.\n\nMr Handsome is the bread and butter of the label, its most popular face. Mr. Wormwood manages him and keeps the darker, more gruesome operations hidden from his view. The label fabricates public narratives—such as artist signings—to conceal the true fate of the originals.",
   },
   {
     id: "sacrifice-mechanism",
     title: "Sacrifice Mechanism",
     category: "systems",
-    body: "Smiley Teeth Records kills its pop stars and replaces them with clones—not merely for efficiency and profit maximization, but to fuel the black magic that sustains the label. This truth is only suggested early in the story and is discovered late.\n\nThe real artists are fed to the Wall of Teeth: a large demon mouth in the deep basement of the Smiley Teeth Records skyscraper in Mediocricity. The public sees only the clone, which continues to tour and release music indefinitely. Garbagina Hypertrash was processed this way after an apparent signing; her clone still performs while the original was sacrificed.",
+    body: "Smiley Teeth Records kills its pop stars and replaces them with clones—not merely for efficiency and profit maximization, but to fuel the black magic that sustains the label. This truth is only suggested early in the story and is discovered late.\n\nThe real artists are fed to the Wall of Teeth: a large demon mouth in the deep basement of the Smiley Teeth Records skyscraper in Mediocricity. The public sees only the clone, which continues to tour and release music indefinitely. Garbagina Hypertrash was processed this way after an apparent signing; her clone still performs while the original was sacrificed. Mr. Wormwood ensures figures like Mr Handsome remain insulated from these details.",
   },
   {
     id: "stardrain-island",
@@ -64,7 +64,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     id: "hollywood-cowboy",
     title: "Hollywood Cowboy",
     category: "characters",
-    body: "Protagonist who runs the Stardrain Hotel. He draws infinite energy directly from the heavenly realms and is therefore independent of the Mediocricity power grid. He lives with his family at the very top of the hotel.\n\nFormerly one half of the historic duo Alluminumb with Mr Handsome. Their completely alternate worldviews caused them to break up before the first show of their farewell tour. After the split he went the long way around, investing his rock-star earnings into botanical technology and Blaster Beasts on the remote island of Stardrain. Managing a beautiful hotel and encouraging his tenants’ businesses in the first-floor marketplace is the life he always dreamed of but could never afford when he was younger.",
+    body: "Protagonist who runs the Stardrain Hotel. He draws infinite energy directly from the heavenly realms and is therefore independent of the Mediocricity power grid. He lives with his family at the very top of the hotel.\n\nFormerly one half of the historic duo Alluminumb with Mr Handsome. Their completely alternate worldviews caused them to break up before the first show of their farewell tour. After the split he went the long way around, investing his rock-star earnings into botanical technology and Blaster Beasts on the remote island of Stardrain. Managing a beautiful hotel and encouraging his tenants’ businesses in the first-floor marketplace is the life he always dreamed of but could never afford when he was younger.\n\nPublicly he is seen as more crazy, rude, blunt, aggressive, and maniacal than Mr Handsome. He will risk everything to say what he believes. He has spent centuries proving his worthiness to his immediate community and family, but to no one else.",
   },
   {
     id: "south-side",
@@ -94,7 +94,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     id: "alluminumb",
     title: "Alluminumb",
     category: "culture",
-    body: "A very popular and historic musical duo consisting of Hollywood Cowboy and Mr Handsome. They possessed completely alternate worldviews. They broke up before the first show of their farewell tour. On that final date Garbagina Hypertrash opened to an enthusiastic crowd; the audience nearly rioted when they discovered Alluminumb would not take the stage.",
+    body: "A very popular and historic musical duo consisting of Hollywood Cowboy and Mr Handsome. They possessed completely alternate worldviews. They broke up before the first show of their farewell tour. On that final date Garbagina Hypertrash opened to an enthusiastic crowd; the audience nearly rioted when they discovered Alluminumb would not take the stage.\n\nDuring this era Mr Handsome still appeared as the purple slime mutant creature he actually is; the silver robotic skin armor came later.",
   },
   {
     id: "garbagina-hypertrash",
@@ -106,7 +106,13 @@ export const LORE_ENTRIES: LoreEntry[] = [
     id: "mr-handsome",
     title: "Mr Handsome",
     category: "characters",
-    body: "Former half of the duo Alluminumb with Hollywood Cowboy. After their breakup caused by irreconcilable worldviews, he entered Smiley Teeth Records and now operates from the center of Mediocricity.",
+    body: "A very popular musician and the bread and butter of Smiley Teeth Records. He behaves very superficially in order to maintain his position at the top of the proverbial food chain. Some of the darker things the label is up to are deliberately hidden from him.\n\nHe is actually a silver robotic cyborg whose interior is a purple slime mutant monster. When he was in Alluminumb he still appeared as the purple creature; he acquired the robotic skin armor later to look handsome while building his solo career. “Mr Handsome” began as a joke nickname and has since become his actualized ego.\n\nHe always travels with a posse of cyborg babes. He prefers creature comforts and allows sadness and despondency to overwhelm him, which is why he smokes and drinks too much. He is emotionally weak because he believes optimistic outcomes are unlikely, impossible, or likely to be a negative thing in disguise—even though the public holds him in high regard. He lives blindly and appreciates not knowing the details, yet he remains depressed and unhappy. His own laziness and disinterest in procuring those details make the insulation possible.\n\nHe is managed by the evil Mr. Wormwood, who keeps the most gruesome operations of Smiley Teeth Records away from him.",
+  },
+  {
+    id: "mr-wormwood",
+    title: "Mr. Wormwood",
+    category: "characters",
+    body: "Evil manager who handles Mr Handsome at Smiley Teeth Records. He deliberately keeps the darker and more gruesome details of the label’s operations hidden from his client, maintaining the superficial distance Mr Handsome prefers.",
   },
   {
     id: "blaster-beasts",

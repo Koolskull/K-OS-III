@@ -1,0 +1,179 @@
+@font-face {
+  font-family: "kongtext";
+  src: url("/assets/fonts/kongtext-webfont.woff2") format("woff2");
+  font-display: block;
+}
+
+/* One terminal family. Each page purpose keeps its own machine palette. */
+html {
+  --u: 4px;
+  -webkit-font-smoothing: none;
+  text-rendering: optimizeSpeed;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "kongtext", monospace;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+body,
+body[data-page="island"],
+body[data-theme="dmg"] {
+  --bg: #091a1f;
+  --paper: #0b221d;
+  --dim: #456254;
+  --mid: #456254;
+  --ink: #90b08e;
+  --hi: #729277;
+  --wall: #0b221d;
+  --floor: #091a1f;
+}
+
+body[data-theme="mint"] {
+  --bg: #081923;
+  --paper: #0b221d;
+  --dim: #4d6e55;
+  --mid: #4d6e55;
+  --ink: #9ec582;
+  --hi: #9ec582;
+  --wall: #0b221d;
+  --floor: #081923;
+}
+
+body[data-page="rooms"] {
+  --bg: #1a0e00;
+  --paper: #120800;
+  --dim: #8a5a00;
+  --mid: #8a5a00;
+  --ink: #ffb000;
+  --hi: #ffe680;
+  --wall: #3a2400;
+  --floor: #120800;
+}
+
+body[data-page="levels"] {
+  --bg: #001400;
+  --paper: #001400;
+  --dim: #0b7a32;
+  --mid: #0b7a32;
+  --ink: #33ff66;
+  --hi: #ccffd6;
+  --wall: #003300;
+  --floor: #001400;
+}
+
+body[data-page="menus"] {
+  --bg: #0055aa;
+  --paper: #000000;
+  --dim: #ff8800;
+  --mid: #ff8800;
+  --ink: #ffffff;
+  --hi: #ffffff;
+  --wall: #000000;
+  --floor: #0055aa;
+}
+
+body[data-page="games"] {
+  --bg: #000000;
+  --paper: #000000;
+  --dim: #ff55ff;
+  --mid: #ff55ff;
+  --ink: #55ffff;
+  --hi: #ffffff;
+  --wall: #550055;
+  --floor: #000000;
+}
+
+body[data-page="playlists"] {
+  --bg: #352879;
+  --paper: #221858;
+  --dim: #70a4b2;
+  --mid: #70a4b2;
+  --ink: #b8c76f;
+  --hi: #ffffff;
+  --wall: #221858;
+  --floor: #352879;
+}
+
+body[data-page="scene"] {
+  --bg: #000000;
+  --paper: #000000;
+  --dim: #888888;
+  --mid: #888888;
+  --ink: #ffffff;
+  --hi: #ffffff;
+  --wall: #222222;
+  --floor: #000000;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: var(--bg);
+}
+
+.pad {
+  display: none;
+}
+
+button,
+a {
+  border-radius: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  html {
+    --u: 2px;
+  }
+
+  .pad {
+    display: grid;
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 4;
+    grid-template-columns: 44px 44px 44px 1fr 44px 44px;
+    grid-template-areas: ". up . . b a" "left down right . b a";
+    gap: 6px;
+    justify-content: start;
+  }
+
+  button[data-act] {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    border: 2px solid var(--dim);
+    border-radius: 0;
+    font-family: "kongtext", monospace;
+    font-size: 8px;
+  }
+
+  button[data-act="up"] { grid-area: up; }
+  button[data-act="down"] { grid-area: down; }
+  button[data-act="left"] { grid-area: left; }
+  button[data-act="right"] { grid-area: right; }
+  button[data-act="b"] { grid-area: b; }
+  button[data-act="a"] { grid-area: a; }
+}

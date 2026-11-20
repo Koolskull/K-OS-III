@@ -1,0 +1,360 @@
+{
+  "publisher": "2kool Productions LLC, Los Angeles, CA",
+  "editor": "koolskull.eth",
+  "sections": [
+    {
+      "id": "island",
+      "title": "Island",
+      "summary": "The hotel, Hollywood Cowboy, teef found in the wild, and music made on the island instruments.",
+      "children": [
+        {
+          "id": "island-place",
+          "title": "The island",
+          "paragraphs": [
+            "Stardrain is an island. Storage is treated as infinite because Hollywood Cowboy put his career money into plants that store data in their genes.",
+            "Drum modules, synths, mixers, samplers, and sequencers grow as fruit. An XY pad grows on a tree. It is called a Padpear. Oscillators grow as berries, one waveform each. Patch cables grow as vines."
+          ]
+        },
+        {
+          "id": "hotel",
+          "title": "The hotel",
+          "paragraphs": [
+            "The Stardrain Hotel faces south. The ground floor is a market mall and two music venues. Apartments are above that. The family is at the top.",
+            "The night exterior is the front of stardrain.app. The field manual and this wiki live at /stardrain/."
+          ]
+        },
+        {
+          "id": "cowboy",
+          "title": "Hollywood Cowboy",
+          "paragraphs": [
+            "Hollywood Cowboy is the landlord, the mayor, and the lead botanist. He is an ex-rock star.",
+            "Island pictures use the night greens of his portrait: sky #081923, land #456254, light #90b08e."
+          ]
+        },
+        {
+          "id": "wild-teefz",
+          "title": "Finds in the wild",
+          "paragraphs": [
+            "TEEFZ are found in the wild on Stardrain. A find mints teef to the finder, or to the character wallet they have open.",
+            "The amount of a find is unset. The account server does not hold the tokens and does not send the transaction. The holder claims a signed voucher."
+          ]
+        },
+        {
+          "id": "instruments",
+          "title": "Instruments",
+          "paragraphs": [
+            "Making and releasing music with Stardrain instruments mints TEEFZ to the person who releases it.",
+            "A public release is the earning event. The piece is built from the island instruments: padpears, berries, vines, the drum module, and the rest of the rack."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "city",
+      "title": "Mediocricity",
+      "summary": "The city orb, the processing-floor wage, Smiley Teeth Records, tips, and trades.",
+      "children": [
+        {
+          "id": "city-orb",
+          "title": "The city",
+          "paragraphs": [
+            "Mediocricity is a glass-and-steel orb off the coast of Stardrain, in its own firmament. The ocean is between them. City residents do not think of the island.",
+            "Underworld plumbing passages are the connection. People in the city do not leave. They are union workers and pensioners on a weekly wage."
+          ]
+        },
+        {
+          "id": "floor",
+          "title": "The processing floor",
+          "paragraphs": [
+            "The easy job is a top-down room. A conveyor is on the left. A truck is on the right. The worker picks up rectangles, rotates them, and packs the truck.",
+            "That minigame pays SMILE onto the card. The wage is a mint. The amount is unset."
+          ]
+        },
+        {
+          "id": "records",
+          "title": "Smiley Teeth Records",
+          "paragraphs": [
+            "Smiley Teeth Records runs the city and issues SMILE.",
+            "A record sale moves SMILE from the buyer to the seller. The sale does not mint a new token. The label's bank is where a card balance becomes a paper note, after the holder turns preservation on and exchanges into that face."
+          ]
+        },
+        {
+          "id": "smile-tips",
+          "title": "Tips",
+          "paragraphs": [
+            "A tip in Mediocricity is a transfer of SMILE from one wallet to another.",
+            "The tipper chooses the amount. The token does not convert itself into TEEFZ or KXXL."
+          ]
+        },
+        {
+          "id": "smile-trades",
+          "title": "Trades",
+          "paragraphs": [
+            "Two users can trade SMILE for whatever they agree to hand over.",
+            "Some desks that trade SMILE for TEEFZ sit outside the city's law. The player has to find them. The rate is unset."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tokens",
+      "title": "Tokens",
+      "summary": "How MD420 faces work for TEEFZ, SMILE, and KXXL, and which actions mint or move them.",
+      "children": [
+        {
+          "id": "md420",
+          "title": "MD420",
+          "paragraphs": [
+            "Each money is one MD420 token. One address is an ERC20 and an ERC1155. The face list is fixed at deployment. Contract ids start at 1. Catalog ids start at 0. Contract id i + 1 is catalog id i.",
+            "Automatic change is on by default. It uses largest-first greedy division. A holder who wants to keep a specific note calls setAutoChange(false). MD420 is experimental. It is not an assigned ERC and it is not audited. Nothing here is deployed.",
+            "The three tokens are TEEFZ, SMILE, and KXXL. KXXL is the 2kool.me coin. It was called SLIME until the phone approval on 2026-11-19. They do not convert inside a contract."
+          ]
+        },
+        {
+          "id": "faces",
+          "title": "Faces",
+          "children": [
+            {
+              "id": "teefz-faces",
+              "title": "TEEFZ",
+              "paragraphs": [
+                "TEEFZ is island and hotel money. Decimals are 0. The faces are TEEF 1, JAW 16, MOUF 32, SKULL 128, and SKELETONNE 1024.",
+                "A canonical wallet with 32 teef holds one MOUF. Two jaws is a preserved stack. Four moufs make a skull. Eight skulls make a SkeleTonne. TEEFZ is worthless inside Mediocricity."
+              ]
+            },
+            {
+              "id": "smile-faces",
+              "title": "SMILE",
+              "paragraphs": [
+                "SMILE is Mediocricity money. Decimals are 2. One base unit is one cent, shown as 0.01 SMILE.",
+                "The faces are 0.01, 0.05, 0.25, 0.50, 1, 4, 11, 44, 88, 222, and 777 SMILE. The card and the paper notes are this one token. A paper note is that face held with automatic change off, or pulled by a counter as that ERC1155 id.",
+                "A counter that takes the note and refuses the card asks for a transfer of that id. An ERC20 spend of part of a 777 note recomputes the remainder."
+              ]
+            },
+            {
+              "id": "slime-faces",
+              "title": "KXXL",
+              "paragraphs": [
+                "KXXL is 2kool.me money. It was called SLIME until the phone approval on 2026-11-19. Decimals are 0. The faces are S1 through S7, worth 1 through 7, and S10, worth 8, written S1 S0.",
+                "S0 stays the tracker's zero and is not a coin. The square family stays tracker digits. A canonical balance of 8 is one S10. Eight S1 coins exist only as a preserved stack."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "earn-or-move",
+          "title": "Earn or move",
+          "paragraphs": [
+            "A find, a wage, a release, time in an app, or a public publish mints new tokens. The holder claims an EIP-712 voucher. The signer key lives apart from the website.",
+            "A sale, a tip, or a trade moves tokens that already exist. The buyer's balance goes down. The seller's balance goes up by the same number of base units.",
+            "Rates, wages, find amounts, minutes per KXXL, and publish bonuses are unset."
+          ]
+        },
+        {
+          "id": "change",
+          "title": "Change and notes",
+          "paragraphs": [
+            "The hotel and the debit card make change with automatic change on. Paper notes stay whole when the holder has preservation on.",
+            "exchangeDenominations rearranges the caller's own notes. It requires preservation and ERC1155 participation. The ERC20 balance does not move."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "twokool",
+      "title": "2kool.me",
+      "summary": "One account, time in the apps, published work, and the market shared with koolskull.com, scatter.art, and miyamaker.com.",
+      "children": [
+        {
+          "id": "account",
+          "title": "One account",
+          "paragraphs": [
+            "One Koolskull user is the person on 2kool.me, on miyamaker.com, and in Stardrain. Sign-in is Ethereum or Matrix. Extra methods are linked only when the person wants them.",
+            "The tools still run with no account. Holdings are read from the chain for each linked Ethereum address and each character wallet."
+          ]
+        },
+        {
+          "id": "app-time",
+          "title": "Time in the apps",
+          "paragraphs": [
+            "KXXL is earned by using the software. The measure is an active session on 2kool.me or in Stardrain.",
+            "Time is credited only after an account is signed in. The tools keep working with no account. The minutes-per-KXXL number is unset."
+          ]
+        },
+        {
+          "id": "published",
+          "title": "Published work",
+          "paragraphs": [
+            "Publishing a song, an image, a drumkit, or a video on 2kool.me mints KXXL to the publisher.",
+            "The minter pays the gas. A finished piece earns KXXL by being published. The platform does not hold ETH for that mint."
+          ]
+        },
+        {
+          "id": "market",
+          "title": "The market",
+          "paragraphs": [
+            "2kool.me has one market. The same signed-in user sees it on koolskull.com and miyamaker.com.",
+            "The floor lists koolskull.com, scatter.art, miyamaker.com, and work made in the apps. A listing created on one host shows on the others. The market does not hold the tokens and does not add a platform fee."
+          ]
+        },
+        {
+          "id": "hosts",
+          "title": "The three hosts",
+          "children": [
+            {
+              "id": "scatter",
+              "title": "scatter.art",
+              "paragraphs": [
+                "Scatter collections already in the app are mialien-eth, kool-skull-s-halloween-special, and bannerz-by-koolskull. The API is https://api.scatter.art/v1.",
+                "Those mints keep their ETH checkout. Whether an ETH listing can also be bought with KXXL is still an open approval."
+              ]
+            },
+            {
+              "id": "koolskull-market",
+              "title": "koolskull.com",
+              "paragraphs": [
+                "koolskull.com keeps the Marketplace, the mint pages, the OpenSea asks, and the shop.",
+                "Those checkouts stay on ETH and OpenSea. The shared market shows them beside the 2kool.me works."
+              ]
+            },
+            {
+              "id": "miyamaker",
+              "title": "miyamaker.com",
+              "paragraphs": [
+                "Miyamaker Mini stays the ERC-721 at 0x375a1911C0C2982f59826C227B7830e5d5985d59. Its mint stays in ETH.",
+                "Songs and kits made in the app sell for KXXL. A digital download is 0.99 USDC. Holding Mini does not become a new 2kool.me mint, and the other way around."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "slime-sales",
+          "title": "Sales and tips",
+          "paragraphs": [
+            "In-app NFTs sell for KXXL. The seller sets the price. The buyer pays the seller. A digital download is 0.99 USDC, with no platform fee.",
+            "A KXXL tip is a transfer. The tipper chooses the amount."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "title": "People",
+      "summary": "The character wallet, gear, RemiliaNET, the publisher, and what is still unset.",
+      "children": [
+        {
+          "id": "character",
+          "title": "The character",
+          "paragraphs": [
+            "A new player makes a character. The character is the save: an ERC-721 with an ERC-6551 wallet. The wallet starts empty.",
+            "Selling the character sells what is still inside. The listing shows the three money balances and the gear before anyone signs. A character wallet has to be recognized by each money token or its notes show up as dust."
+          ]
+        },
+        {
+          "id": "gear",
+          "title": "Gear and craft",
+          "paragraphs": [
+            "Gear is an ERC-1155. Copies of one id stack. A Padpear is a tool, so it is not an MD420 face. Island goods take TEEFZ. Mediocricity goods take SMILE.",
+            "Craft burns specific gear from the character wallet and mints one ERC-721 work. A jaw cannot stand in for a berry. Currency can be a fee."
+          ]
+        },
+        {
+          "id": "remilia",
+          "title": "RemiliaNET",
+          "paragraphs": [
+            "RemiliaNET links as an OpenID account at https://www.remilia.net/oidc/realms/remilia. The link stores the subject and the username.",
+            "The link is not a wallet. Beetle, chat, and social scopes are not requested. An Ethereum address still comes from Sign-In With Ethereum."
+          ]
+        },
+        {
+          "id": "publisher",
+          "title": "Publisher",
+          "paragraphs": [
+            "The code and the token metadata name one publisher: 2kool Productions LLC, Los Angeles, CA.",
+            "The record is src/data/attribution.json. Token metadata gets a creator, a copyright line, and Publisher and Locality traits."
+          ]
+        },
+        {
+          "id": "open",
+          "title": "Still open",
+          "paragraphs": [
+            "The chain is not chosen. The rate table is not set. The voucher signer is not named.",
+            "Whether a Scatter, OpenSea, or Miyamaker Mini listing can also be bought with KXXL is waiting on koolskull.eth.",
+            "The foundation repo is private: Koolskull/2kool-me. New repositories stay private, owned only by GitHub user Koolskull."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "approved",
+      "title": "Phone approval",
+      "summary": "What koolskull.eth approved on 2026-11-19, including the rename of SLIME to KXXL.",
+      "children": [
+        {
+          "id": "kxxl-name",
+          "title": "KXXL",
+          "paragraphs": [
+            "The 2kool.me coin is KXXL. It was called SLIME. SMILE and TEEFZ keep their names.",
+            "KXXL is earned by active time in 2kool.me and Stardrain, published work, in-app sales, and tips. A digital download is 0.99 USDC, buyer to seller, with no platform fee."
+          ]
+        },
+        {
+          "id": "music-curve",
+          "title": "Music NFTs",
+          "paragraphs": [
+            "A music NFT is listed on a bonding curve. The direction is ERC721M or a MiyaMaker curve, or an ERC-1155 edition with the same gentle, steady, and steep curves.",
+            "Shot NFTs stay ERC-721 with ERC-2981 royalties. The curve numbers are unset."
+          ]
+        },
+        {
+          "id": "cloud-box",
+          "title": "Cloud box",
+          "paragraphs": [
+            "2kool.me keeps a Dropbox-style box for the signed-in user. The files are hosted as IPFS notes."
+          ]
+        },
+        {
+          "id": "inventory-admin",
+          "title": "Inventory",
+          "paragraphs": [
+            "The game keeps an inventory. An admin panel mints sample packs, skins, outfits, and later items.",
+            "A person can burn the matching regular item and mint a personal 1-of-1 of a hand-made version."
+          ]
+        },
+        {
+          "id": "monero-later",
+          "title": "Endgame purchases",
+          "paragraphs": [
+            "An optional later rail can take Monero for an endgame purchase. The buyer and the receiver stay unlinked on that rail. Offline play stays on the device until the person chooses to bring it online.",
+            "That rail is not in the first build. Ethereum mixers are not the path. The codewrite agent held it until a further go-ahead. The first build is the publisher stamp, the voucher claims, the market split, and the inventory, in the private repo Koolskull/2kool-me."
+          ]
+        },
+        {
+          "id": "foundation-pr",
+          "title": "Foundation pull request",
+          "paragraphs": [
+            "The codewrite agent opened private repo Koolskull/2kool-me and pull request 1 on 2026-11-19. The pull request is open. Nothing in it is deployed.",
+            "It has the publisher stamp, voucher claims, checkout routes, and a basic inventory. The token contracts in it are plain ERC-20s at the default 18 decimals. They are not the MD420 face arrays in this plan.",
+            "Sales, tips, and trades stay transfers in this plan. That pull request also lists those three as voucher mint reasons. Time tracking, the cloud box, the admin panel, the burn to a 1-of-1, the bonding curve, and Monero are later. A lawyer check before launch is still open."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "desk",
+      "title": "This wiki",
+      "summary": "How koolskull.eth edits a whole article on the phone and signs the approval.",
+      "children": [
+        {
+          "id": "how-to-approve",
+          "title": "Approval",
+          "paragraphs": [
+            "Anyone can read this menu. Rewriting an article belongs to koolskull.eth.",
+            "Open the page in the wallet browser. Connect the wallet that resolves to koolskull.eth on Ethereum mainnet and sign the login line. EDIT opens the whole article. CLOSE leaves the editor. SAVE keeps the draft on this phone. APPROVE signs that article text.",
+            "A valid signature is the approval. Visitors then read the signed text. Another address cannot edit or approve. If the site can store the signed record, it shows here for everyone. If it cannot, the signed copy stays on this phone until the ledger file is writable."
+          ]
+        }
+      ]
+    }
+  ]
+}

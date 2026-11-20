@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STARDRAIN</title>
+<link rel="stylesheet" href="/assets/shell.css">
+<link rel="stylesheet" href="/assets/hotel.css">
+</head>
+<body data-page="island" data-theme="dmg" data-view="island" data-crt="on">
+<div class="term">
+  <header class="bar">
+    <span>STARDRAIN</span>
+    <span id="where">ISLAND</span>
+  </header>
+  <nav class="menu tree" id="menu-l" aria-label="Places">
+    <p class="trunk">PLACES</p>
+    <div class="kids">
+      <button type="button" class="leaf" data-view="island">ISLAND</button>
+      <button type="button" class="leaf" data-view="talk">HOLLYWOOD</button>
+      <button type="button" class="leaf" data-view="city">MEDIOCRICITY</button>
+      <button type="button" class="leaf" data-view="drawings">DRAWINGS</button>
+    </div>
+  </nav>
+  <div class="gutter gutter-l" aria-hidden="true"></div>
+  <div class="cell screen" id="screen">
+    <div class="gb" id="island" data-panel="island">
+      <div class="px land" style="--x:0;--y:16;--w:56;--h:20"></div>
+      <div class="px land" style="--x:28;--y:28;--w:104;--h:12"></div>
+      <div class="px land" style="--x:0;--y:44;--w:160;--h:16"></div>
+      <div class="px land" style="--x:0;--y:88;--w:40;--h:48"></div>
+      <div class="px land" style="--x:120;--y:72;--w:40;--h:64"></div>
+      <div class="px land" style="--x:0;--y:126;--w:160;--h:10"></div>
+      <div class="px ground" style="--x:0;--y:136;--w:160;--h:8"></div>
+      <div class="px mass" style="--x:44;--y:50;--w:72;--h:78"></div>
+      <button class="px cross" type="button" data-hot="cross" data-line="A light cross is on the roof." style="--x:68;--y:36;--w:22;--h:16" aria-label="Cross">
+        <span class="px lit" style="--x:9;--y:0;--w:4;--h:16"></span>
+        <span class="px lit" style="--x:0;--y:4;--w:22;--h:4"></span>
+      </button>
+      <button class="sign" type="button" data-hot="sign" data-line="Star Drain, on the mountain above the hotel." aria-label="Star Drain"></button>
+      <button class="px win lit" type="button" data-hot="top" data-line="Hollywood and his family live at the top." style="--x:50;--y:56;--w:56;--h:6" aria-label="Top floor"></button>
+      <div class="px win dark" style="--x:50;--y:67;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:62;--y:67;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:74;--y:67;--w:8;--h:6"></div>
+      <button class="px win lit" type="button" data-hot="win" data-line="A light is on." style="--x:86;--y:67;--w:8;--h:6" aria-label="Lit window"></button>
+      <div class="px win dark" style="--x:98;--y:67;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:50;--y:78;--w:8;--h:6"></div>
+      <button class="px win lit" type="button" data-hot="win" data-line="A light is on." style="--x:62;--y:78;--w:8;--h:6" aria-label="Lit window"></button>
+      <div class="px win dark" style="--x:74;--y:78;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:86;--y:78;--w:8;--h:6"></div>
+      <button class="px win lit" type="button" data-hot="win" data-line="A light is on." style="--x:98;--y:78;--w:8;--h:6" aria-label="Lit window"></button>
+      <button class="px win lit" type="button" data-hot="win" data-line="A light is on." style="--x:50;--y:89;--w:8;--h:6" aria-label="Lit window"></button>
+      <div class="px win dark" style="--x:62;--y:89;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:74;--y:89;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:86;--y:89;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:98;--y:89;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:50;--y:100;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:62;--y:100;--w:8;--h:6"></div>
+      <button class="px win lit" type="button" data-hot="win" data-line="A light is on." style="--x:74;--y:100;--w:8;--h:6" aria-label="Lit window"></button>
+      <div class="px win dark" style="--x:86;--y:100;--w:8;--h:6"></div>
+      <div class="px win dark" style="--x:98;--y:100;--w:8;--h:6"></div>
+      <button class="px door" type="button" data-hot="door" data-line="First floor. Market mall and two music venues." style="--x:70;--y:114;--w:20;--h:14" aria-label="Door"></button>
+    </div>
+    <div class="gb talk" id="talk" data-panel="talk" hidden>
+      <button class="plate" type="button" data-full="/assets/ref/hollywood.jpg" data-line="I live at the top of the hotel." aria-label="Hollywood Cowboy">
+        <img alt="" src="/assets/ref/hollywood.jpg" data-dither data-w="160">
+        <canvas></canvas>
+      </button>
+    </div>
+    <div class="gb city" id="city" data-panel="city" hidden>
+      <div class="px orb" style="--x:56;--y:24;--w:48;--h:8"></div>
+      <div class="px orb" style="--x:40;--y:32;--w:80;--h:8"></div>
+      <div class="px orb" style="--x:32;--y:40;--w:96;--h:64"></div>
+      <div class="px orb" style="--x:40;--y:104;--w:80;--h:8"></div>
+      <div class="px orb" style="--x:56;--y:112;--w:48;--h:8"></div>
+      <div class="px orb-in" style="--x:44;--y:48;--w:72;--h:48"></div>
+      <div class="px lamp" style="--x:52;--y:56;--w:6;--h:6"></div>
+      <div class="px lamp" style="--x:102;--y:64;--w:6;--h:6"></div>
+      <div class="px lamp" style="--x:76;--y:80;--w:6;--h:6"></div>
+      <button class="plate pass" type="button" data-full="/assets/ref/smile-pass.jpg" data-line="Smiley Teeth Records pass." aria-label="Smiley Teeth Records pass">
+        <img alt="" src="/assets/ref/smile-pass.jpg" data-dither data-w="88">
+        <canvas></canvas>
+      </button>
+    </div>
+    <div class="drawings" id="drawings" data-panel="drawings" hidden></div>
+  </div>
+  <div class="gutter gutter-r" aria-hidden="true"></div>
+  <nav class="menu" id="menu-r" aria-label="Books and engine">
+    <p class="trunk">BOOKS</p>
+    <div class="kids">
+      <a class="leaf" href="/stardrain/">FIELD MANUAL</a>
+      <a class="leaf" href="/stardrain/desk/">WIKI</a>
+    </div>
+    <p class="trunk rank-3">ENGINE</p>
+    <div class="kids kids-quiet">
+      <a class="leaf" href="/rooms/">ROOMS</a>
+      <a class="leaf" href="/levels/">LEVELS</a>
+      <a class="leaf" href="/menus/">MENUS</a>
+      <a class="leaf" href="/games/">GAMES</a>
+      <a class="leaf" href="/playlists/">PLAYLISTS</a>
+      <a class="leaf" href="/scene/">SCENE</a>
+    </div>
+  </nav>
+  <p class="story" id="story">South side. The hotel faces the night.</p>
+  <p class="hint">ARROWS MOVE   Z OPEN   X BACK</p>
+</div>
+<div class="pad">
+  <button type="button" data-act="up">U</button>
+  <button type="button" data-act="down">D</button>
+  <button type="button" data-act="left">L</button>
+  <button type="button" data-act="right">R</button>
+  <button type="button" data-act="b">B</button>
+  <button type="button" data-act="a">A</button>
+</div>
+<div class="zoom" hidden>
+  <button type="button" data-close>X</button>
+  <img alt="">
+  <p class="zoom-cap"></p>
+</div>
+<script type="module" src="/assets/hotel.js"></script>
+<script type="module" src="/assets/crt.js"></script>
+</body>
+</html>
